@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "baseUrl": ".",
+    "paths": {
+      "@config/*": ["packages/config/src/*"],
+      "@db/*": ["packages/db/src/*"],
+      "@ui/*": ["packages/ui/src/*"],
+      "@shared/*": ["packages/shared/src/*"],
+      "@types/*": ["packages/types/src/*"]
+    }
+  }
+}
+

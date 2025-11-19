@@ -1,0 +1,114 @@
+---
+description: "Projeto — Arquitetura + Clean Code (Regras Globais)"
+globs:
+  - "**/*.ts"
+  - "**/*.tsx"
+alwaysApply: true
+---
+
+# 📌 Regras Gerais do Projeto
+- 100% do código novo deve ser escrito em **TypeScript**.
+- Evitar arquivos `.js` (exceto quando estritamente necessário).
+- Priorizar **funções puras** e evitar mutabilidade.
+- Usar sempre **ES Modules** (`import/export`).
+
+# 🧱 Arquitetura — Regras Obrigatórias
+
+## 1. Estrutura por Camadas (Clean Architecture)
+
+**domain/**
+- entidades
+- tipos
+- regras de negócio puras
+- casos de uso
+
+**application/**
+- DTOs
+- services
+- orquestração de casos de uso
+- validadores
+
+**infra/**
+- repositórios concretos
+- gateways
+- HTTP clients
+- drivers externos
+
+**presentation/**
+- controllers
+- rotas
+- view-models
+- front-end
+- adaptadores
+
+## 2. Repository Pattern
+- Toda entidade persistida deve possuir interface de repositório dentro de `domain/repositories/`.
+- Implementações concretas ficam em `infra/repositories/`.
+- **domain nunca deve importar de infra.**
+
+## 3. Service Layer
+- Regras de negócio complexas ficam em `application/services/`.
+- Controllers não devem conter lógica — apenas chamar services.
+- Services não podem conhecer banco ou frameworks.
+
+# 🧼 Clean Code
+
+## 4. Nomeação
+- Funções: camelCase
+- Classes / interfaces: PascalCase
+- Arquivos: kebab-case
+- Constantes: UPPER_SNAKE_CASE
+- Colunas de banco: snake_case
+- Evitar abreviações obscuras.
+
+Exemplo ruim:
+function prcUsr(d) {}
+
+Exemplo bom:
+function processUser(data) {}
+
+## 5. Tamanho e Responsabilidade
+- Funções devem ter até ~20 linhas quando possível.
+- Classes devem ter uma única responsabilidade.
+- Evitar múltiplos efeitos colaterais.
+- Evitar God Classes e God Components.
+
+## 6. Comentários
+- Comentários apenas para explicar porquê, nunca como.
+- Código deve ser autoexplicativo.
+
+## 7. Tratamento de Erros
+- Nunca lançar erros genéricos.
+- Criar classes de erro específicas por contexto.
+- Encapsular erros externos em erros de domínio.
+
+## 8. Estrutura de Arquivos
+- Um arquivo deve conter apenas uma peça principal.
+
+# ⚛️ Regras para React
+- Sempre usar Functional Components.
+- Extrair subcomponentes quando JSX ficar grande.
+- Componentes grandes devem seguir estrutura index/component/styles/types.
+- Minimizar estado local.
+- Estado global via Zustand/Redux Toolkit/Context.
+- Side effects isolados em useEffect.
+
+# ⚙️ Testes
+- Testes obrigatórios para domain, services e repositórios mockados.
+- Evitar testes frágeis.
+
+# 📦 Padronização Técnica
+- Usar ESLint + Prettier.
+- Tipar explicitamente retornos.
+- Evitar any.
+
+# 🔒 Segurança
+- Nunca expor valores sensíveis.
+- Sempre usar .env.
+- Sanitizar entradas externas.
+- Validar entrada no controller ou caso de uso.
+
+# 🔄 Fluxo de Pull Request
+- Proibido código sem testes.
+- Proibido console.log.
+- Revisões devem validar responsabilidade, nomes, complexidade e testes.
