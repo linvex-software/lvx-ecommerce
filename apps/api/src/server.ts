@@ -17,8 +17,15 @@ async function buildServer() {
     openapi: {
       info: {
         title: 'White Label API',
-        version: '0.1.0'
-      }
+        version: '0.1.0',
+        description: 'API REST para o sistema de e-commerce white label'
+      },
+      servers: [
+        {
+          url: `http://localhost:${process.env.PORT || 3333}`,
+          description: 'Servidor de desenvolvimento'
+        }
+      ]
     }
   })
 
@@ -31,8 +38,20 @@ async function buildServer() {
     })
   }
 
+  app.get('/', async () => {
+    return {
+      name: 'White Label API',
+      version: '0.1.0',
+      status: 'running',
+      endpoints: {
+        health: '/health',
+        swagger: '/documentation/json'
+      }
+    }
+  })
+
   app.get('/health', async () => {
-    return { ok: true }
+    return { ok: true, timestamp: new Date().toISOString() }
   })
 
   return app
