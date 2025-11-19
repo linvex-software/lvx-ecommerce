@@ -1,5 +1,10 @@
 import { Button } from '@white-label/ui'
 
+export const metadata = {
+  title: 'Painel Admin - White Label',
+  description: 'Painel administrativo do sistema'
+}
+
 export default function AdminHomePage() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center">
