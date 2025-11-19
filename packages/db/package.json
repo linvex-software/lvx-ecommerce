@@ -11,7 +11,8 @@
     "postgres": "^3.4.4"
   },
   "devDependencies": {
-    "drizzle-kit": "^0.24.0"
+    "drizzle-kit": "^0.24.0",
+    "dotenv": "^16.4.0"
   },
   "scripts": {
     "db:generate": "drizzle-kit generate",
