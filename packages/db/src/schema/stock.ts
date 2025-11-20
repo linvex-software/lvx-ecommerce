@@ -9,6 +9,7 @@ import {
 import { stores } from './core'
 import { products } from './catalog'
 import { productVariants } from './catalog'
+import { users } from './core'
 
 export const stockMovements = pgTable(
   'stock_movements',
@@ -23,9 +24,14 @@ export const stockMovements = pgTable(
     variant_id: uuid('variant_id').references(() => productVariants.id, {
       onDelete: 'set null'
     }),
-    type: text('type').notNull(),
-    origin: text('origin'),
+    type: text('type').notNull(), // IN, OUT, ADJUST
+    origin: text('origin'), // manual, order, physical_sale, etc.
     quantity: integer('quantity').notNull(),
+    reason: text('reason'),
+    final_quantity: integer('final_quantity'), // Para ADJUST: saldo final desejado
+    created_by: uuid('created_by').references(() => users.id, {
+      onDelete: 'set null'
+    }),
     created_at: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull()
@@ -38,6 +44,10 @@ export const stockMovements = pgTable(
     storeCreatedIdx: index('stock_movements_store_created_idx').on(
       table.store_id,
       table.created_at
+    ),
+    productVariantIdx: index('stock_movements_product_variant_idx').on(
+      table.product_id,
+      table.variant_id
     )
   })
 )
