@@ -6,7 +6,8 @@ import {
   boolean,
   numeric,
   integer,
-  uniqueIndex
+  uniqueIndex,
+  index
 } from 'drizzle-orm/pg-core'
 import { stores } from './core'
 
@@ -33,7 +34,9 @@ export const coupons = pgTable(
     storeCodeUnique: uniqueIndex('coupons_store_code_unique').on(
       table.store_id,
       table.code
-    )
+    ),
+    storeIdIdx: index('coupons_store_id_idx').on(table.store_id),
+    activeIdx: index('coupons_active_idx').on(table.active)
   })
 )
 

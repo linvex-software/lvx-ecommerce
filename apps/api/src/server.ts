@@ -7,6 +7,8 @@ import swagger from '@fastify/swagger'
 import jwt from '@fastify/jwt'
 import cookie from '@fastify/cookie'
 import { registerAuthRoutes } from './presentation/http/auth/auth-routes'
+import { registerAdminCouponRoutes } from './presentation/http/admin/coupon-routes'
+import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
 
 async function buildServer() {
   const app = Fastify({
@@ -63,6 +65,8 @@ async function buildServer() {
   })
 
   await registerAuthRoutes(app)
+  await registerAdminCouponRoutes(app)
+  await registerCheckoutRoutes(app)
 
   return app
 }
