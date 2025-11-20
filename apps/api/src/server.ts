@@ -1,6 +1,6 @@
 import 'dotenv/config'
 
-import Fastify from 'fastify'
+import Fastify, { type FastifyRequest } from 'fastify'
 import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
 import swagger from '@fastify/swagger'
@@ -9,11 +9,32 @@ import cookie from '@fastify/cookie'
 import { registerAuthRoutes } from './presentation/http/auth/auth-routes'
 import { registerAdminCouponRoutes } from './presentation/http/admin/coupon-routes'
 import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
+import { registerWebhookRoutes } from './presentation/http/webhooks/webhook-routes'
 
 async function buildServer() {
   const app = Fastify({
     logger: true
   })
+
+  // Parser customizado para application/json
+  // Retorna JSON parseado normalmente, mas também armazena raw body como Buffer
+  // Isso permite validação HMAC em webhooks sem quebrar outras rotas
+  app.addContentTypeParser(
+    'application/json',
+    { parseAs: 'buffer' },
+    async (req: FastifyRequest & { rawBody?: Buffer }, body: Buffer) => {
+      try {
+        // Sempre armazenar raw body (será usado apenas em webhooks)
+        req.rawBody = body
+        
+        // Parsear e retornar JSON (para não quebrar outras rotas)
+        const json = JSON.parse(body.toString('utf-8')) as Record<string, unknown>
+        return json
+      } catch (error) {
+        throw error as Error
+      }
+    }
+  )
 
   await app.register(cors, {
     origin: true,
@@ -67,6 +88,7 @@ async function buildServer() {
   await registerAuthRoutes(app)
   await registerAdminCouponRoutes(app)
   await registerCheckoutRoutes(app)
+  await registerWebhookRoutes(app)
 
   return app
 }
