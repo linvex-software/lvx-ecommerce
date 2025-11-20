@@ -1,16 +1,25 @@
-import { Button } from '@white-label/ui'
+'use client'
 
-export const metadata = {
-  title: 'Painel Admin - White Label',
-  description: 'Painel administrativo do sistema'
-}
+import { useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/store/auth-store'
 
 export default function AdminHomePage() {
+  const router = useRouter()
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated())
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      router.push('/dashboard')
+    } else {
+      router.push('/login')
+    }
+  }, [isAuthenticated, router])
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center">
-      <h1 className="text-2xl font-bold">Painel Admin</h1>
-      <Button className="mt-4">Entrar no painel</Button>
-    </main>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="text-sm font-light text-gray-500 tracking-wide">Redirecionando...</div>
+    </div>
   )
 }
 
