@@ -8,6 +8,8 @@ import jwt from '@fastify/jwt'
 import cookie from '@fastify/cookie'
 import { registerAuthRoutes } from './presentation/http/auth/auth-routes'
 import { registerAdminCouponRoutes } from './presentation/http/admin/coupon-routes'
+import { registerAdminProductRoutes } from './presentation/http/admin/product-routes'
+import { registerCatalogRoutes } from './presentation/http/catalog/product-routes'
 import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
 import { registerWebhookRoutes } from './presentation/http/webhooks/webhook-routes'
 
@@ -26,7 +28,7 @@ async function buildServer() {
       try {
         // Sempre armazenar raw body (será usado apenas em webhooks)
         req.rawBody = body
-        
+
         // Parsear e retornar JSON (para não quebrar outras rotas)
         const json = JSON.parse(body.toString('utf-8')) as Record<string, unknown>
         return json
@@ -87,6 +89,8 @@ async function buildServer() {
 
   await registerAuthRoutes(app)
   await registerAdminCouponRoutes(app)
+  await registerAdminProductRoutes(app)
+  await registerCatalogRoutes(app)
   await registerCheckoutRoutes(app)
   await registerWebhookRoutes(app)
 

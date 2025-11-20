@@ -1,4 +1,4 @@
-import { AuthSessionRepository } from '../../infra/db/repositories/auth-session-repository'
+import { AuthSessionRepository } from '../../../infra/db/repositories/auth-session-repository'
 
 export interface LogoutDependencies {
   authSessionRepository: AuthSessionRepository

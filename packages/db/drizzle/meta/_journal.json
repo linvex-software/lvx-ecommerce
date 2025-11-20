@@ -29,6 +29,13 @@
       "when": 1763610168374,
       "tag": "0003_safe_sugar_man",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1737417600000,
+      "tag": "0004_add_catalog_fields",
+      "breakpoints": true
     }
   ]
 }
