@@ -7,3 +7,11 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>
 
+export interface AuthUser {
+  id: string
+  name: string
+  email: string
+  role: 'admin' | 'operador' | 'vendedor'
+  storeId: string
+}
+

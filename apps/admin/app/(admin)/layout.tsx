@@ -1,0 +1,86 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useAuthStore } from '@/store/auth-store'
+import { AdminShell } from '@/components/layout/admin-shell'
+
+// Roles permitidas para acessar o painel admin
+const ALLOWED_ROLES: Array<'admin' | 'operador' | 'vendedor'> = ['admin', 'operador']
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const router = useRouter()
+  const [isMounted, setIsMounted] = useState(false)
+  const [isChecking, setIsChecking] = useState(true)
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated())
+  const user = useAuthStore((state) => state.user)
+
+  // Aguardar montagem no cliente (hidratação do Zustand)
+  useEffect(() => {
+    setIsMounted(true)
+    
+    // Verificar localStorage diretamente enquanto Zustand hidrata
+    const checkStorage = () => {
+      if (typeof window === 'undefined') return false
+      
+      const token = localStorage.getItem('accessToken')
+      const storeId = localStorage.getItem('storeId')
+      const userStr = localStorage.getItem('user')
+      
+      return !!(token && storeId && userStr)
+    }
+
+    // Se já tem dados no localStorage, aguardar pouco tempo para Zustand hidratar
+    if (checkStorage()) {
+      const timer = setTimeout(() => {
+        setIsChecking(false)
+      }, 50)
+      return () => clearTimeout(timer)
+    } else {
+      // Se não tem dados, pode verificar imediatamente
+      setIsChecking(false)
+    }
+  }, [])
+
+  // Verificar autenticação após hidratação
+  useEffect(() => {
+    if (!isMounted || isChecking) return
+
+    if (!isAuthenticated || !user) {
+      router.push('/login')
+      return
+    }
+
+    // Verificar se o usuário tem role permitida
+    if (!ALLOWED_ROLES.includes(user.role)) {
+      router.push('/unauthorized')
+      return
+    }
+  }, [isMounted, isChecking, isAuthenticated, user, router])
+
+  // Mostrar loading enquanto verifica autenticação ou não está montado
+  if (!isMounted || isChecking || !isAuthenticated || !user) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50/50">
+        <div className="text-sm font-light text-gray-500 tracking-wide">Carregando...</div>
+      </div>
+    )
+  }
+
+  // Verificar role antes de renderizar
+  if (!ALLOWED_ROLES.includes(user.role)) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-50/50">
+        <div className="text-center">
+          <p className="text-sm font-medium text-gray-900">Acesso negado</p>
+          <p className="mt-1 text-xs text-gray-500">
+            Você não tem permissão para acessar esta área
+          </p>
+        </div>
+      </div>
+    )
+  }
+
+  return <AdminShell>{children}</AdminShell>
+}
+
