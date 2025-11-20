@@ -35,7 +35,7 @@ export async function refreshTokenUseCase(
     throw new Error('Session expired')
   }
 
-  const user = await userRepository.findById(session.user_id)
+  const user = await userRepository.findById(session.user_id, session.store_id)
 
   if (!user) {
     throw new Error('User not found')
