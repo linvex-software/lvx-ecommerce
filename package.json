@@ -7,11 +7,19 @@
     "build": "turbo build",
     "lint": "turbo lint",
     "test": "turbo test",
-    "db:generate": "turbo run db:generate --filter=@white-label/db",
-    "db:migrate": "turbo run db:migrate --filter=@white-label/db"
+    "db:generate": "turbo run db:generate --filter=@white-label/db --",
+    "db:migrate": "turbo run db:migrate --filter=@white-label/db",
+    "test:setup": "tsx --tsconfig scripts/tsconfig.json scripts/setup-test-data.ts",
+    "test:store-id": "tsx --tsconfig scripts/tsconfig.json scripts/get-store-id.ts"
   },
   "packageManager": "pnpm@9.0.0",
   "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/node": "^20.19.25",
+    "@white-label/db": "workspace:*",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.0",
+    "tsx": "^4.19.0",
     "turbo": "^2.0.0",
     "typescript": "^5.6.0"
   },
@@ -21,4 +29,3 @@
     }
   }
 }
-
