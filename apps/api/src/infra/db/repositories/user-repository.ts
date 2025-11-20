@@ -50,11 +50,16 @@ export class UserRepository {
     }
   }
 
-  async findById(id: string): Promise<User | null> {
+  async findById(id: string, storeId: string): Promise<User | null> {
     const result = await db
       .select()
       .from(schema.users)
-      .where(eq(schema.users.id, id))
+      .where(
+        and(
+          eq(schema.users.id, id),
+          eq(schema.users.store_id, storeId)
+        )
+      )
       .limit(1)
 
     if (result.length === 0) {
