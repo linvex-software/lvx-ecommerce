@@ -22,6 +22,13 @@
       "when": 1763606295706,
       "tag": "0002_fine_molecule_man",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1763610168374,
+      "tag": "0003_safe_sugar_man",
+      "breakpoints": true
     }
   ]
 }
