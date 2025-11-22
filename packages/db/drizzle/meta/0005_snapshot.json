@@ -1,6 +1,6 @@
 {
-  "id": "fdcd5470-7144-4319-b9a8-a8da145e75d9",
-  "prevId": "5b413e88-65e1-4f17-b0f1-de00eb12671a",
+  "id": "577ff6be-713e-490c-90b5-b6e218854906",
+  "prevId": "fdcd5470-7144-4319-b9a8-a8da145e75d9",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -745,14 +745,14 @@
           "notNull": true,
           "default": "gen_random_uuid()"
         },
-        "product_id": {
-          "name": "product_id",
+        "store_id": {
+          "name": "store_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
         },
-        "store_id": {
-          "name": "store_id",
+        "product_id": {
+          "name": "product_id",
           "type": "uuid",
           "primaryKey": false,
           "notNull": true
@@ -780,13 +780,6 @@
           "type": "text",
           "primaryKey": false,
           "notNull": false
-        },
-        "stock": {
-          "name": "stock",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
         },
         "price_override": {
           "name": "price_override",
@@ -818,6 +811,27 @@
           "method": "btree",
           "with": {}
         },
+        "product_variants_store_sku_unique": {
+          "name": "product_variants_store_sku_unique",
+          "columns": [
+            {
+              "expression": "store_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sku",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "product_variants_product_size_color_unique": {
           "name": "product_variants_product_size_color_unique",
           "columns": [
@@ -844,36 +858,15 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "product_variants_store_sku_unique": {
-          "name": "product_variants_store_sku_unique",
-          "columns": [
-            {
-              "expression": "store_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "sku",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
-        "product_variants_product_id_products_id_fk": {
-          "name": "product_variants_product_id_products_id_fk",
+        "product_variants_store_id_stores_id_fk": {
+          "name": "product_variants_store_id_stores_id_fk",
           "tableFrom": "product_variants",
-          "tableTo": "products",
+          "tableTo": "stores",
           "columnsFrom": [
-            "product_id"
+            "store_id"
           ],
           "columnsTo": [
             "id"
@@ -881,12 +874,12 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "product_variants_store_id_stores_id_fk": {
-          "name": "product_variants_store_id_stores_id_fk",
+        "product_variants_product_id_products_id_fk": {
+          "name": "product_variants_product_id_products_id_fk",
           "tableFrom": "product_variants",
-          "tableTo": "stores",
+          "tableTo": "products",
           "columnsFrom": [
-            "store_id"
+            "product_id"
           ],
           "columnsTo": [
             "id"
@@ -921,17 +914,17 @@
           "primaryKey": false,
           "notNull": true
         },
-        "description": {
-          "name": "description",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
         "slug": {
           "name": "slug",
           "type": "text",
           "primaryKey": false,
           "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "base_price": {
           "name": "base_price",
@@ -950,7 +943,7 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
-          "default": "draft"
+          "default": "'draft'"
         },
         "virtual_model_url": {
           "name": "virtual_model_url",
@@ -2045,6 +2038,24 @@
           "primaryKey": false,
           "notNull": true
         },
+        "reason": {
+          "name": "reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "final_quantity": {
+          "name": "final_quantity",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -2095,6 +2106,27 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
+        },
+        "stock_movements_product_variant_idx": {
+          "name": "stock_movements_product_variant_idx",
+          "columns": [
+            {
+              "expression": "product_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "variant_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
         }
       },
       "foreignKeys": {
@@ -2130,6 +2162,19 @@
           "tableTo": "product_variants",
           "columnsFrom": [
             "variant_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "stock_movements_created_by_users_id_fk": {
+          "name": "stock_movements_created_by_users_id_fk",
+          "tableFrom": "stock_movements",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
           ],
           "columnsTo": [
             "id"
