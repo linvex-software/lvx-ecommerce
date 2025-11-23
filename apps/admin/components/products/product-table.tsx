@@ -38,8 +38,9 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
   const deleteProduct = useDeleteProduct()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
-  const handleToggleStatus = async (id: string, currentStatus: boolean) => {
-    await toggleStatus.mutateAsync({ id, active: !currentStatus })
+  const handleToggleStatus = async (id: string, currentStatus: 'draft' | 'active' | 'inactive') => {
+    const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
+    await toggleStatus.mutateAsync({ id, status: newStatus })
   }
 
   const handleDelete = async (id: string) => {
@@ -129,31 +130,38 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
           {products.map((product) => (
             <TableRow key={product.id}>
               <TableCell>
-                {product.image_url ? (
-                  <div className="relative h-12 w-12 overflow-hidden rounded-lg">
-                    {product.image_url.startsWith('data:') ? (
-                      <img
-                        src={product.image_url}
-                        alt={product.name}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      <Image
-                        src={product.image_url}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                        unoptimized={product.image_url.startsWith('http://localhost')}
-                      />
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
-                    <span className="text-xs font-medium text-gray-400">
-                      {product.name.slice(0, 2).toUpperCase()}
-                    </span>
-                  </div>
-                )}
+                {(() => {
+                  const mainImage =
+                    (product as any).images?.find((img: any) => img.is_main)?.image_url ||
+                    (product as any).images?.[0]?.image_url ||
+                    null
+
+                  return mainImage ? (
+                    <div className="relative h-12 w-12 overflow-hidden rounded-lg">
+                      {mainImage.startsWith('data:') ? (
+                        <img
+                          src={mainImage}
+                          alt={product.name}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <Image
+                          src={mainImage}
+                          alt={product.name}
+                          fill
+                          className="object-cover"
+                          unoptimized={mainImage.startsWith('http://localhost')}
+                        />
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
+                      <span className="text-xs font-medium text-gray-400">
+                        {product.name.slice(0, 2).toUpperCase()}
+                      </span>
+                    </div>
+                  )
+                })()}
               </TableCell>
               <TableCell>
                 <div>
@@ -165,20 +173,33 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
               </TableCell>
               <TableCell>
                 <span className="text-sm text-gray-600">
-                  {product.category_name || 'Sem categoria'}
+                  {(product as any).categories?.map((c: any) => c.name).join(', ') ||
+                    'Sem categoria'}
                 </span>
               </TableCell>
               <TableCell>
                 <span className="font-medium text-gray-900">
-                  {currencyFormatter.format(product.price)}
+                  {currencyFormatter.format(parseFloat(product.base_price))}
                 </span>
               </TableCell>
               <TableCell>
-                <span className="text-sm text-gray-600">{product.stock}</span>
+                <span className="text-sm text-gray-600">-</span>
               </TableCell>
               <TableCell>
-                <Badge variant={product.active ? 'success' : 'secondary'}>
-                  {product.active ? 'Ativo' : 'Inativo'}
+                <Badge
+                  variant={
+                    product.status === 'active'
+                      ? 'success'
+                      : product.status === 'draft'
+                        ? 'secondary'
+                        : 'secondary'
+                  }
+                >
+                  {product.status === 'active'
+                    ? 'Ativo'
+                    : product.status === 'draft'
+                      ? 'Rascunho'
+                      : 'Inativo'}
                 </Badge>
               </TableCell>
               <TableCell className="text-right">
@@ -203,10 +224,10 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem
-                      onClick={() => handleToggleStatus(product.id, product.active)}
+                      onClick={() => handleToggleStatus(product.id, product.status)}
                       className="cursor-pointer"
                     >
-                      {product.active ? (
+                      {product.status === 'active' ? (
                         <>
                           <EyeOff className="mr-2 h-4 w-4" />
                           Desativar

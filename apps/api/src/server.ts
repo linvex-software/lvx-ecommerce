@@ -9,6 +9,7 @@ import cookie from '@fastify/cookie'
 import { registerAuthRoutes } from './presentation/http/auth/auth-routes'
 import { registerAdminCouponRoutes } from './presentation/http/admin/coupon-routes'
 import { registerAdminProductRoutes } from './presentation/http/admin/product-routes'
+import { registerAdminCategoryRoutes } from './presentation/http/admin/category-routes'
 import { registerCatalogRoutes } from './presentation/http/catalog/product-routes'
 import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
 import { registerWebhookRoutes } from './presentation/http/webhooks/webhook-routes'
@@ -90,6 +91,7 @@ async function buildServer() {
   await registerAuthRoutes(app)
   await registerAdminCouponRoutes(app)
   await registerAdminProductRoutes(app)
+  await registerAdminCategoryRoutes(app)
   await registerCatalogRoutes(app)
   await registerCheckoutRoutes(app)
   await registerWebhookRoutes(app)

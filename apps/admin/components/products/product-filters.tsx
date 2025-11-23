@@ -3,6 +3,7 @@
 import { Search, X } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@white-label/ui'
+import { useCategories } from '@/lib/hooks/use-categories'
 import type { ProductFilters } from '@/lib/hooks/use-products'
 
 interface ProductFiltersProps {
@@ -11,8 +12,11 @@ interface ProductFiltersProps {
 }
 
 export function ProductFilters({ filters, onFiltersChange }: ProductFiltersProps) {
+  const { data: categoriesData } = useCategories()
+  const categories = categoriesData?.categories || []
+
   const handleNameChange = (value: string) => {
-    onFiltersChange({ ...filters, name: value || undefined, page: 1 })
+    onFiltersChange({ ...filters, q: value || undefined, page: 1 })
   }
 
   const handleCategoryChange = (value: string) => {
@@ -22,7 +26,7 @@ export function ProductFilters({ filters, onFiltersChange }: ProductFiltersProps
   const handleStatusChange = (value: string) => {
     onFiltersChange({
       ...filters,
-      active: value === 'all' ? undefined : value === 'true',
+      status: value === 'all' ? undefined : (value as 'draft' | 'active' | 'inactive'),
       page: 1
     })
   }
@@ -32,7 +36,7 @@ export function ProductFilters({ filters, onFiltersChange }: ProductFiltersProps
   }
 
   const hasActiveFilters =
-    filters.name || filters.category_id || filters.active !== undefined
+    filters.q || filters.category_id || filters.status !== undefined
 
   return (
     <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:flex-row sm:items-end">
@@ -44,7 +48,7 @@ export function ProductFilters({ filters, onFiltersChange }: ProductFiltersProps
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
           <Input
             placeholder="Nome do produto..."
-            value={filters.name || ''}
+            value={filters.q || ''}
             onChange={(e) => handleNameChange(e.target.value)}
             className="pl-10"
           />
@@ -61,9 +65,11 @@ export function ProductFilters({ filters, onFiltersChange }: ProductFiltersProps
           className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <option value="">Todas</option>
-          {/* TODO: Carregar categorias da API */}
-          <option value="cat1">Categoria 1</option>
-          <option value="cat2">Categoria 2</option>
+          {categories.map((category) => (
+            <option key={category.id} value={category.id}>
+              {category.name}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -72,19 +78,14 @@ export function ProductFilters({ filters, onFiltersChange }: ProductFiltersProps
           Status
         </label>
         <select
-          value={
-            filters.active === undefined
-              ? 'all'
-              : filters.active
-                ? 'true'
-                : 'false'
-          }
+          value={filters.status || 'all'}
           onChange={(e) => handleStatusChange(e.target.value)}
           className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <option value="all">Todos</option>
-          <option value="true">Ativo</option>
-          <option value="false">Inativo</option>
+          <option value="active">Ativo</option>
+          <option value="draft">Rascunho</option>
+          <option value="inactive">Inativo</option>
         </select>
       </div>
 
