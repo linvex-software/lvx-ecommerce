@@ -42,7 +42,7 @@ export function LoginForm() {
     mutationFn: async (data: LoginInput) => {
       // Obter storeId do localStorage ou de algum lugar (por enquanto, pode ser hardcoded para teste)
       // Em produção, isso viria de um subdomínio ou configuração
-      const storeId = localStorage.getItem('storeId') || '34c236fc-6f43-49de-aea4-4ad4ff2f4323'
+      const storeId = localStorage.getItem('storeId') || 'eab2332d-5785-490b-a2cd-205754a7d64c'
 
       const response = await apiClient.post<LoginResponse>('/auth/login', data, {
         headers: {

@@ -3,6 +3,7 @@
 import { use } from 'react'
 import { useProduct, useUpdateProduct } from '@/lib/hooks/use-products'
 import { ProductForm } from '@/components/products/product-form'
+import { StockManager } from '@/components/products/stock-manager'
 import type { ProductFormData } from '@/components/products/product-form'
 
 interface EditProductPageProps {
@@ -15,7 +16,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
   const updateProduct = useUpdateProduct()
 
   const handleSubmit = async (data: ProductFormData) => {
-    await updateProduct.mutateAsync({ id, ...data })
+    await updateProduct.mutateAsync({
+      id,
+      ...data,
+      size_chart: data.size_chart ?? undefined
+    })
   }
 
   if (isLoadingProduct) {
@@ -48,6 +53,11 @@ export default function EditProductPage({ params }: EditProductPageProps) {
         product={product}
         onSubmit={handleSubmit}
         isLoading={updateProduct.isPending}
+      />
+
+      <StockManager
+        productId={id}
+        variants={(product as any).variants || []}
       />
     </div>
   )
