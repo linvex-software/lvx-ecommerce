@@ -14,6 +14,10 @@ export async function registerCatalogRoutes(
     Querystring: {
       q?: string
       category_id?: string
+      sizes?: string | string[]
+      colors?: string | string[]
+      min_price?: string
+      max_price?: string
       page?: string
       limit?: string
     }
@@ -27,6 +31,10 @@ export async function registerCatalogRoutes(
         Querystring: {
           q?: string
           category_id?: string
+          sizes?: string | string[]
+          colors?: string | string[]
+          min_price?: string
+          max_price?: string
           page?: string
           limit?: string
         }

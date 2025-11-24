@@ -198,8 +198,8 @@ const ProductFilters = ({
                                 key={size}
                                 onClick={() => toggleSize(size)}
                                 className={`px-4 py-2 border-2 text-sm font-medium transition-all ${filters.sizes.includes(size)
-                                        ? 'border-foreground bg-foreground text-background'
-                                        : 'border-border hover:border-foreground'
+                                    ? 'border-foreground bg-foreground text-background'
+                                    : 'border-border hover:border-foreground'
                                     }`}
                             >
                                 {size}
@@ -229,8 +229,8 @@ const ProductFilters = ({
                                 key={color.name}
                                 onClick={() => toggleColor(color.name)}
                                 className={`group relative w-10 h-10 rounded-full border-2 transition-all ${filters.colors.includes(color.name)
-                                        ? 'border-foreground scale-110'
-                                        : 'border-border hover:border-foreground hover:scale-105'
+                                    ? 'border-foreground scale-110'
+                                    : 'border-border hover:border-foreground hover:scale-105'
                                     }`}
                                 title={color.name}
                             >
