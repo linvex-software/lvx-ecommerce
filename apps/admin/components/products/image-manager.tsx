@@ -107,24 +107,18 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
   return (
     <Card className="rounded-2xl border-gray-100 shadow-sm">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
-            <CardTitle className="text-xl font-light">Imagens</CardTitle>
-            <CardDescription>Gerencie as imagens do produto</CardDescription>
-          </div>
-          <Button type="button" variant="outline" size="sm" onClick={handleAddImageClick} className="gap-2">
-            <Upload className="h-4 w-4" />
-            Selecionar imagem
-          </Button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            onChange={handleFileSelect}
-            className="hidden"
-          />
+        <div>
+          <CardTitle className="text-xl font-light">Imagens</CardTitle>
+          <CardDescription>Gerencie as imagens do produto</CardDescription>
         </div>
       </CardHeader>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileSelect}
+        className="hidden"
+      />
       <CardContent>
         {images.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
@@ -137,13 +131,6 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                 <Upload className="h-4 w-4" />
                 Selecionar imagem
               </Button>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileSelect}
-                className="hidden"
-              />
             </div>
           </div>
         ) : (

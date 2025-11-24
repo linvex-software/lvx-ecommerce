@@ -312,27 +312,11 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
             }}
           />
 
-          <ImageManager
-            images={images}
-            onChange={(newImages) => {
-              setImages(newImages)
-              setValue('images', newImages as any)
-            }}
-          />
-
           <SEOForm
             seo={seo}
             onChange={(newSEO) => {
               setSeo(newSEO)
               setValue('seo', newSEO as any)
-            }}
-          />
-
-          <SizeChartForm
-            sizeChart={sizeChart}
-            onChange={(newSizeChart) => {
-              setSizeChart(newSizeChart)
-              setValue('size_chart', newSizeChart as any)
             }}
           />
         </div>
@@ -366,6 +350,22 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               </div>
             </CardContent>
           </Card>
+
+          <ImageManager
+            images={images}
+            onChange={(newImages) => {
+              setImages(newImages)
+              setValue('images', newImages as any)
+            }}
+          />
+
+          <SizeChartForm
+            sizeChart={sizeChart}
+            onChange={(newSizeChart) => {
+              setSizeChart(newSizeChart)
+              setValue('size_chart', newSizeChart as any)
+            }}
+          />
         </div>
       </div>
 
