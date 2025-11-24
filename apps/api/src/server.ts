@@ -14,6 +14,7 @@ import { registerCatalogRoutes } from './presentation/http/catalog/product-route
 import { registerCatalogCategoryRoutes } from './presentation/http/catalog/category-routes'
 import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
 import { registerWebhookRoutes } from './presentation/http/webhooks/webhook-routes'
+import { registerStoreRoutes } from './presentation/http/store-routes'
 
 async function buildServer() {
   const app = Fastify({
@@ -97,6 +98,7 @@ async function buildServer() {
   await registerCatalogCategoryRoutes(app)
   await registerCheckoutRoutes(app)
   await registerWebhookRoutes(app)
+  await registerStoreRoutes(app)
 
   return app
 }

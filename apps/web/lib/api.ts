@@ -15,8 +15,7 @@ export async function fetchAPI(path: string, options: RequestInit = {}) {
     }
 
     if (storeId) {
-        // @ts-ignore
-        headers['x-store-id'] = storeId
+        (headers as Record<string, string>)['x-store-id'] = storeId
     }
 
     const response = await fetch(`${API_URL}${path}`, {
@@ -25,7 +24,9 @@ export async function fetchAPI(path: string, options: RequestInit = {}) {
     })
 
     if (!response.ok) {
-        throw new Error(`API Error: ${response.statusText}`)
+        const error = new Error(`API Error: ${response.statusText}`) as Error & { status: number }
+        error.status = response.status
+        throw error
     }
 
     return response.json()
