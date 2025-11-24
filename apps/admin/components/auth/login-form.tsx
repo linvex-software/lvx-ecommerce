@@ -5,8 +5,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useMutation } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import axios from 'axios'
 import { loginSchema, type LoginInput } from '@white-label/types'
-import { apiClient } from '@/lib/api-client'
 import { useAuthStore } from '@/store/auth-store'
 import { Button } from '@white-label/ui'
 import { cn } from '@white-label/ui'
@@ -40,15 +40,47 @@ export function LoginForm() {
 
   const loginMutation = useMutation({
     mutationFn: async (data: LoginInput) => {
-      // Obter storeId do localStorage ou de algum lugar (por enquanto, pode ser hardcoded para teste)
-      // Em produção, isso viria de um subdomínio ou configuração
-      const storeId = localStorage.getItem('storeId') || 'eab2332d-5785-490b-a2cd-205754a7d64c'
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'
 
-      const response = await apiClient.post<LoginResponse>('/auth/login', data, {
-        headers: {
-          'x-store-id': storeId
+      // Buscar storeId: primeiro tenta env, depois localStorage, depois busca da API
+      let storeId = process.env.NEXT_PUBLIC_STORE_ID || localStorage.getItem('storeId')
+
+      // Se não tiver storeId, buscar da API pelo domain localhost
+      if (!storeId) {
+        try {
+          const storeResponse = await axios.get<{ storeId: string; name: string; domain: string }>(
+            `${API_URL}/stores/by-domain?domain=localhost`
+          )
+          storeId = storeResponse.data.storeId
+          // Salvar no localStorage para próximas requisições
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('storeId', storeId)
+          }
+        } catch {
+          throw new Error(
+            'Não foi possível identificar a loja. Verifique se os dados de teste foram criados (pnpm test:setup) e se a API está rodando.'
+          )
         }
-      })
+      }
+
+      if (!storeId) {
+        throw new Error(
+          'Store ID não configurado. Configure NEXT_PUBLIC_STORE_ID no .env ou execute pnpm test:setup para criar dados de teste.'
+        )
+      }
+
+      // Criar uma requisição sem o interceptor para garantir que o header seja passado
+      const response = await axios.post<LoginResponse>(
+        `${API_URL}/auth/login`,
+        data,
+        {
+          headers: {
+            'x-store-id': storeId,
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true
+        }
+      )
 
       return response.data
     },
