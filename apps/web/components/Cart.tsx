@@ -1,26 +1,28 @@
 import { X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Product } from "./ProductCard";
+import { useCartStore } from "@/lib/store/useCartStore";
+import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 
-interface CartItem extends Product {
-  quantity: number;
-}
+const Cart = () => {
+  const { items, closeCart, removeItem } = useCartStore();
+  const router = useRouter();
 
-interface CartProps {
-  items: CartItem[];
-  onClose: () => void;
-  onRemoveItem: (id: number) => void;
-}
+  const total = useMemo(() => {
+    return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  }, [items]);
 
-const Cart = ({ items, onClose, onRemoveItem }: CartProps) => {
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const handleCheckout = () => {
+    closeCart();
+    router.push("/checkout");
+  };
 
   return (
     <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50 flex justify-end">
       <div className="bg-background w-full max-w-md h-full shadow-2xl flex flex-col">
         <div className="p-6 border-b border-border flex items-center justify-between">
           <h2 className="text-2xl font-bold">Carrinho</h2>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={closeCart}>
             <X className="h-5 w-5" />
           </Button>
         </div>
@@ -45,7 +47,7 @@ const Cart = ({ items, onClose, onRemoveItem }: CartProps) => {
                   <Button
                     variant="ghost"
                     size="icon"
-                    onClick={() => onRemoveItem(item.id)}
+                    onClick={() => removeItem(item.id)}
                   >
                     <X className="h-4 w-4" />
                   </Button>
@@ -61,7 +63,11 @@ const Cart = ({ items, onClose, onRemoveItem }: CartProps) => {
               <span>Total</span>
               <span>R$ {total.toFixed(2)}</span>
             </div>
-            <Button className="w-full bg-foreground text-background hover:bg-accent" size="lg">
+            <Button
+              className="w-full bg-foreground text-background hover:bg-accent"
+              size="lg"
+              onClick={handleCheckout}
+            >
               Finalizar Compra
             </Button>
           </div>
