@@ -11,6 +11,7 @@ import Pagination from '@/components/Pagination'
 import { SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fetchAPI } from '@/lib/api'
+import { useCartStore } from '@/lib/store/useCartStore'
 
 // Available filter options (Static for now as API doesn't provide them yet)
 const AVAILABLE_SIZES = ['P', 'M', 'G', 'GG', 'XG', '38', '39', '40', '41', '42', '43', '44', '46', 'Único']
@@ -25,10 +26,6 @@ const AVAILABLE_COLORS = [
   { name: 'Dourado', hex: '#FFD700' },
   { name: 'Prata', hex: '#C0C0C0' },
 ]
-
-interface CartItem extends Product {
-  quantity: number
-}
 
 const ITEMS_PER_PAGE = 8
 
@@ -48,8 +45,7 @@ interface Category {
 }
 
 const HomePage = () => {
-  const [cartItems, setCartItems] = useState<CartItem[]>([])
-  const [isCartOpen, setIsCartOpen] = useState(false)
+  const { addItem, isOpen, openCart, items } = useCartStore()
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -142,26 +138,15 @@ const HomePage = () => {
   }, [])
 
   const handleAddToCart = (product: Product) => {
-    setCartItems((prev) => {
-      const existing = prev.find((item) => item.id === product.id)
-      if (existing) {
-        return prev.map((item) =>
-          item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item
-        )
-      }
-      return [...prev, { ...product, quantity: 1 }]
-    })
+    addItem(product)
+    openCart()
   }
 
-  const handleRemoveItem = (id: number | string) => {
-    setCartItems((prev) => prev.filter((item) => item.id !== id))
-  }
-
-  const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar cartCount={totalItems} onCartClick={() => setIsCartOpen(true)} />
+      <Navbar cartCount={totalItems} onCartClick={openCart} />
 
       <main className="container mx-auto px-4 py-12">
         {/* Header Section */}
@@ -263,8 +248,8 @@ const HomePage = () => {
         </div>
       </main>
 
-      {isCartOpen && (
-        <Cart items={cartItems} onClose={() => setIsCartOpen(false)} onRemoveItem={handleRemoveItem} />
+      {isOpen && (
+        <Cart />
       )}
     </div>
   )
