@@ -6,7 +6,6 @@ import Navbar from '@/components/Navbar'
 import ProductCard, { Product } from '@/components/ProductCard'
 import Cart from '@/components/Cart'
 import ProductFilters, { FilterState } from '@/components/ProductFilters'
-import SearchBar from '@/components/SearchBar'
 import Pagination from '@/components/Pagination'
 import { SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -146,34 +145,33 @@ const HomePage = () => {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar cartCount={totalItems} onCartClick={openCart} />
+      <Navbar cartCount={totalItems} onCartClick={openCart} onSearch={handleSearch} />
 
-      <main className="container mx-auto px-4 py-12">
-        {/* Header Section */}
-        <div className="mb-8">
-          <div className="text-center mb-8">
-            <h1 className="text-5xl font-bold mb-4 tracking-tight">Coleção Essencial</h1>
-            <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-              Produtos minimalistas de alta qualidade para o seu dia a dia
-            </p>
-          </div>
+      {/* Hero Section - Banner */}
+      <div className="w-full  mb-8 sm:mb-12 relative overflow-hidden flex items-center justify-center bg-muted -mt-px">
+        {/* Banner image */}
+        <div className="w-full h-full flex items-center justify-center">
+          <img
+            src="https://marketplace.canva.com/EAFRp91MQHk/1/0/1600w/canva-banner-oferta-de-black-week-fashion-branco-preto-e-verde-gtpHK3FGwQE.jpg"
+            alt="Banner Principal"
+            className="w-full h-full object-cover object-center"
+          />
+        </div>
+        {/* Gradient overlay - fade from bottom to top */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent pointer-events-none"></div>
+      </div>
 
-          {/* Search Bar */}
-          <div className="flex justify-center mb-6">
-            <SearchBar onSearch={handleSearch} />
-          </div>
-
-          {/* Mobile Filter Toggle */}
-          <div className="lg:hidden mb-6">
-            <Button
-              variant="outline"
-              onClick={() => setShowFilters(!showFilters)}
-              className="w-full border-2"
-            >
-              <SlidersHorizontal className="w-4 h-4 mr-2" />
-              {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-            </Button>
-          </div>
+      <main className="container mx-auto px-4 pb-12">
+        {/* Mobile Filter Toggle */}
+        <div className="lg:hidden mb-6">
+          <Button
+            variant="outline"
+            onClick={() => setShowFilters(!showFilters)}
+            className="w-full border-2"
+          >
+            <SlidersHorizontal className="w-4 h-4 mr-2" />
+            {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
+          </Button>
         </div>
 
         {/* Main Content Grid */}
