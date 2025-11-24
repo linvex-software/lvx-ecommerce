@@ -7,6 +7,7 @@ import { Button } from '@white-label/ui'
 import { useProducts, type ProductFilters } from '@/lib/hooks/use-products'
 import { ProductFilters as ProductFiltersComponent } from '@/components/products/product-filters'
 import { ProductTable } from '@/components/products/product-table'
+import { CategoriesModal } from '@/components/products/categories-modal'
 
 export default function ProductsPage() {
   const [filters, setFilters] = useState<ProductFilters>({ page: 1, limit: 20 })
@@ -22,12 +23,15 @@ export default function ProductsPage() {
             Gerencie o catálogo de produtos da sua loja
           </p>
         </div>
-        <Button asChild className="gap-2">
-          <Link href="/products/new">
-            <Plus className="h-4 w-4" />
-            Novo produto
-          </Link>
-        </Button>
+        <div className="flex gap-3">
+          <CategoriesModal />
+          <Button asChild className="gap-2">
+            <Link href="/products/new">
+              <Plus className="h-4 w-4" />
+              Novo produto
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {/* Filtros */}
