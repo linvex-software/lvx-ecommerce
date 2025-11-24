@@ -1,5 +1,5 @@
 import { db, schema } from '@white-label/db'
-import { eq, and, or, like, desc, sql, count, inArray } from 'drizzle-orm'
+import { eq, and, or, like, ilike, desc, sql, count, inArray, gte, lte } from 'drizzle-orm'
 import type {
   Product,
   ProductWithRelations,
@@ -23,8 +23,8 @@ export class ProductRepository {
     if (filters?.q) {
       conditions.push(
         or(
-          like(schema.products.name, `%${filters.q}%`),
-          like(schema.products.sku, `%${filters.q}%`)
+          ilike(schema.products.name, `%${filters.q}%`),
+          ilike(schema.products.sku, `%${filters.q}%`)
         )!
       )
     }
@@ -48,6 +48,63 @@ export class ProductRepository {
       }
     }
 
+    // Filter by sizes (using sizeChart)
+    if (filters?.sizes && filters.sizes.length > 0) {
+      // Query products that have a size chart with any of the requested sizes as keys
+      const productsWithSizes = await db
+        .selectDistinct({ product_id: schema.productSizeChart.product_id })
+        .from(schema.productSizeChart)
+        .where(
+          and(
+            eq(schema.productSizeChart.store_id, storeId),
+            // Check if any of the requested sizes exist as keys in chart_json
+            sql`EXISTS (
+              SELECT 1 FROM jsonb_object_keys(${schema.productSizeChart.chart_json}) AS key
+              WHERE key = ANY(${filters.sizes})
+            )`
+          )!
+        )
+
+      if (productsWithSizes.length > 0) {
+        const productIds = productsWithSizes.map((p) => p.product_id)
+        conditions.push(inArray(schema.products.id, productIds))
+      } else {
+        // Se não há produtos com esses tamanhos, retornar vazio
+        conditions.push(sql`1 = 0`)
+      }
+    }
+
+    // Filter by colors
+    if (filters?.colors && filters.colors.length > 0) {
+      const productsWithColors = await db
+        .selectDistinct({ product_id: schema.productVariants.product_id })
+        .from(schema.productVariants)
+        .where(
+          and(
+            eq(schema.productVariants.store_id, storeId),
+            inArray(schema.productVariants.color, filters.colors)
+          )!
+        )
+
+      if (productsWithColors.length > 0) {
+        const productIds = productsWithColors.map((p) => p.product_id)
+        conditions.push(inArray(schema.products.id, productIds))
+      } else {
+        // Se não há produtos com essas cores, retornar vazio
+        conditions.push(sql`1 = 0`)
+      }
+    }
+
+    // Filter by price range
+    if (filters?.min_price !== undefined) {
+      conditions.push(sql`${schema.products.base_price} >= ${filters.min_price}`)
+    }
+
+    if (filters?.max_price !== undefined) {
+      conditions.push(sql`${schema.products.base_price} <= ${filters.max_price}`)
+    }
+
+
     const whereClause = conditions.length > 1 ? and(...conditions) : conditions[0]
 
     const [totalResult] = await db
@@ -59,8 +116,18 @@ export class ProductRepository {
     const totalPages = Math.ceil(total / limit)
 
     const products = await db
-      .select()
+      .select({
+        ...schema.products,
+        main_image: schema.productImages.image_url
+      })
       .from(schema.products)
+      .leftJoin(
+        schema.productImages,
+        and(
+          eq(schema.productImages.product_id, schema.products.id),
+          eq(schema.productImages.is_main, true)
+        )
+      )
       .where(whereClause!)
       .orderBy(desc(schema.products.created_at))
       .limit(limit)
@@ -219,27 +286,27 @@ export class ProductRepository {
       })),
       seo: seoData.length > 0
         ? {
-            id: seoData[0].id,
-            store_id: seoData[0].store_id,
-            product_id: seoData[0].product_id,
-            meta_title: seoData[0].meta_title,
-            meta_description: seoData[0].meta_description,
-            meta_keywords: seoData[0].meta_keywords,
-            open_graph_image: seoData[0].open_graph_image,
-            created_at: seoData[0].created_at,
-            updated_at: seoData[0].updated_at
-          }
+          id: seoData[0].id,
+          store_id: seoData[0].store_id,
+          product_id: seoData[0].product_id,
+          meta_title: seoData[0].meta_title,
+          meta_description: seoData[0].meta_description,
+          meta_keywords: seoData[0].meta_keywords,
+          open_graph_image: seoData[0].open_graph_image,
+          created_at: seoData[0].created_at,
+          updated_at: seoData[0].updated_at
+        }
         : null,
       size_chart: sizeChartData.length > 0
         ? {
-            id: sizeChartData[0].id,
-            store_id: sizeChartData[0].store_id,
-            product_id: sizeChartData[0].product_id,
-            name: sizeChartData[0].name,
-            chart_json: sizeChartData[0].chart_json as Record<string, unknown>,
-            created_at: sizeChartData[0].created_at,
-            updated_at: sizeChartData[0].updated_at
-          }
+          id: sizeChartData[0].id,
+          store_id: sizeChartData[0].store_id,
+          product_id: sizeChartData[0].product_id,
+          name: sizeChartData[0].name,
+          chart_json: sizeChartData[0].chart_json as Record<string, unknown>,
+          created_at: sizeChartData[0].created_at,
+          updated_at: sizeChartData[0].updated_at
+        }
         : null
     }
   }
@@ -540,6 +607,20 @@ export class ProductRepository {
     }
   }
 
+  async getAvailableSizes(storeId: string): Promise<string[]> {
+    // Get all unique sizes from size charts
+    const result = await db
+      .select({
+        size: sql<string>`jsonb_object_keys(${schema.productSizeChart.chart_json})`
+      })
+      .from(schema.productSizeChart)
+      .where(eq(schema.productSizeChart.store_id, storeId))
+
+    // Get unique sizes
+    const uniqueSizes = [...new Set(result.map(r => r.size))]
+    return uniqueSizes.sort()
+  }
+
   private mapRowToProduct(row: {
     id: string
     store_id: string
@@ -554,6 +635,8 @@ export class ProductRepository {
     virtual_config_json: Record<string, unknown> | null
     created_at: Date
     updated_at: Date
+    main_image: string | null
+    category_name?: string | null
   }): Product {
     return {
       id: row.id,
@@ -568,7 +651,9 @@ export class ProductRepository {
       virtual_provider: row.virtual_provider,
       virtual_config_json: row.virtual_config_json,
       created_at: row.created_at,
-      updated_at: row.updated_at
+      updated_at: row.updated_at,
+      main_image: row.main_image,
+      category_name: row.category_name
     }
   }
 }

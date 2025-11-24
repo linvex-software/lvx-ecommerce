@@ -7,7 +7,7 @@ import { getProductBySlugUseCase } from '../../../application/catalog/use-cases/
 import { ProductRepository } from '../../../infra/db/repositories/product-repository'
 
 export class PublicProductController {
-  constructor(private readonly productRepository: ProductRepository) {}
+  constructor(private readonly productRepository: ProductRepository) { }
 
   async list(
     request: FastifyRequest<{
@@ -31,7 +31,11 @@ export class PublicProductController {
       const filters = {
         q: request.query.q,
         category_id: request.query.category_id,
-        status: 'active' as const,
+        status: 'active' as const, // TODO: Uncomment when products have status
+        sizes: request.query.sizes ? (Array.isArray(request.query.sizes) ? request.query.sizes : [request.query.sizes]) : undefined,
+        colors: request.query.colors ? (Array.isArray(request.query.colors) ? request.query.colors : [request.query.colors]) : undefined,
+        min_price: request.query.min_price ? Number.parseFloat(request.query.min_price) : undefined,
+        max_price: request.query.max_price ? Number.parseFloat(request.query.max_price) : undefined,
         page: request.query.page ? Number.parseInt(request.query.page, 10) : undefined,
         limit: request.query.limit ? Number.parseInt(request.query.limit, 10) : undefined
       }

@@ -11,6 +11,7 @@ import { registerAdminCouponRoutes } from './presentation/http/admin/coupon-rout
 import { registerAdminProductRoutes } from './presentation/http/admin/product-routes'
 import { registerAdminCategoryRoutes } from './presentation/http/admin/category-routes'
 import { registerCatalogRoutes } from './presentation/http/catalog/product-routes'
+import { registerCatalogCategoryRoutes } from './presentation/http/catalog/category-routes'
 import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
 import { registerWebhookRoutes } from './presentation/http/webhooks/webhook-routes'
 
@@ -93,6 +94,7 @@ async function buildServer() {
   await registerAdminProductRoutes(app)
   await registerAdminCategoryRoutes(app)
   await registerCatalogRoutes(app)
+  await registerCatalogCategoryRoutes(app)
   await registerCheckoutRoutes(app)
   await registerWebhookRoutes(app)
 

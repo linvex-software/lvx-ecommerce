@@ -2,14 +2,14 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 
 export interface Product {
-  id: number
+  id: number | string
   name: string
   price: number
   image: string
   category: string
-  sizes: string[]
-  colors: { name: string; hex: string }[]
-  stock: number
+  sizes?: string[]
+  colors?: { name: string; hex: string }[]
+  stock?: number
   description?: string
 }
 
@@ -19,8 +19,12 @@ interface ProductCardProps {
 }
 
 const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
-  const isLowStock = product.stock > 0 && product.stock <= 5
-  const isOutOfStock = product.stock === 0
+  const stock = product.stock ?? 0
+  const colors = product.colors ?? []
+  const sizes = product.sizes ?? []
+
+  const isLowStock = stock > 0 && stock <= 5
+  const isOutOfStock = stock === 0
 
   return (
     <Card className="group overflow-hidden border border-border hover:border-foreground transition-all duration-300">
@@ -50,11 +54,11 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         </div>
 
         {/* Available Colors */}
-        {product.colors.length > 0 && (
+        {colors.length > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Cores:</span>
             <div className="flex gap-1">
-              {product.colors.slice(0, 4).map((color) => (
+              {colors.slice(0, 4).map((color) => (
                 <div
                   key={color.name}
                   className="w-5 h-5 rounded-full border border-border"
@@ -62,9 +66,9 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
                   title={color.name}
                 />
               ))}
-              {product.colors.length > 4 && (
+              {colors.length > 4 && (
                 <span className="text-xs text-muted-foreground ml-1">
-                  +{product.colors.length - 4}
+                  +{colors.length - 4}
                 </span>
               )}
             </div>
@@ -72,11 +76,11 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         )}
 
         {/* Available Sizes */}
-        {product.sizes.length > 0 && (
+        {sizes.length > 0 && (
           <div className="flex items-center gap-2">
             <span className="text-xs text-muted-foreground">Tamanhos:</span>
             <div className="flex gap-1 flex-wrap">
-              {product.sizes.map((size) => (
+              {sizes.map((size) => (
                 <span key={size} className="text-xs px-2 py-1 border border-border">
                   {size}
                 </span>
