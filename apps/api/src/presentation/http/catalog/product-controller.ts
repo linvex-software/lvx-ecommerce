@@ -4,10 +4,15 @@ import {
   listProductsSchema
 } from '../../../application/catalog/use-cases/list-products'
 import { getProductBySlugUseCase } from '../../../application/catalog/use-cases/get-product'
+import { getProductStockUseCase } from '../../../application/catalog/use-cases/get-product-stock'
 import { ProductRepository } from '../../../infra/db/repositories/product-repository'
+import { StockMovementRepository } from '../../../infra/db/repositories/stock-movement-repository'
 
 export class PublicProductController {
-  constructor(private readonly productRepository: ProductRepository) { }
+  constructor(
+    private readonly productRepository: ProductRepository,
+    private readonly stockMovementRepository: StockMovementRepository
+  ) { }
 
   async list(
     request: FastifyRequest<{
@@ -71,7 +76,34 @@ export class PublicProductController {
         productRepository: this.productRepository
       })
 
-      await reply.send({ product })
+      // Buscar estoque do produto (sem variante específica)
+      let stock = null
+      try {
+        stock = await getProductStockUseCase(
+          product.id,
+          storeId,
+          null, // variantId = null para estoque do produto base
+          {
+            stockMovementRepository: this.stockMovementRepository
+          }
+        )
+      } catch (error) {
+        // Se não houver movimentos de estoque, retorna null (estoque = 0)
+        // Não quebra a resposta do produto
+      }
+
+      await reply.send({
+        product: {
+          ...product,
+          stock: stock
+            ? {
+                current_stock: stock.current_stock
+              }
+            : {
+                current_stock: 0
+              }
+        }
+      })
     } catch (error) {
       if (error instanceof Error) {
         const statusCode = error.message === 'Product not found' ? 404 : 500
