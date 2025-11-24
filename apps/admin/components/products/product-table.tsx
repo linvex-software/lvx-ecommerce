@@ -38,6 +38,31 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
   const deleteProduct = useDeleteProduct()
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
+  const getMainImage = (product: Product): string | null => {
+    if (product.main_image) {
+      return product.main_image
+    }
+
+    if (product.images && product.images.length > 0) {
+      const primary = product.images.find((img) => img.is_main)
+      return (primary ?? product.images[0]).image_url
+    }
+
+    return null
+  }
+
+  const getCategoryLabel = (product: Product): string => {
+    if (product.categories && product.categories.length > 0) {
+      return product.categories.map((category) => category.name).join(', ')
+    }
+
+    if (product.category_name) {
+      return product.category_name
+    }
+
+    return 'Sem categoria'
+  }
+
   const handleToggleStatus = async (id: string, currentStatus: 'draft' | 'active' | 'inactive') => {
     const newStatus = currentStatus === 'active' ? 'inactive' : 'active'
     await toggleStatus.mutateAsync({ id, status: newStatus })
@@ -131,19 +156,22 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
             <TableRow key={product.id}>
               <TableCell>
                 {(() => {
-                  const mainImage =
-                    (product as any).images?.find((img: any) => img.is_main)?.image_url ||
-                    (product as any).images?.[0]?.image_url ||
-                    null
+                  const mainImage = getMainImage(product)
 
-                  return mainImage ? (
+                  if (!mainImage) {
+                    return (
+                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
+                        <span className="text-xs font-medium text-gray-400">
+                          {product.name.slice(0, 2).toUpperCase()}
+                        </span>
+                      </div>
+                    )
+                  }
+
+                  return (
                     <div className="relative h-12 w-12 overflow-hidden rounded-lg">
                       {mainImage.startsWith('data:') ? (
-                        <img
-                          src={mainImage}
-                          alt={product.name}
-                          className="h-full w-full object-cover"
-                        />
+                        <img src={mainImage} alt={product.name} className="h-full w-full object-cover" />
                       ) : (
                         <Image
                           src={mainImage}
@@ -153,12 +181,6 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
                           unoptimized={mainImage.startsWith('http://localhost')}
                         />
                       )}
-                    </div>
-                  ) : (
-                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
-                      <span className="text-xs font-medium text-gray-400">
-                        {product.name.slice(0, 2).toUpperCase()}
-                      </span>
                     </div>
                   )
                 })()}
@@ -172,10 +194,7 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
                 </div>
               </TableCell>
               <TableCell>
-                <span className="text-sm text-gray-600">
-                  {(product as any).categories?.map((c: any) => c.name).join(', ') ||
-                    'Sem categoria'}
-                </span>
+                <span className="text-sm text-gray-600">{getCategoryLabel(product)}</span>
               </TableCell>
               <TableCell>
                 <span className="font-medium text-gray-900">

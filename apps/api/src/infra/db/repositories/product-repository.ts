@@ -1,5 +1,5 @@
 import { db, schema } from '@white-label/db'
-import { eq, and, or, like, ilike, desc, sql, count, inArray, gte, lte } from 'drizzle-orm'
+import { eq, and, or, ilike, desc, sql, count, inArray } from 'drizzle-orm'
 import type {
   Product,
   ProductWithRelations,
@@ -8,6 +8,9 @@ import type {
   ProductListFilters,
   ProductListResult
 } from '../../../domain/catalog/product-types'
+
+type ProductRow = typeof schema.products.$inferSelect
+type ProductRowWithImage = ProductRow & { main_image: string | null }
 
 export class ProductRepository {
   async listByStore(
@@ -115,11 +118,25 @@ export class ProductRepository {
     const total = totalResult?.count ?? 0
     const totalPages = Math.ceil(total / limit)
 
-    const products = await db
-      .select({
-        ...schema.products,
-        main_image: schema.productImages.image_url
-      })
+    const productSelection = {
+      id: schema.products.id,
+      store_id: schema.products.store_id,
+      name: schema.products.name,
+      slug: schema.products.slug,
+      description: schema.products.description,
+      base_price: schema.products.base_price,
+      sku: schema.products.sku,
+      status: schema.products.status,
+      virtual_model_url: schema.products.virtual_model_url,
+      virtual_provider: schema.products.virtual_provider,
+      virtual_config_json: schema.products.virtual_config_json,
+      created_at: schema.products.created_at,
+      updated_at: schema.products.updated_at,
+      main_image: schema.productImages.image_url
+    }
+
+    const productRows = await db
+      .select(productSelection)
       .from(schema.products)
       .leftJoin(
         schema.productImages,
@@ -133,8 +150,41 @@ export class ProductRepository {
       .limit(limit)
       .offset(offset)
 
+    const products = productRows as ProductRowWithImage[]
+
+    const productIds = products.map((product) => product.id)
+    const categoriesByProduct: Record<string, string> = {}
+
+    if (productIds.length > 0) {
+      const categories = await db
+        .select({
+          product_id: schema.productCategory.product_id,
+          category_name: schema.categories.name
+        })
+        .from(schema.productCategory)
+        .leftJoin(
+          schema.categories,
+          eq(schema.categories.id, schema.productCategory.category_id)
+        )
+        .where(inArray(schema.productCategory.product_id, productIds))
+
+      for (const category of categories) {
+        if (!category.category_name) continue
+        if (!categoriesByProduct[category.product_id]) {
+          categoriesByProduct[category.product_id] = category.category_name
+        } else {
+          categoriesByProduct[category.product_id] = `${categoriesByProduct[category.product_id]}, ${category.category_name}`
+        }
+      }
+    }
+
     return {
-      products: products.map((row) => this.mapRowToProduct(row)),
+      products: products.map((row) =>
+        this.mapRowToProduct({
+          ...row,
+          category_name: categoriesByProduct[row.id] ?? null
+        })
+      ),
       total,
       page,
       limit,
@@ -621,23 +671,12 @@ export class ProductRepository {
     return uniqueSizes.sort()
   }
 
-  private mapRowToProduct(row: {
-    id: string
-    store_id: string
-    name: string
-    slug: string
-    description: string | null
-    base_price: string
-    sku: string
-    status: string
-    virtual_model_url: string | null
-    virtual_provider: string | null
-    virtual_config_json: Record<string, unknown> | null
-    created_at: Date
-    updated_at: Date
-    main_image: string | null
-    category_name?: string | null
-  }): Product {
+  private mapRowToProduct(
+    row: ProductRow & {
+      main_image?: string | null
+      category_name?: string | null
+    }
+  ): Product {
     return {
       id: row.id,
       store_id: row.store_id,
@@ -652,7 +691,7 @@ export class ProductRepository {
       virtual_config_json: row.virtual_config_json,
       created_at: row.created_at,
       updated_at: row.updated_at,
-      main_image: row.main_image,
+      main_image: row.main_image ?? null,
       category_name: row.category_name
     }
   }

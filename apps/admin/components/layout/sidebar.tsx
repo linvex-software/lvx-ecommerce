@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, Palette, Ticket, Settings } from 'lucide-react'
+import { LayoutDashboard, Package, Palette, Ticket, Settings, Tags } from 'lucide-react'
 import { cn } from '@white-label/ui'
 
 interface NavItem {
@@ -21,6 +21,11 @@ const navItems: NavItem[] = [
     title: 'Produtos',
     href: '/products',
     icon: Package
+  },
+  {
+    title: 'Categorias',
+    href: '/categories',
+    icon: Tags
   },
   {
     title: 'Tema',

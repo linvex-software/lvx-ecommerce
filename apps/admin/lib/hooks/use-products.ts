@@ -63,6 +63,8 @@ export interface Product {
   virtual_model_url: string | null
   virtual_provider: string | null
   virtual_config_json: Record<string, unknown> | null
+  main_image?: string | null
+  category_name?: string | null
   created_at: string
   updated_at: string
   variants?: ProductVariant[]
