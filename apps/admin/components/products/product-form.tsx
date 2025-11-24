@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -9,7 +10,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select } from '@/components/ui/select'
 import { Button } from '@white-label/ui'
-import { ImageUpload } from './image-upload'
+import { ImageManager, type ProductImage } from './image-manager'
+import { CategorySelector } from './category-selector'
+import { VariantManager, type ProductVariant } from './variant-manager'
+import { SEOForm, type ProductSEO } from './seo-form'
+import { SizeChartForm, type SizeChartData } from './size-chart-form'
 import type { Product } from '@/lib/hooks/use-products'
 
 const productSchema = z.object({
@@ -19,11 +24,46 @@ const productSchema = z.object({
     .min(1, 'Slug é obrigatório')
     .regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
   description: z.string().optional(),
-  category_id: z.string().optional(),
-  price: z.number().min(0.01, 'Preço deve ser maior que zero'),
-  stock: z.number().int().min(0, 'Estoque não pode ser negativo'),
-  image_url: z.string().nullable().optional(),
-  active: z.boolean().default(true)
+  category_ids: z.array(z.string().uuid()).optional(),
+  base_price: z.number().min(0.01, 'Preço deve ser maior que zero'),
+  sku: z.string().min(1, 'SKU é obrigatório'),
+  status: z.enum(['draft', 'active', 'inactive']).default('draft'),
+  variants: z
+    .array(
+      z.object({
+        size: z.string().nullable().optional(),
+        color: z.string().nullable().optional(),
+        sku: z.string().nullable().optional(),
+        barcode: z.string().nullable().optional(),
+        price_override: z.number().nullable().optional(),
+        active: z.boolean().optional()
+      })
+    )
+    .optional(),
+  images: z
+    .array(
+      z.object({
+        image_url: z.string().url(),
+        position: z.number().optional(),
+        is_main: z.boolean().optional()
+      })
+    )
+    .optional(),
+  seo: z
+    .object({
+      meta_title: z.string().max(60).nullable().optional(),
+      meta_description: z.string().max(160).nullable().optional(),
+      meta_keywords: z.string().nullable().optional(),
+      open_graph_image: z.string().url().nullable().optional()
+    })
+    .optional(),
+  size_chart: z
+    .object({
+      name: z.string().min(1),
+      chart_json: z.record(z.unknown())
+    })
+    .nullable()
+    .optional()
 })
 
 export type ProductFormData = z.infer<typeof productSchema>
@@ -35,6 +75,48 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ product, onSubmit, isLoading = false }: ProductFormProps) {
+  const initialVariants: ProductVariant[] = (product as any)?.variants?.map((v: any) => ({
+    size: v.size || null,
+    color: v.color || null,
+    sku: v.sku || null,
+    barcode: v.barcode || null,
+    price_override: v.price_override ? parseFloat(v.price_override) : null,
+    active: v.active !== false
+  })) || []
+
+  const initialImages: ProductImage[] =
+    (product as any)?.images?.map((img: any) => ({
+      image_url: img.image_url,
+      position: img.position || 0,
+      is_main: img.is_main || false
+    })) || []
+
+  const initialSEO: ProductSEO = (product as any)?.seo
+    ? {
+        meta_title: (product as any).seo.meta_title || null,
+        meta_description: (product as any).seo.meta_description || null,
+        meta_keywords: (product as any).seo.meta_keywords || null,
+        open_graph_image: (product as any).seo.open_graph_image || null
+      }
+    : {
+        meta_title: null,
+        meta_description: null,
+        meta_keywords: null,
+        open_graph_image: null
+      }
+
+  const initialSizeChart: SizeChartData | null = (product as any)?.size_chart
+    ? {
+        name: (product as any).size_chart.name,
+        chart_json: (product as any).size_chart.chart_json
+      }
+    : null
+
+  const [variants, setVariants] = useState<ProductVariant[]>(initialVariants)
+  const [images, setImages] = useState<ProductImage[]>(initialImages)
+  const [seo, setSeo] = useState<ProductSEO>(initialSEO)
+  const [sizeChart, setSizeChart] = useState<SizeChartData | null>(initialSizeChart)
+
   const {
     register,
     handleSubmit,
@@ -48,29 +130,35 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
           name: product.name,
           slug: product.slug,
           description: product.description || '',
-          category_id: product.category_id || '',
-          price: product.price,
-          stock: product.stock,
-          image_url: product.image_url,
-          active: product.active
+          category_ids: (product as any).categories?.map((c: any) => c.id) || [],
+          base_price: parseFloat(product.base_price.toString()) || 0,
+          sku: product.sku || '',
+          status: product.status || 'draft',
+          variants: initialVariants,
+          images: initialImages,
+          seo: initialSEO,
+          size_chart: initialSizeChart
         }
       : {
           name: '',
           slug: '',
           description: '',
-          category_id: '',
-          price: 0,
-          stock: 0,
-          image_url: null,
-          active: true
+          category_ids: [],
+          base_price: 0,
+          sku: '',
+          status: 'draft',
+          variants: [],
+          images: [],
+          seo: {
+            meta_title: null,
+            meta_description: null,
+            meta_keywords: null,
+            open_graph_image: null
+          },
+          size_chart: null
         }
   })
 
-  const imageUrl = watch('image_url')
-
-  const handleImageChange = (url: string | null) => {
-    setValue('image_url', url)
-  }
 
   const generateSlug = (name: string) => {
     return name
@@ -89,8 +177,33 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     }
   }
 
+  const handleFormSubmit = async (data: ProductFormData) => {
+    // Filtrar variantes vazias (sem tamanho e sem cor)
+    const validVariants = variants.filter((v) => v.size || v.color)
+
+    // Filtrar imagens com URL válida
+    const validImages = images.filter((img) => img.image_url.trim() !== '')
+
+    // Filtrar SEO vazio
+    const hasSEO =
+      seo.meta_title || seo.meta_description || seo.meta_keywords || seo.open_graph_image
+
+    // Filtrar size chart vazio
+    const hasSizeChart = sizeChart && sizeChart.name.trim() !== '' && Object.keys(sizeChart.chart_json).length > 0
+
+    const submitData = {
+      ...data,
+      variants: validVariants.length > 0 ? validVariants : undefined,
+      images: validImages.length > 0 ? validImages : undefined,
+      seo: hasSEO ? seo : undefined,
+      size_chart: hasSizeChart ? sizeChart : undefined
+    }
+
+    await onSubmit(submitData as any)
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Coluna esquerda: Dados principais */}
         <div className="lg:col-span-2 space-y-6">
@@ -154,70 +267,78 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="price">Preço (R$) *</Label>
+                  <Label htmlFor="base_price">Preço base (R$) *</Label>
                   <Input
-                    id="price"
+                    id="base_price"
                     type="number"
                     step="0.01"
                     min="0"
-                    {...register('price', { valueAsNumber: true })}
+                    {...register('base_price', { valueAsNumber: true })}
                     placeholder="0.00"
-                    className={errors.price ? 'border-rose-300' : ''}
+                    className={errors.base_price ? 'border-rose-300' : ''}
                   />
-                  {errors.price && (
-                    <p className="text-xs text-rose-600">{errors.price.message}</p>
+                  {errors.base_price && (
+                    <p className="text-xs text-rose-600">{errors.base_price.message}</p>
                   )}
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="stock">Estoque *</Label>
+                  <Label htmlFor="sku">SKU *</Label>
                   <Input
-                    id="stock"
-                    type="number"
-                    min="0"
-                    {...register('stock', { valueAsNumber: true })}
-                    placeholder="0"
-                    className={errors.stock ? 'border-rose-300' : ''}
+                    id="sku"
+                    {...register('sku')}
+                    placeholder="SKU-001"
+                    className={errors.sku ? 'border-rose-300' : ''}
                   />
-                  {errors.stock && (
-                    <p className="text-xs text-rose-600">{errors.stock.message}</p>
+                  {errors.sku && (
+                    <p className="text-xs text-rose-600">{errors.sku.message}</p>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="category_id">Categoria</Label>
-                <select
-                  id="category_id"
-                  {...register('category_id')}
-                  className={`flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${
-                    errors.category_id ? 'border-rose-300' : ''
-                  }`}
-                >
-                  <option value="">Sem categoria</option>
-                  {/* TODO: Carregar categorias da API */}
-                  <option value="cat1">Categoria 1</option>
-                  <option value="cat2">Categoria 2</option>
-                </select>
-                {errors.category_id && (
-                  <p className="text-xs text-rose-600">{errors.category_id.message}</p>
-                )}
-              </div>
+              <CategorySelector
+                value={watch('category_ids') || []}
+                onChange={(ids) => setValue('category_ids', ids)}
+                error={errors.category_ids?.message}
+              />
             </CardContent>
           </Card>
+
+          <VariantManager
+            variants={variants}
+            onChange={(newVariants) => {
+              setVariants(newVariants)
+              setValue('variants', newVariants as any)
+            }}
+          />
+
+          <ImageManager
+            images={images}
+            onChange={(newImages) => {
+              setImages(newImages)
+              setValue('images', newImages as any)
+            }}
+          />
+
+          <SEOForm
+            seo={seo}
+            onChange={(newSEO) => {
+              setSeo(newSEO)
+              setValue('seo', newSEO as any)
+            }}
+          />
+
+          <SizeChartForm
+            sizeChart={sizeChart}
+            onChange={(newSizeChart) => {
+              setSizeChart(newSizeChart)
+              setValue('size_chart', newSizeChart as any)
+            }}
+          />
         </div>
 
-        {/* Coluna direita: Imagem e status */}
+        {/* Coluna direita: Status */}
         <div className="space-y-6">
-          <Card className="rounded-2xl border-gray-100 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-xl font-light">Imagem</CardTitle>
-              <CardDescription>Imagem principal do produto</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ImageUpload value={imageUrl || null} onChange={handleImageChange} />
-            </CardContent>
-          </Card>
 
           <Card className="rounded-2xl border-gray-100 shadow-sm">
             <CardHeader>
@@ -225,20 +346,24 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               <CardDescription>Visibilidade do produto</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center gap-3">
-                <input
-                  type="checkbox"
-                  id="active"
-                  {...register('active')}
-                  className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
-                />
-                <Label htmlFor="active" className="cursor-pointer font-normal">
-                  Produto ativo
-                </Label>
+              <div className="space-y-2">
+                <Label htmlFor="status">Status *</Label>
+                <select
+                  id="status"
+                  {...register('status')}
+                  className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  <option value="draft">Rascunho</option>
+                  <option value="active">Ativo</option>
+                  <option value="inactive">Inativo</option>
+                </select>
+                {errors.status && (
+                  <p className="text-xs text-rose-600">{errors.status.message}</p>
+                )}
+                <p className="mt-2 text-xs text-gray-500">
+                  Rascunho: não aparece na loja | Ativo: visível | Inativo: oculto
+                </p>
               </div>
-              <p className="mt-2 text-xs text-gray-500">
-                Produtos inativos não aparecem na loja
-              </p>
             </CardContent>
           </Card>
         </div>

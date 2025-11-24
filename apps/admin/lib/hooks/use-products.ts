@@ -2,25 +2,80 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
 import { apiClient } from '@/lib/api-client'
 
-export interface Product {
+export interface ProductVariant {
+  id: string
+  store_id: string
+  product_id: string
+  sku: string | null
+  size: string | null
+  color: string | null
+  barcode: string | null
+  price_override: string | null
+  active: boolean
+}
+
+export interface ProductImage {
+  id: string
+  store_id: string
+  product_id: string
+  image_url: string
+  position: number
+  is_main: boolean
+}
+
+export interface ProductCategory {
   id: string
   name: string
   slug: string
-  description: string | null
-  category_id: string | null
-  category_name?: string
-  price: number
-  stock: number
-  image_url: string | null
-  active: boolean
+}
+
+export interface ProductSEO {
+  id: string
+  store_id: string
+  product_id: string
+  meta_title: string | null
+  meta_description: string | null
+  meta_keywords: string | null
+  open_graph_image: string | null
   created_at: string
   updated_at: string
 }
 
+export interface ProductSizeChart {
+  id: string
+  store_id: string
+  product_id: string
+  name: string
+  chart_json: Record<string, unknown>
+  created_at: string
+  updated_at: string
+}
+
+export interface Product {
+  id: string
+  store_id: string
+  name: string
+  slug: string
+  description: string | null
+  base_price: string
+  sku: string
+  status: 'draft' | 'active' | 'inactive'
+  virtual_model_url: string | null
+  virtual_provider: string | null
+  virtual_config_json: Record<string, unknown> | null
+  created_at: string
+  updated_at: string
+  variants?: ProductVariant[]
+  images?: ProductImage[]
+  categories?: ProductCategory[]
+  seo?: ProductSEO
+  size_chart?: ProductSizeChart
+}
+
 export interface ProductFilters {
-  name?: string
+  q?: string
   category_id?: string
-  active?: boolean
+  status?: 'draft' | 'active' | 'inactive'
   page?: number
   limit?: number
 }
@@ -36,16 +91,76 @@ export interface ProductsResponse {
 export interface CreateProductInput {
   name: string
   slug: string
-  description?: string
-  category_id?: string
-  price: number
-  stock: number
-  image_url?: string
-  active: boolean
+  description?: string | null
+  base_price: number
+  sku: string
+  status?: 'draft' | 'active' | 'inactive'
+  virtual_model_url?: string | null
+  virtual_provider?: string | null
+  virtual_config_json?: Record<string, unknown> | null
+  variants?: Array<{
+    sku?: string | null
+    size?: string | null
+    color?: string | null
+    barcode?: string | null
+    price_override?: number | null
+    active?: boolean
+  }>
+  images?: Array<{
+    image_url: string
+    position?: number
+    is_main?: boolean
+  }>
+  category_ids?: string[]
+  seo?: {
+    meta_title?: string | null
+    meta_description?: string | null
+    meta_keywords?: string | null
+    open_graph_image?: string | null
+  }
+  size_chart?: {
+    name: string
+    chart_json: Record<string, unknown>
+  }
 }
 
-export interface UpdateProductInput extends Partial<CreateProductInput> {
+export interface UpdateProductInput {
   id: string
+  name?: string
+  slug?: string
+  description?: string | null
+  base_price?: number
+  sku?: string
+  status?: 'draft' | 'active' | 'inactive'
+  virtual_model_url?: string | null
+  virtual_provider?: string | null
+  virtual_config_json?: Record<string, unknown> | null
+  variants?: Array<{
+    id?: string
+    sku?: string | null
+    size?: string | null
+    color?: string | null
+    barcode?: string | null
+    price_override?: number | null
+    active?: boolean
+  }>
+  images?: Array<{
+    id?: string
+    image_url: string
+    position?: number
+    is_main?: boolean
+  }>
+  category_ids?: string[]
+  seo?: {
+    meta_title?: string | null
+    meta_description?: string | null
+    meta_keywords?: string | null
+    open_graph_image?: string | null
+  }
+  size_chart?: {
+    name: string
+    chart_json: Record<string, unknown>
+  }
 }
 
 const PRODUCTS_QUERY_KEY = ['products']
@@ -55,9 +170,9 @@ export function useProducts(filters?: ProductFilters) {
     queryKey: [...PRODUCTS_QUERY_KEY, filters],
     queryFn: async () => {
       const params = new URLSearchParams()
-      if (filters?.name) params.append('name', filters.name)
+      if (filters?.q) params.append('q', filters.q)
       if (filters?.category_id) params.append('category_id', filters.category_id)
-      if (filters?.active !== undefined) params.append('active', String(filters.active))
+      if (filters?.status) params.append('status', filters.status)
       if (filters?.page) params.append('page', String(filters.page))
       if (filters?.limit) params.append('limit', String(filters.limit))
 
@@ -132,14 +247,80 @@ export function useToggleProductStatus() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: async ({ id, active }: { id: string; active: boolean }) => {
-      const response = await apiClient.patch<{ product: Product }>(
-        `/admin/products/${id}/status`,
-        { active }
+    mutationFn: async ({ id, status }: { id: string; status: 'draft' | 'active' | 'inactive' }) => {
+      const response = await apiClient.put<{ product: Product }>(
+        `/admin/products/${id}`,
+        { status }
       )
       return response.data.product
     },
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY })
+    }
+  })
+}
+
+// Estoque
+export interface StockInfo {
+  product_id: string
+  variant_id: string | null
+  current_stock: number
+  last_movement_at: string | null
+}
+
+export interface StockMovement {
+  id: string
+  store_id: string
+  product_id: string
+  variant_id: string | null
+  type: 'IN' | 'OUT' | 'ADJUST'
+  origin: string
+  quantity: number
+  reason: string | null
+  final_quantity: number | null
+  created_by: string | null
+  created_at: string
+}
+
+export interface CreateStockMovementInput {
+  variant_id?: string | null
+  type: 'IN' | 'OUT' | 'ADJUST'
+  origin?: 'manual' | 'order' | 'physical_sale' | 'adjustment' | 'return'
+  quantity: number
+  reason?: string | null
+  final_quantity?: number | null
+}
+
+export function useProductStock(productId: string | null, variantId?: string | null) {
+  return useQuery({
+    queryKey: ['product-stock', productId, variantId],
+    queryFn: async () => {
+      if (!productId) return null
+      const params = new URLSearchParams()
+      if (variantId) params.append('variant_id', variantId)
+
+      const response = await apiClient.get<{ stock?: StockInfo; stocks?: StockInfo[] }>(
+        `/admin/products/${productId}/stock?${params.toString()}`
+      )
+      return response.data
+    },
+    enabled: !!productId
+  })
+}
+
+export function useCreateStockMovement(productId: string) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (data: CreateStockMovementInput) => {
+      const response = await apiClient.post<{ movement: StockMovement }>(
+        `/admin/products/${productId}/stock/movements`,
+        data
+      )
+      return response.data.movement
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['product-stock', productId] })
       queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY })
     }
   })

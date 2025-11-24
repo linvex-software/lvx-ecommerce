@@ -8,7 +8,10 @@ export default function NewProductPage() {
   const createProduct = useCreateProduct()
 
   const handleSubmit = async (data: ProductFormData) => {
-    await createProduct.mutateAsync(data)
+    await createProduct.mutateAsync({
+      ...data,
+      size_chart: data.size_chart ?? undefined
+    })
   }
 
   return (
