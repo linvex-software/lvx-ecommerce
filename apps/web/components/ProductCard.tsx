@@ -27,7 +27,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
   const isOutOfStock = stock === 0
 
   return (
-    <Card className="group overflow-hidden border border-border hover:border-foreground transition-all duration-300">
+    <Card className="group overflow-hidden border border-border hover:border-foreground transition-all duration-300 cursor-pointer">
       <div className="relative aspect-square overflow-hidden bg-secondary">
         <img
           src={product.image}
