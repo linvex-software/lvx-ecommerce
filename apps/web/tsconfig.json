@@ -11,6 +11,8 @@
   },
   "include": [
     "next-env.d.ts",
-    "app/**/*"
+    "app/**/*",
+    "components/**/*",
+    "lib/**/*"
   ]
 }
