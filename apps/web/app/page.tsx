@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import ProductCard, { Product } from '@/components/ProductCard'
 import Cart from '@/components/Cart'
@@ -31,6 +32,7 @@ const ITEMS_PER_PAGE = 8
 interface APIProduct {
   id: string
   name: string
+  slug: string
   base_price: string
   main_image: string | null
   description: string | null
@@ -110,11 +112,12 @@ const HomePage = () => {
   })
 
   // Map API products to UI products
-  const products: Product[] = useMemo(() => {
+  const products: (Product & { slug: string })[] = useMemo(() => {
     if (!productsData?.products) return []
     return productsData.products.map(p => ({
       id: p.id,
       name: p.name,
+      slug: p.slug,
       price: parseFloat(p.base_price),
       image: p.main_image || 'https://via.placeholder.com/500', // Fallback image
       category: p.category_name || 'Geral',
@@ -210,7 +213,9 @@ const HomePage = () => {
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {products.map((product) => (
-                    <ProductCard key={product.id} product={product} onAddToCart={handleAddToCart} />
+                    <Link key={product.id} href={`/products/${product.slug}`}>
+                      <ProductCard product={product} onAddToCart={handleAddToCart} />
+                    </Link>
                   ))}
                 </div>
 
