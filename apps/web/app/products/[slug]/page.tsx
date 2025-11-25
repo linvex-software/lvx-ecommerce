@@ -1,12 +1,11 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { useParams, notFound } from 'next/navigation'
+import { useParams, notFound, useRouter } from 'next/navigation'
 import { fetchAPI } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import Navbar from '@/components/Navbar'
-import Cart from '@/components/Cart'
 import { useCartStore } from '@/lib/store/useCartStore'
 import { useState } from 'react'
 import { ArrowLeft, ShoppingCart } from 'lucide-react'
@@ -94,7 +93,8 @@ interface ProductResponse {
 export default function ProductDetailPage() {
   const params = useParams()
   const slug = params.slug as string
-  const { addItem, isOpen, openCart, items } = useCartStore()
+  const router = useRouter()
+  const { addItem, items } = useCartStore()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
@@ -118,7 +118,7 @@ export default function ProductDetailPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
-        <Navbar cartCount={0} onCartClick={openCart} onSearch={() => {}} />
+        <Navbar cartCount={0} onCartClick={() => router.push('/carrinho')} onSearch={() => {}} />
         <main className="container mx-auto px-4 py-8">
           <div className="animate-pulse space-y-8">
             <div className="h-8 bg-muted w-48 rounded"></div>
@@ -187,12 +187,12 @@ export default function ProductDetailPage() {
       return // Não adiciona ao carrinho se estiver esgotado
     }
     addItem(cartProduct)
-    openCart()
+    router.push('/carrinho')
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar cartCount={totalItems} onCartClick={openCart} onSearch={() => {}} />
+      <Navbar cartCount={totalItems} onCartClick={() => router.push('/carrinho')} onSearch={() => {}} />
 
       <main className="container mx-auto px-4 py-8">
         {/* Botão Voltar */}
@@ -369,8 +369,6 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </main>
-
-      {isOpen && <Cart />}
     </div>
   )
 }
@@ -383,7 +381,8 @@ function RelatedProducts({
   currentProductId: string
   categoryId?: string
 }) {
-  const { addItem, openCart } = useCartStore()
+  const { addItem } = useCartStore()
+  const router = useRouter()
 
   const { data: relatedProductsData, isLoading } = useQuery<{
     products: Array<{
@@ -429,7 +428,7 @@ function RelatedProducts({
     description?: string
   }) => {
     addItem(product)
-    openCart()
+    router.push('/carrinho')
   }
 
   return (

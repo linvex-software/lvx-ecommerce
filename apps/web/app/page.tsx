@@ -2,10 +2,10 @@
 
 import { useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/Navbar'
 import ProductCard, { Product } from '@/components/ProductCard'
-import Cart from '@/components/Cart'
 import ProductFilters, { FilterState } from '@/components/ProductFilters'
 import Pagination from '@/components/Pagination'
 import { SlidersHorizontal } from 'lucide-react'
@@ -46,7 +46,8 @@ interface Category {
 }
 
 const HomePage = () => {
-  const { addItem, isOpen, openCart, items } = useCartStore()
+  const { addItem, items } = useCartStore()
+  const router = useRouter()
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
 
@@ -141,14 +142,14 @@ const HomePage = () => {
 
   const handleAddToCart = (product: Product) => {
     addItem(product)
-    openCart()
+    router.push('/carrinho')
   }
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
 
   return (
     <div className="min-h-screen bg-background">
-      <Navbar cartCount={totalItems} onCartClick={openCart} onSearch={handleSearch} />
+      <Navbar cartCount={totalItems} onCartClick={() => router.push('/carrinho')} onSearch={handleSearch} />
 
       {/* Hero Section - Banner */}
       <div className="w-full  mb-8 sm:mb-12 relative overflow-hidden flex items-center justify-center bg-muted -mt-px">
@@ -251,9 +252,6 @@ const HomePage = () => {
         </div>
       </main>
 
-      {isOpen && (
-        <Cart />
-      )}
     </div>
   )
 }
