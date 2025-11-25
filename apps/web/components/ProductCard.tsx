@@ -94,7 +94,11 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
           <Button
             variant="default"
             size="sm"
-            onClick={() => onAddToCart(product)}
+            onClick={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              onAddToCart(product)
+            }}
             disabled={isOutOfStock}
             className="bg-foreground text-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
           >
