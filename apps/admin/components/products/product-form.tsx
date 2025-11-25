@@ -16,6 +16,8 @@ import { VariantManager, type ProductVariant } from './variant-manager'
 import { SEOForm, type ProductSEO } from './seo-form'
 import { SizeChartForm, type SizeChartData } from './size-chart-form'
 import type { Product } from '@/lib/hooks/use-products'
+import { isClothingProduct, generateDefaultSizeChart } from '@/lib/utils/product-detection'
+import { useCategories } from '@/lib/hooks/use-categories'
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').min(3, 'Nome deve ter pelo menos 3 caracteres'),
@@ -75,6 +77,8 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ product, onSubmit, isLoading = false }: ProductFormProps) {
+  const { data: categoriesData } = useCategories()
+
   const initialVariants: ProductVariant[] = (product as any)?.variants?.map((v: any) => ({
     size: v.size || null,
     color: v.color || null,
@@ -116,6 +120,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   const [images, setImages] = useState<ProductImage[]>(initialImages)
   const [seo, setSeo] = useState<ProductSEO>(initialSEO)
   const [sizeChart, setSizeChart] = useState<SizeChartData | null>(initialSizeChart)
+  const [autoSizeChartCreated, setAutoSizeChartCreated] = useState(false)
 
   const {
     register,
@@ -174,6 +179,17 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     setValue('name', name)
     if (!product) {
       setValue('slug', generateSlug(name))
+
+      // Se for produto novo e for roupa, criar size_chart padrão automaticamente
+      if (name.trim().length > 0 && isClothingProduct(name, []) && !sizeChart) {
+        const defaultSizeChart = generateDefaultSizeChart(name)
+        setSizeChart(defaultSizeChart)
+        setValue('size_chart', defaultSizeChart as any)
+        setAutoSizeChartCreated(true)
+      } else if (!isClothingProduct(name, [])) {
+        // Se não for roupa, limpar o flag
+        setAutoSizeChartCreated(false)
+      }
     }
   }
 
@@ -188,15 +204,40 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     const hasSEO =
       seo.meta_title || seo.meta_description || seo.meta_keywords || seo.open_graph_image
 
+    // Verificar se é roupa e criar size_chart padrão se necessário
+    let finalSizeChart = sizeChart
+    if (!finalSizeChart || !finalSizeChart.name.trim() || Object.keys(finalSizeChart.chart_json).length === 0) {
+      // Buscar nomes das categorias para melhor detecção
+      const categoryIds = data.category_ids || []
+      const allCategories = categoriesData?.categories || []
+      const productCategories = (product as any)?.categories || []
+
+      // Combinar categorias do produto com todas as categorias disponíveis
+      const categoryNames = categoryIds
+        .map((id) => {
+          const productCat = productCategories.find((c: any) => c.id === id)
+          if (productCat) return productCat.name
+          const allCat = allCategories.find((c) => c.id === id)
+          return allCat?.name || ''
+        })
+        .filter(Boolean)
+
+      // Se for roupa, criar size_chart padrão automaticamente
+      if (isClothingProduct(data.name, categoryNames)) {
+        finalSizeChart = generateDefaultSizeChart(data.name)
+        setSizeChart(finalSizeChart)
+      }
+    }
+
     // Filtrar size chart vazio
-    const hasSizeChart = sizeChart && sizeChart.name.trim() !== '' && Object.keys(sizeChart.chart_json).length > 0
+    const hasSizeChart = finalSizeChart && finalSizeChart.name.trim() !== '' && Object.keys(finalSizeChart.chart_json).length > 0
 
     const submitData = {
       ...data,
       variants: validVariants.length > 0 ? validVariants : undefined,
       images: validImages.length > 0 ? validImages : undefined,
       seo: hasSEO ? seo : undefined,
-      size_chart: hasSizeChart ? sizeChart : undefined
+      size_chart: hasSizeChart ? finalSizeChart : undefined
     }
 
     await onSubmit(submitData as any)
@@ -298,7 +339,27 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
 
               <CategorySelector
                 value={watch('category_ids') || []}
-                onChange={(ids) => setValue('category_ids', ids)}
+                onChange={(ids) => {
+                  setValue('category_ids', ids)
+
+                  // Se for produto novo e for roupa, criar size_chart padrão
+                  if (!product) {
+                    const name = watch('name')
+                    if (name && name.trim().length > 0) {
+                      const allCategories = categoriesData?.categories || []
+                      const categoryNames = ids
+                        .map((id) => allCategories.find((c) => c.id === id)?.name || '')
+                        .filter(Boolean)
+
+                      if (isClothingProduct(name, categoryNames) && !sizeChart) {
+                        const defaultSizeChart = generateDefaultSizeChart(name)
+                        setSizeChart(defaultSizeChart)
+                        setValue('size_chart', defaultSizeChart as any)
+                        setAutoSizeChartCreated(true)
+                      }
+                    }
+                  }
+                }}
                 error={errors.category_ids?.message}
               />
             </CardContent>
@@ -359,13 +420,26 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
             }}
           />
 
-          <SizeChartForm
-            sizeChart={sizeChart}
-            onChange={(newSizeChart) => {
-              setSizeChart(newSizeChart)
-              setValue('size_chart', newSizeChart as any)
-            }}
-          />
+          <div className="space-y-2">
+            {autoSizeChartCreated && (
+              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
+                <p className="font-medium">✓ Provador Virtual habilitado automaticamente</p>
+                <p className="text-xs text-blue-600 mt-1">
+                  Detectamos que este é um produto de roupa. Uma tabela de medidas padrão foi criada. Você pode editá-la abaixo.
+                </p>
+              </div>
+            )}
+            <SizeChartForm
+              sizeChart={sizeChart}
+              onChange={(newSizeChart) => {
+                setSizeChart(newSizeChart)
+                setValue('size_chart', newSizeChart as any)
+                if (newSizeChart) {
+                  setAutoSizeChartCreated(false) // Remove flag quando usuário edita manualmente
+                }
+              }}
+            />
+          </div>
         </div>
       </div>
 
