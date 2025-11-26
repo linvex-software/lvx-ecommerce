@@ -309,14 +309,17 @@ export default function ProductDetailPage() {
             )}
 
             {/* Botão Descobrir meu tamanho */}
-            <div className="pt-4">
-              <VirtualTryOn
-                virtualModelUrl={product.virtual_model_url}
-                virtualProvider={product.virtual_provider}
-                virtualConfigJson={product.virtual_config_json}
-                productName={product.name}
-              />
-            </div>
+            {product.size_chart && (
+              <div className="pt-4">
+                <VirtualTryOn
+                  virtualModelUrl={product.virtual_model_url}
+                  virtualProvider={product.virtual_provider}
+                  virtualConfigJson={product.virtual_config_json}
+                  productName={product.name}
+                  sizeChart={product.size_chart}
+                />
+              </div>
+            )}
 
             {/* Botão Adicionar ao Carrinho */}
             <div className="pt-4">
