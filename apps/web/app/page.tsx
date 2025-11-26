@@ -142,7 +142,6 @@ const HomePage = () => {
 
   const handleAddToCart = (product: Product) => {
     addItem(product)
-    router.push('/carrinho')
   }
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)

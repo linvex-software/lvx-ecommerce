@@ -36,6 +36,9 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
   }
 
   const removeVariant = (index: number) => {
+    if (!confirm('Tem certeza que deseja excluir esta variante?')) {
+      return
+    }
     onChange(variants.filter((_, i) => i !== index))
   }
 

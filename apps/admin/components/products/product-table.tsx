@@ -69,11 +69,13 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
   }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Tem certeza que deseja excluir este produto?')) return
+    if (!confirm('Tem certeza que deseja excluir este produto permanentemente?\n\nEsta ação não pode ser desfeita.')) return
 
     setDeletingId(id)
     try {
       await deleteProduct.mutateAsync(id)
+    } catch (error) {
+      // Erro já tratado no hook com toast
     } finally {
       setDeletingId(null)
     }

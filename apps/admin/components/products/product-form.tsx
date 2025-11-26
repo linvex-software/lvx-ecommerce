@@ -433,7 +433,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               sizeChart={sizeChart}
               onChange={(newSizeChart) => {
                 setSizeChart(newSizeChart)
-                setValue('size_chart', newSizeChart as any)
+                setValue('size_chart', newSizeChart as any, { shouldDirty: true })
                 if (newSizeChart) {
                   setAutoSizeChartCreated(false) // Remove flag quando usuário edita manualmente
                 }

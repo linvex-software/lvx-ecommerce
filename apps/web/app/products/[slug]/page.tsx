@@ -12,7 +12,7 @@ import { ArrowLeft, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import SizeChart from '@/components/SizeChart'
 import VirtualTryOn from '@/components/VirtualTryOn'
-import ProductCard from '@/components/ProductCard'
+import ProductCard, { type Product } from '@/components/ProductCard'
 
 // Types baseados na resposta da API
 interface ProductImage {
@@ -119,7 +119,7 @@ export default function ProductDetailPage() {
     return (
       <div className="min-h-screen bg-background">
         <Navbar cartCount={0} onCartClick={() => router.push('/carrinho')} onSearch={() => {}} />
-        <main className="container mx-auto px-4 py-8">
+        <main className="mx-auto w-full max-w-6xl px-4 py-8">
           <div className="animate-pulse space-y-8">
             <div className="h-8 bg-muted w-48 rounded"></div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -187,14 +187,13 @@ export default function ProductDetailPage() {
       return // Não adiciona ao carrinho se estiver esgotado
     }
     addItem(cartProduct)
-    router.push('/carrinho')
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar cartCount={totalItems} onCartClick={() => router.push('/carrinho')} onSearch={() => {}} />
 
-      <main className="container mx-auto px-4 py-8">
+      <main className="mx-auto w-full max-w-6xl px-4 py-8">
         {/* Botão Voltar */}
         <Link
           href="/"
@@ -422,16 +421,15 @@ function RelatedProducts({
     return null
   }
 
-  const handleAddToCart = (product: {
-    id: string
-    name: string
-    price: number
-    image: string
-    category: string
-    description?: string
-  }) => {
-    addItem(product)
-    router.push('/carrinho')
+  const handleAddToCart = (product: Product) => {
+    addItem({
+      id: String(product.id),
+      name: product.name,
+      price: product.price,
+      image: product.image,
+      category: product.category,
+      description: product.description
+    })
   }
 
   return (
