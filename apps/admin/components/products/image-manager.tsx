@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Plus, Trash2, MoveUp, MoveDown, Upload } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@white-label/ui'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -20,19 +21,42 @@ interface ImageManagerProps {
 export function ImageManager({ images, onChange }: ImageManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  const validateImageFile = (file: File): boolean => {
+    if (!file.type.startsWith('image/')) {
+      toast.error('Arquivo inválido', {
+        description: 'Por favor, selecione apenas arquivos de imagem (JPG, PNG, GIF).'
+      })
+      return false
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande', {
+        description: 'A imagem deve ter no máximo 5MB. Por favor, escolha uma imagem menor.'
+      })
+      return false
+    }
+
+    return true
+  }
+
+  const processImageFile = (file: File, callback: (imageUrl: string) => void) => {
+    if (!validateImageFile(file)) {
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const imageUrl = event.target?.result as string
+      callback(imageUrl)
+    }
+    reader.readAsDataURL(file)
+  }
+
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0]
     if (!file) return
 
-    // Validar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione apenas arquivos de imagem')
-      return
-    }
-
-    // Validar tamanho (máximo 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 5MB')
+    if (!validateImageFile(file)) {
       return
     }
 
@@ -209,22 +233,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                             const file = (e.target as HTMLInputElement).files?.[0]
                             if (!file) return
 
-                            if (!file.type.startsWith('image/')) {
-                              alert('Por favor, selecione apenas arquivos de imagem')
-                              return
-                            }
-
-                            if (file.size > 5 * 1024 * 1024) {
-                              alert('A imagem deve ter no máximo 5MB')
-                              return
-                            }
-
-                            const reader = new FileReader()
-                            reader.onload = (event) => {
-                              const newUrl = event.target?.result as string
-                              updateImage(index, 'image_url', newUrl)
-                            }
-                            reader.readAsDataURL(file)
+                            processImageFile(file, (imageUrl) => {
+                              updateImage(index, 'image_url', imageUrl)
+                            })
                           }
                           input.click()
                         }}
@@ -249,22 +260,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                             const file = (e.target as HTMLInputElement).files?.[0]
                             if (!file) return
 
-                            if (!file.type.startsWith('image/')) {
-                              alert('Por favor, selecione apenas arquivos de imagem')
-                              return
-                            }
-
-                            if (file.size > 5 * 1024 * 1024) {
-                              alert('A imagem deve ter no máximo 5MB')
-                              return
-                            }
-
-                            const reader = new FileReader()
-                            reader.onload = (event) => {
-                              const newUrl = event.target?.result as string
-                              updateImage(index, 'image_url', newUrl)
-                            }
-                            reader.readAsDataURL(file)
+                            processImageFile(file, (imageUrl) => {
+                              updateImage(index, 'image_url', imageUrl)
+                            })
                           }
                           input.click()
                         }}

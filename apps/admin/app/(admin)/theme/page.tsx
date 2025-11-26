@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useMemo } from 'react'
+import { toast } from 'sonner'
 import { useTheme, useUpdateTheme } from '@/lib/hooks/use-theme'
 import { ThemeForm, type ThemeConfig } from '@/components/theme/theme-form'
 import { LivePreview } from '@/components/theme/live-preview'
@@ -37,7 +38,9 @@ export default function ThemePage() {
       setShowSuccess(true)
       setTimeout(() => setShowSuccess(false), 3000)
     } catch (error) {
-      alert('Erro ao salvar tema. Tente novamente.')
+      toast.error('Erro ao salvar tema', {
+        description: 'Não foi possível salvar as alterações. Tente novamente.'
+      })
     }
   }
 

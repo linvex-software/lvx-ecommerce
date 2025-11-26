@@ -93,6 +93,9 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
   }
 
   const handleRemoveMeasurement = (measurement: string) => {
+    if (!confirm(`Tem certeza que deseja remover a medida "${measurement}"?\n\nTodos os valores associados a esta medida serão perdidos.`)) {
+      return
+    }
     const nextMeasurements = measurements.filter((item) => item !== measurement)
     const nextData: ChartMatrix = { ...chartData }
 
@@ -108,6 +111,9 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
   }
 
   const handleRemoveSize = (size: string) => {
+    if (!confirm(`Tem certeza que deseja remover o tamanho "${size}"?\n\nTodos os valores associados a este tamanho serão perdidos.`)) {
+      return
+    }
     const nextSizes = sizes.filter((item) => item !== size)
     const nextData: ChartMatrix = { ...chartData }
     delete nextData[size]

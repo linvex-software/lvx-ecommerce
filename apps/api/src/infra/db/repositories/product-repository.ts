@@ -657,6 +657,63 @@ export class ProductRepository {
     }
   }
 
+  async hasAssociatedOrders(productId: string): Promise<boolean> {
+    const result = await db
+      .select({ id: schema.orderItems.id })
+      .from(schema.orderItems)
+      .where(eq(schema.orderItems.product_id, productId))
+      .limit(1)
+
+    return result.length > 0
+  }
+
+  async hasAssociatedPhysicalSales(productId: string): Promise<boolean> {
+    const result = await db
+      .select({ id: schema.physicalSales.id })
+      .from(schema.physicalSales)
+      .where(eq(schema.physicalSales.product_id, productId))
+      .limit(1)
+
+    return result.length > 0
+  }
+
+  async delete(id: string, storeId: string): Promise<void> {
+    // Verificar se produto existe
+    const existingProduct = await this.findById(id, storeId)
+    if (!existingProduct) {
+      throw new Error('Product not found')
+    }
+
+    // Verificar se há pedidos associados
+    const hasOrders = await this.hasAssociatedOrders(id)
+    if (hasOrders) {
+      throw new Error('Cannot delete product: it has associated orders')
+    }
+
+    // Verificar se há vendas físicas associadas
+    const hasPhysicalSales = await this.hasAssociatedPhysicalSales(id)
+    if (hasPhysicalSales) {
+      throw new Error('Cannot delete product: it has associated physical sales')
+    }
+
+    // Deletar produto (hard delete)
+    // Como há CASCADE configurado, vai deletar automaticamente:
+    // - product_variants
+    // - product_images
+    // - product_category
+    // - product_seo
+    // - product_size_chart
+    // - stock_movements
+    const result = await db
+      .delete(schema.products)
+      .where(and(eq(schema.products.id, id), eq(schema.products.store_id, storeId)))
+      .returning()
+
+    if (result.length === 0) {
+      throw new Error('Product not found')
+    }
+  }
+
   async getAvailableSizes(storeId: string): Promise<string[]> {
     // Get all unique sizes from size charts
     const result = await db

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { Plus, Package } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@white-label/ui'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -41,12 +42,16 @@ export function StockManager({ productId, variants = [] }: StockManagerProps) {
 
   const handleCreateMovement = async () => {
     if (!quantity || parseFloat(quantity) <= 0) {
-      alert('Quantidade deve ser maior que zero')
+      toast.error('Quantidade inválida', {
+        description: 'A quantidade deve ser maior que zero.'
+      })
       return
     }
 
     if (movementType === 'ADJUST' && !finalQuantity) {
-      alert('Para ajuste, informe a quantidade final')
+      toast.error('Campo obrigatório', {
+        description: 'Para ajuste, informe a quantidade final desejada.'
+      })
       return
     }
 
@@ -64,8 +69,14 @@ export function StockManager({ productId, variants = [] }: StockManagerProps) {
       setQuantity('')
       setReason('')
       setFinalQuantity('')
+      toast.success('Movimentação criada com sucesso!', {
+        description: `Estoque ${movementType === 'IN' ? 'adicionado' : movementType === 'OUT' ? 'removido' : 'ajustado'}.`
+      })
     } catch (error) {
       console.error('Erro ao criar movimento:', error)
+      toast.error('Erro ao criar movimentação', {
+        description: 'Não foi possível criar a movimentação. Tente novamente.'
+      })
     }
   }
 
