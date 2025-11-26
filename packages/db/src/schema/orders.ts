@@ -29,6 +29,8 @@ export const orders = pgTable(
     shipping_cost: numeric('shipping_cost', { precision: 12, scale: 2 })
       .notNull()
       .default('0'),
+    shipping_label_url: text('shipping_label_url'),
+    tracking_code: text('tracking_code'),
     created_at: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull()
