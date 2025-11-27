@@ -1,6 +1,7 @@
 'use client'
 
 import { useParams } from 'next/navigation'
+import { toast } from 'sonner'
 import { useOrder, useDownloadShippingLabel } from '@/lib/hooks/use-orders'
 import { OrderDetails } from '@/components/orders/order-details'
 
@@ -32,7 +33,9 @@ export default function OrderDetailPage() {
       document.body.removeChild(a)
     } catch (error) {
       console.error('Erro ao baixar etiqueta:', error)
-      alert('Erro ao baixar etiqueta. Tente novamente.')
+      toast.error('Erro ao baixar etiqueta', {
+        description: 'Não foi possível baixar a etiqueta. Tente novamente.'
+      })
     }
   }
 

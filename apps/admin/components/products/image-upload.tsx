@@ -2,6 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { Upload, X, Image as ImageIcon } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@white-label/ui'
 import { cn } from '@white-label/ui'
 
@@ -18,7 +19,9 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
 
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione apenas imagens')
+      toast.error('Arquivo inválido', {
+        description: 'Por favor, selecione apenas arquivos de imagem (JPG, PNG, GIF).'
+      })
       return
     }
 
@@ -33,11 +36,19 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
         onChange(result)
         setIsUploading(false)
       }
+      reader.onerror = () => {
+        setIsUploading(false)
+        toast.error('Erro ao processar imagem', {
+          description: 'Não foi possível processar a imagem. Tente novamente com outro arquivo.'
+        })
+      }
       reader.readAsDataURL(file)
     } catch (error) {
       // Erro ao processar imagem
       setIsUploading(false)
-      alert('Erro ao processar a imagem. Tente novamente.')
+      toast.error('Erro ao processar imagem', {
+        description: 'Não foi possível processar a imagem. Tente novamente.'
+      })
     }
   }
 

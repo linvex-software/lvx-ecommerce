@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { Save, RotateCcw, Download, Upload } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@white-label/ui'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
@@ -152,7 +153,9 @@ export function ThemeForm({ initialConfig, onSave, isLoading = false, onExport, 
           if (onImportError) {
             onImportError(errorMessage)
           } else {
-            alert(errorMessage)
+            toast.error('Erro ao importar tema', {
+              description: 'O arquivo JSON é inválido ou está corrompido. Verifique o arquivo e tente novamente.'
+            })
           }
         }
       }
