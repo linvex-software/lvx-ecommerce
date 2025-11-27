@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, Palette, Ticket, Settings, Tags, ShoppingCart, Warehouse } from 'lucide-react'
+import { LayoutDashboard, Package, Palette, Ticket, Settings, Tags, ShoppingCart, Warehouse, Store } from 'lucide-react'
 import { cn } from '@white-label/ui'
 
 interface NavItem {
@@ -36,6 +36,11 @@ const navItems: NavItem[] = [
     title: 'Pedidos',
     href: '/orders',
     icon: ShoppingCart
+  },
+  {
+    title: 'Vendas Físicas',
+    href: '/physical-sales',
+    icon: Store
   },
   {
     title: 'Tema',
