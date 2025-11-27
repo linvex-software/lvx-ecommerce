@@ -96,7 +96,25 @@ async function handleMercadoPagoEvent(
   switch (eventType) {
     case 'payment':
     case 'payment.created':
-      // Processar pagamento
+      // Verificar se é relacionado a venda física
+      if (payload.data && typeof payload.data === 'object') {
+        const data = payload.data as Record<string, unknown>
+        if (data.metadata?.sale_type === 'physical_sale' || data.external_reference?.includes('physical_sale')) {
+          // Processar webhook de venda física
+          const { processPhysicalSaleWebhookUseCase } = await import('../../physical-sales/use-cases/process-physical-sale-webhook')
+          const { PhysicalSaleRepository } = await import('../../../infra/db/repositories/physical-sale-repository')
+          const storeId = data.metadata?.store_id as string | undefined
+          if (storeId) {
+            await processPhysicalSaleWebhookUseCase(
+              data as Record<string, unknown>,
+              storeId,
+              {
+                physicalSaleRepository: new PhysicalSaleRepository()
+              }
+            )
+          }
+        }
+      }
       break
     default:
       // Event type desconhecido - silenciosamente ignorado
@@ -113,7 +131,25 @@ async function handlePagSeguroEvent(
   switch (eventType) {
     case 'TRANSACTION':
     case 'transaction.paid':
-      // Processar transação
+      // Verificar se é relacionado a venda física
+      if (payload.transaction && typeof payload.transaction === 'object') {
+        const transaction = payload.transaction as Record<string, unknown>
+        if (transaction.reference?.includes('physical_sale')) {
+          // Processar webhook de venda física
+          const { processPhysicalSaleWebhookUseCase } = await import('../../physical-sales/use-cases/process-physical-sale-webhook')
+          const { PhysicalSaleRepository } = await import('../../../infra/db/repositories/physical-sale-repository')
+          const storeId = transaction.store_id as string | undefined
+          if (storeId) {
+            await processPhysicalSaleWebhookUseCase(
+              transaction as Record<string, unknown>,
+              storeId,
+              {
+                physicalSaleRepository: new PhysicalSaleRepository()
+              }
+            )
+          }
+        }
+      }
       break
     default:
       // Event type desconhecido - silenciosamente ignorado

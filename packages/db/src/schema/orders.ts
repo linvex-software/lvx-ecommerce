@@ -83,6 +83,13 @@ export const physicalSales = pgTable(
     seller_user_id: uuid('seller_user_id').references(() => users.id, {
       onDelete: 'set null'
     }),
+    coupon_id: uuid('coupon_id'),
+    shipping_cost: numeric('shipping_cost', { precision: 12, scale: 2 })
+      .notNull()
+      .default('0'),
+    commission_amount: numeric('commission_amount', { precision: 12, scale: 2 }),
+    cart_id: uuid('cart_id'),
+    status: text('status').notNull().default('completed'), // completed, pending, cancelled
     created_at: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull()
@@ -91,6 +98,86 @@ export const physicalSales = pgTable(
     storeCreatedIdx: index('physical_sales_store_created_idx').on(
       table.store_id,
       table.created_at
+    ),
+    storeStatusIdx: index('physical_sales_store_status_idx').on(
+      table.store_id,
+      table.status
+    ),
+    cartIdIdx: index('physical_sales_cart_id_idx').on(table.cart_id)
+  })
+)
+
+export const physicalSalesCarts = pgTable(
+  'physical_sales_carts',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    store_id: uuid('store_id')
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    seller_user_id: uuid('seller_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status').notNull().default('active'), // active, abandoned, converted
+    items_json: text('items_json').notNull().$type<Array<{
+      product_id: string
+      variant_id?: string | null
+      quantity: number
+      price: number
+    }>>(),
+    total: numeric('total', { precision: 12, scale: 2 }).notNull().default('0'),
+    coupon_code: text('coupon_code'),
+    shipping_address: text('shipping_address'),
+    last_activity_at: timestamp('last_activity_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (table) => ({
+    storeSellerIdx: index('physical_sales_carts_store_seller_idx').on(
+      table.store_id,
+      table.seller_user_id
+    ),
+    storeStatusIdx: index('physical_sales_carts_store_status_idx').on(
+      table.store_id,
+      table.status
+    )
+  })
+)
+
+export const physicalSalesCommissions = pgTable(
+  'physical_sales_commissions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    store_id: uuid('store_id')
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    physical_sale_id: uuid('physical_sale_id')
+      .notNull()
+      .references(() => physicalSales.id, { onDelete: 'cascade' }),
+    seller_user_id: uuid('seller_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    commission_amount: numeric('commission_amount', { precision: 12, scale: 2 })
+      .notNull(),
+    commission_rate: numeric('commission_rate', { precision: 5, scale: 2 }), // porcentagem
+    status: text('status').notNull().default('pending'), // pending, paid, cancelled
+    paid_at: timestamp('paid_at', { withTimezone: true }),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (table) => ({
+    saleIdIdx: index('physical_sales_commissions_sale_id_idx').on(
+      table.physical_sale_id
+    ),
+    storeSellerIdx: index('physical_sales_commissions_store_seller_idx').on(
+      table.store_id,
+      table.seller_user_id
     )
   })
 )

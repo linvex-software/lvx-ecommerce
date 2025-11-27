@@ -16,6 +16,7 @@ import { registerCatalogCategoryRoutes } from './presentation/http/catalog/categ
 import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
 import { registerWebhookRoutes } from './presentation/http/webhooks/webhook-routes'
 import { registerStoreRoutes } from './presentation/http/store-routes'
+import { registerPhysicalSalesRoutes } from './presentation/http/physical-sales/physical-sales-routes'
 
 async function buildServer() {
   const app = Fastify({
@@ -33,10 +34,19 @@ async function buildServer() {
         // Sempre armazenar raw body (será usado apenas em webhooks)
         req.rawBody = body
 
+        // Se body estiver vazio, retornar objeto vazio
+        if (body.length === 0) {
+          return {}
+        }
+
         // Parsear e retornar JSON (para não quebrar outras rotas)
         const json = JSON.parse(body.toString('utf-8')) as Record<string, unknown>
         return json
       } catch (error) {
+        // Se falhar ao fazer parse, retornar objeto vazio (pode ser body vazio)
+        if (body.length === 0) {
+          return {}
+        }
         throw error as Error
       }
     }
@@ -101,6 +111,7 @@ async function buildServer() {
   await registerCheckoutRoutes(app)
   await registerWebhookRoutes(app)
   await registerStoreRoutes(app)
+  await registerPhysicalSalesRoutes(app)
 
   return app
 }
