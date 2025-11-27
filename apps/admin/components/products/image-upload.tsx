@@ -10,9 +10,10 @@ interface ImageUploadProps {
   value?: string | null
   onChange: (url: string | null) => void
   disabled?: boolean
+  aspectRatio?: 'square' | 'wide'
 }
 
-export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
+export function ImageUpload({ value, onChange, disabled, aspectRatio = 'square' }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false)
   const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -106,7 +107,9 @@ export function ImageUpload({ value, onChange, disabled }: ImageUploadProps) {
       />
 
       {value ? (
-        <div className="relative aspect-square w-full overflow-hidden rounded-xl">
+        <div className={`relative w-full overflow-hidden rounded-xl ${
+          aspectRatio === 'square' ? 'aspect-square' : 'aspect-[21/9]'
+        }`}>
           <img src={value} alt="Preview" className="h-full w-full object-cover" />
           {!disabled && (
             <button

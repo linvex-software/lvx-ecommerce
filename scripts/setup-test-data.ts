@@ -38,7 +38,7 @@ async function setupTestData() {
         store_id: null,
         name: 'Admin Teste',
         password_hash: adminPasswordHash,
-        role: null
+        role: 'admin'
       })
       .where(eq(schema.users.email, 'admin@teste.com'))
       .returning()
@@ -52,7 +52,7 @@ async function setupTestData() {
         name: 'Admin Teste',
         email: 'admin@teste.com',
         password_hash: adminPasswordHash,
-        role: null
+        role: 'admin'
       })
       .returning()
     admin = newAdmin
@@ -84,7 +84,7 @@ async function setupTestData() {
         store_id: null,
         name: 'Operador Teste',
         password_hash: operadorPasswordHash,
-        role: null
+        role: 'operador'
       })
       .where(eq(schema.users.email, 'operador@teste.com'))
       .returning()
@@ -98,7 +98,7 @@ async function setupTestData() {
         name: 'Operador Teste',
         email: 'operador@teste.com',
         password_hash: operadorPasswordHash,
-        role: null
+        role: 'operador'
       })
       .returning()
     operador = newOperador
@@ -130,7 +130,7 @@ async function setupTestData() {
         store_id: null,
         name: 'Vendedor Teste',
         password_hash: vendedorPasswordHash,
-        role: null
+        role: 'vendedor'
       })
       .where(eq(schema.users.email, 'vendedor@teste.com'))
       .returning()
@@ -144,7 +144,7 @@ async function setupTestData() {
         name: 'Vendedor Teste',
         email: 'vendedor@teste.com',
         password_hash: vendedorPasswordHash,
-        role: null
+        role: 'vendedor'
       })
       .returning()
     vendedor = newVendedor

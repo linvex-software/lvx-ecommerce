@@ -12,6 +12,7 @@ import { SlidersHorizontal } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { fetchAPI } from '@/lib/api'
 import { useCartStore } from '@/lib/store/useCartStore'
+import { useStoreTheme } from '@/lib/hooks/use-store-theme'
 
 // Available filter options (Static for now as API doesn't provide them yet)
 const AVAILABLE_SIZES = ['P', 'M', 'G', 'GG', 'XG', '38', '39', '40', '41', '42', '43', '44', '46', 'Único']
@@ -28,6 +29,29 @@ const AVAILABLE_COLORS = [
 ]
 
 const ITEMS_PER_PAGE = 8
+
+function StoreBanner() {
+  const { data: theme } = useStoreTheme()
+
+  if (!theme?.banner_url) {
+    return null
+  }
+
+  return (
+    <div className="w-full mb-8 sm:mb-12 relative overflow-hidden flex items-center justify-center bg-muted -mt-px">
+      {/* Banner image */}
+      <div className="w-full h-full flex items-center justify-center">
+        <img
+          src={theme.banner_url}
+          alt="Banner Principal"
+          className="w-full h-full object-cover object-center"
+        />
+      </div>
+      {/* Gradient overlay - fade from bottom to top */}
+      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent pointer-events-none"></div>
+    </div>
+  )
+}
 
 interface APIProduct {
   id: string
@@ -151,18 +175,7 @@ const HomePage = () => {
       <Navbar cartCount={totalItems} onCartClick={() => router.push('/carrinho')} onSearch={handleSearch} />
 
       {/* Hero Section - Banner */}
-      <div className="w-full  mb-8 sm:mb-12 relative overflow-hidden flex items-center justify-center bg-muted -mt-px">
-        {/* Banner image */}
-        <div className="w-full h-full flex items-center justify-center">
-          <img
-            src="https://marketplace.canva.com/EAFRp91MQHk/1/0/1600w/canva-banner-oferta-de-black-week-fashion-branco-preto-e-verde-gtpHK3FGwQE.jpg"
-            alt="Banner Principal"
-            className="w-full h-full object-cover object-center"
-          />
-        </div>
-        {/* Gradient overlay - fade from bottom to top */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent pointer-events-none"></div>
-      </div>
+      <StoreBanner />
 
       <main className="container mx-auto px-4 pb-12">
         {/* Mobile Filter Toggle */}

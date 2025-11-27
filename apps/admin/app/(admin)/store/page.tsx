@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useAuthStore } from '@/store/auth-store'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@white-label/ui'
@@ -8,12 +8,27 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
+import { ImageUpload } from '@/components/products/image-upload'
+import { useStoreTheme, useUpdateStoreLogo, useUpdateStoreBanner } from '@/lib/hooks/use-store-theme'
 
 export default function StorePage() {
   const user = useAuthStore((state) => state.user)
   const [copied, setCopied] = useState(false)
+  const [logoUrl, setLogoUrl] = useState<string | null>(null)
+  const [bannerUrl, setBannerUrl] = useState<string | null>(null)
 
   const storeId = user?.storeId || user?.store?.id || ''
+  
+  const { data: theme, isLoading: isLoadingTheme } = useStoreTheme()
+  const updateLogo = useUpdateStoreLogo()
+  const updateBanner = useUpdateStoreBanner()
+
+  useEffect(() => {
+    if (theme) {
+      setLogoUrl(theme.logo_url)
+      setBannerUrl(theme.banner_url)
+    }
+  }, [theme])
 
   const handleCopy = async () => {
     if (!storeId) {
@@ -173,6 +188,103 @@ export default function StorePage() {
               <li>Ou configure como variável de ambiente no seu serviço de deploy</li>
             </ul>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Logo Configuration Card */}
+      <Card className="border-0 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white/80 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-xl font-light">Logo da Loja</CardTitle>
+          <CardDescription>
+            Configure o logo que aparecerá na sua loja
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoadingTheme ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-sm font-light text-gray-500">Carregando...</div>
+            </div>
+          ) : (
+            <>
+              <div className="max-w-xs">
+                <ImageUpload
+                  value={logoUrl}
+                  onChange={(url) => {
+                    setLogoUrl(url)
+                    if (url) {
+                      updateLogo.mutate(url)
+                    }
+                  }}
+                  disabled={updateLogo.isPending}
+                />
+              </div>
+              {logoUrl && (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setLogoUrl(null)
+                      updateLogo.mutate(null)
+                    }}
+                    disabled={updateLogo.isPending}
+                  >
+                    Remover logo
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Banner Configuration Card */}
+      <Card className="border-0 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white/80 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-xl font-light">Banner da Loja</CardTitle>
+          <CardDescription>
+            Configure o banner que aparecerá na página principal da sua loja
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {isLoadingTheme ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="text-sm font-light text-gray-500">Carregando...</div>
+            </div>
+          ) : (
+            <>
+              <div className="max-w-2xl">
+                <ImageUpload
+                  value={bannerUrl}
+                  onChange={(url) => {
+                    setBannerUrl(url)
+                    if (url) {
+                      updateBanner.mutate(url)
+                    }
+                  }}
+                  disabled={updateBanner.isPending}
+                  aspectRatio="wide"
+                />
+              </div>
+              {bannerUrl && (
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setBannerUrl(null)
+                      updateBanner.mutate(null)
+                    }}
+                    disabled={updateBanner.isPending}
+                  >
+                    Remover banner
+                  </Button>
+                </div>
+              )}
+            </>
+          )}
         </CardContent>
       </Card>
     </div>

@@ -18,6 +18,7 @@ export const storeThemeConfig = pgTable(
       .notNull()
       .references(() => stores.id, { onDelete: 'cascade' }),
     logo_url: text('logo_url'),
+    banner_url: text('banner_url'),
     primary_color: text('primary_color'),
     secondary_color: text('secondary_color'),
     banner_config_json: jsonb('banner_config_json').$type<
