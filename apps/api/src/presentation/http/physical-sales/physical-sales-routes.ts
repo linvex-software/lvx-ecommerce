@@ -1,0 +1,144 @@
+import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
+import { PhysicalSalesController } from './physical-sales-controller'
+import { PhysicalSaleRepository } from '../../../infra/db/repositories/physical-sale-repository'
+import { ProductRepository } from '../../../infra/db/repositories/product-repository'
+import { StockMovementRepository } from '../../../infra/db/repositories/stock-movement-repository'
+import { CouponRepository } from '../../../infra/db/repositories/coupon-repository'
+import { PhysicalSalesCartRepository } from '../../../infra/db/repositories/physical-sales-cart-repository'
+import { PhysicalSalesCommissionRepository } from '../../../infra/db/repositories/physical-sales-commission-repository'
+import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
+import { requireAuth, requireRole } from '../../../infra/http/middlewares/auth'
+
+export async function registerPhysicalSalesRoutes(
+  app: FastifyInstance
+): Promise<void> {
+  const physicalSaleRepository = new PhysicalSaleRepository()
+  const productRepository = new ProductRepository()
+  const stockMovementRepository = new StockMovementRepository()
+  const couponRepository = new CouponRepository()
+  const physicalSalesCartRepository = new PhysicalSalesCartRepository()
+  const physicalSalesCommissionRepository = new PhysicalSalesCommissionRepository()
+  const physicalSalesController = new PhysicalSalesController(
+    physicalSaleRepository,
+    productRepository,
+    stockMovementRepository,
+    couponRepository,
+    physicalSalesCartRepository,
+    physicalSalesCommissionRepository
+  )
+
+  // POST /physical-sales - Criar venda física
+  app.post(
+    '/physical-sales',
+    {
+      onRequest: [tenantMiddleware, requireAuth],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.create(request, reply)
+    }
+  )
+
+  // GET /physical-sales - Listar vendas físicas com filtros
+  app.get<{
+    Querystring: {
+      start_date?: string
+      end_date?: string
+      seller_id?: string
+      product_id?: string
+      page?: string
+      limit?: string
+    }
+  }>(
+    '/physical-sales',
+    {
+      onRequest: [tenantMiddleware, requireAuth],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          start_date?: string
+          end_date?: string
+          seller_id?: string
+          product_id?: string
+          page?: string
+          limit?: string
+        }
+      }>,
+      reply: FastifyReply
+    ) => {
+      await physicalSalesController.list(request, reply)
+    }
+  )
+
+  // GET /physical-sales/report-by-product - Relatório agrupado por produto
+  app.get<{
+    Querystring: {
+      start_date?: string
+      end_date?: string
+      seller_id?: string
+    }
+  }>(
+    '/physical-sales/report-by-product',
+    {
+      onRequest: [tenantMiddleware, requireAuth],
+      preHandler: [requireRole(['admin', 'operador'])]
+    },
+    async (
+      request: FastifyRequest<{
+        Querystring: {
+          start_date?: string
+          end_date?: string
+          seller_id?: string
+        }
+      }>,
+      reply: FastifyReply
+    ) => {
+      await physicalSalesController.getReportByProduct(request, reply)
+    }
+  )
+
+  // POST /physical-sales/cart - Criar carrinho
+  app.post(
+    '/physical-sales/cart',
+    {
+      onRequest: [tenantMiddleware, requireAuth],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.createCart(request, reply)
+    }
+  )
+
+  // POST /physical-sales/cart/:id/abandon - Abandonar carrinho
+  app.post<{ Params: { id: string } }>(
+    '/physical-sales/cart/:id/abandon',
+    {
+      onRequest: [tenantMiddleware, requireAuth],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])],
+      schema: {
+        body: false // Não espera body
+      }
+    },
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      await physicalSalesController.abandonCart(request, reply)
+    }
+  )
+
+  // GET /physical-sales/cart/abandoned - Listar carrinhos abandonados
+  app.get(
+    '/physical-sales/cart/abandoned',
+    {
+      onRequest: [tenantMiddleware, requireAuth],
+      preHandler: [requireRole(['admin', 'operador'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.listAbandonedCarts(request, reply)
+    }
+  )
+}
+
