@@ -53,21 +53,17 @@ export const users = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     store_id: uuid('store_id')
-      .notNull()
-      .references(() => stores.id, { onDelete: 'cascade' }),
+      .references(() => stores.id, { onDelete: 'cascade' }), // Opcional - null se usuário ainda não tem loja
     name: text('name').notNull(),
     email: text('email').notNull(),
     password_hash: text('password_hash').notNull(),
-    role: text('role').notNull(),
+    role: text('role'), // Role do usuário na sua loja (opcional até criar a store no onboarding)
     created_at: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull()
   },
   (table) => ({
-    storeEmailUnique: uniqueIndex('users_store_email_unique').on(
-      table.store_id,
-      table.email
-    )
+    emailUnique: uniqueIndex('users_email_unique').on(table.email)
   })
 )
 

@@ -5,35 +5,33 @@ import { AuthSessionRepository } from '../../../infra/db/repositories/auth-sessi
 import type { LoginInput, AuthUser } from '../../../domain/auth/auth-types'
 
 export interface LoginResult {
-  accessToken: string
-  refreshToken: string
+  accessToken?: string
+  refreshToken?: string
   user: AuthUser
 }
 
 export interface LoginDependencies {
   userRepository: UserRepository
   authSessionRepository: AuthSessionRepository
-  jwtSign: (payload: { sub: string; storeId: string; role: string }) => Promise<string>
+  jwtSign: (payload: { sub: string; storeId?: string; role?: string }) => Promise<string>
 }
 
 export async function loginUseCase(
   input: LoginInput,
-  storeId: string,
   dependencies: LoginDependencies
 ): Promise<LoginResult> {
   const { userRepository, authSessionRepository, jwtSign } = dependencies
 
-  const userWithStore = await userRepository.findByEmailWithStore(
-    input.email,
-    storeId
-  )
+  // Buscar usuário por email
+  const userWithStore = await userRepository.findByEmail(input.email)
 
   if (!userWithStore) {
     throw new Error('Invalid credentials')
   }
 
-  if (!userWithStore.store.active) {
-    throw new Error('Store is not active')
+  // Validar senha
+  if (!userWithStore.password_hash) {
+    throw new Error('Invalid credentials')
   }
 
   const passwordMatch = await bcrypt.compare(
@@ -45,6 +43,28 @@ export async function loginUseCase(
     throw new Error('Invalid credentials')
   }
 
+  // Se usuário não tem loja, retornar sem token para ir para onboarding
+  if (!userWithStore.store_id || !userWithStore.store || !userWithStore.role) {
+    const tempAccessToken = await jwtSign({
+      sub: userWithStore.id
+    })
+
+    return {
+      accessToken: tempAccessToken,
+      user: {
+        id: userWithStore.id,
+        email: userWithStore.email,
+        name: userWithStore.name
+      }
+    }
+  }
+
+  // Verificar se a store está ativa
+  if (!userWithStore.store.active) {
+    throw new Error('Store is not active')
+  }
+
+  // Usuário tem loja - gerar token completo
   const accessToken = await jwtSign({
     sub: userWithStore.id,
     storeId: userWithStore.store_id,
@@ -70,7 +90,13 @@ export async function loginUseCase(
       email: userWithStore.email,
       name: userWithStore.name,
       role: userWithStore.role,
-      storeId: userWithStore.store_id
+      storeId: userWithStore.store_id,
+      store: {
+        id: userWithStore.store.id,
+        name: userWithStore.store.name,
+        domain: userWithStore.store.domain,
+        active: userWithStore.store.active
+      }
     }
   }
 }

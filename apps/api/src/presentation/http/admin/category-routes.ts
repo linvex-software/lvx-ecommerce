@@ -20,7 +20,7 @@ export async function registerAdminCategoryRoutes(
   }>(
     '/admin/categories',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (
@@ -41,7 +41,7 @@ export async function registerAdminCategoryRoutes(
   app.get<{ Params: { id: string } }>(
     '/admin/categories/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (
@@ -56,7 +56,7 @@ export async function registerAdminCategoryRoutes(
   app.post(
     '/admin/categories',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -68,7 +68,7 @@ export async function registerAdminCategoryRoutes(
   app.put<{ Params: { id: string } }>(
     '/admin/categories/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (
@@ -83,7 +83,7 @@ export async function registerAdminCategoryRoutes(
   app.delete<{ Params: { id: string } }>(
     '/admin/categories/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (

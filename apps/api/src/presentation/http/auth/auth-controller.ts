@@ -28,12 +28,6 @@ export class AuthController {
 
   async login(request: FastifyRequest<{ Body: LoginBody }>, reply: FastifyReply) {
     try {
-      const storeId = request.storeId
-      if (!storeId) {
-        await reply.code(400).send({ error: 'Store ID is required' })
-        return
-      }
-
       const validated = loginSchema.parse(request.body)
 
       const dependencies: LoginDependencies = {
@@ -42,8 +36,10 @@ export class AuthController {
         jwtSign: this.jwtSign
       }
 
-      const result = await loginUseCase(validated, storeId, dependencies)
+      const result = await loginUseCase(validated, dependencies)
 
+      // Se houver token (store única selecionada automaticamente), definir cookie
+      if (result.refreshToken) {
       const isProduction = process.env.NODE_ENV === 'production'
 
       reply.setCookie('refreshToken', result.refreshToken, {
@@ -53,9 +49,10 @@ export class AuthController {
         path: '/',
         maxAge: 60 * 60 * 24 * 30
       })
+      }
 
       await reply.send({
-        accessToken: result.accessToken,
+        accessToken: result.accessToken || null,
         user: result.user
       })
     } catch (error) {
@@ -144,6 +141,37 @@ export class AuthController {
         await reply.code(500).send({ error: error.message })
         return
       }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async me(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const userId = (request.user as { id: string } | undefined)?.id
+
+      if (!userId) {
+        await reply.code(401).send({ error: 'Not authenticated' })
+        return
+      }
+
+      const userWithStore = await this.userRepository.findByIdWithStore(userId)
+
+      if (!userWithStore) {
+        await reply.code(404).send({ error: 'User not found' })
+        return
+      }
+
+      await reply.send({
+        user: {
+          id: userWithStore.id,
+          email: userWithStore.email,
+          name: userWithStore.name,
+          role: userWithStore.role || undefined,
+          storeId: userWithStore.store_id || undefined,
+          store: userWithStore.store || undefined
+        }
+      })
+    } catch (error) {
       await reply.code(500).send({ error: 'Internal server error' })
     }
   }

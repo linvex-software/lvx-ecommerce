@@ -15,13 +15,19 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
 interface LoginResponse {
-  accessToken: string
+  accessToken?: string | null
   user: {
     id: string
     name: string
     email: string
-    role: 'admin' | 'operador' | 'vendedor'
-    storeId: string
+    role?: 'admin' | 'operador' | 'vendedor'
+    storeId?: string
+    store?: {
+      id: string
+      name: string
+      domain: string
+      active: boolean
+    }
   }
 }
 
@@ -42,40 +48,12 @@ export function LoginForm() {
     mutationFn: async (data: LoginInput) => {
       const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'
 
-      // Buscar storeId: primeiro tenta env, depois localStorage, depois busca da API
-      let storeId = process.env.NEXT_PUBLIC_STORE_ID || localStorage.getItem('storeId')
-
-      // Se não tiver storeId, buscar da API pelo domain localhost
-      if (!storeId) {
-        try {
-          const storeResponse = await axios.get<{ storeId: string; name: string; domain: string }>(
-            `${API_URL}/stores/by-domain?domain=localhost`
-          )
-          storeId = storeResponse.data.storeId
-          // Salvar no localStorage para próximas requisições
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('storeId', storeId)
-          }
-        } catch {
-          throw new Error(
-            'Não foi possível identificar a loja. Verifique se os dados de teste foram criados (pnpm test:setup) e se a API está rodando.'
-          )
-        }
-      }
-
-      if (!storeId) {
-        throw new Error(
-          'Store ID não configurado. Configure NEXT_PUBLIC_STORE_ID no .env ou execute pnpm test:setup para criar dados de teste.'
-        )
-      }
-
-      // Criar uma requisição sem o interceptor para garantir que o header seja passado
+      // Login não precisa mais de storeId no header
       const response = await axios.post<LoginResponse>(
         `${API_URL}/auth/login`,
         data,
         {
           headers: {
-            'x-store-id': storeId,
             'Content-Type': 'application/json'
           },
           withCredentials: true
@@ -85,8 +63,17 @@ export function LoginForm() {
       return response.data
     },
     onSuccess: (data) => {
-      setSession(data.user, data.accessToken, data.user.storeId)
+      // Sempre salvar token (mesmo que seja temporário para seleção)
+      setSession(data.user, data.accessToken || null, data.user.storeId)
+      
+      // Verificar fluxo após login
+      if (!data.user.storeId || !data.user.store) {
+        // Usuário não tem loja - ir para onboarding
+        router.push('/onboarding')
+      } else {
+        // Usuário tem loja - ir para dashboard
       router.push('/dashboard')
+      }
     },
     onError: (error: unknown) => {
       if (error && typeof error === 'object' && 'response' in error) {

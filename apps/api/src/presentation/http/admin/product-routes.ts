@@ -27,7 +27,7 @@ export async function registerAdminProductRoutes(
   }>(
     '/admin/products',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (
@@ -50,7 +50,7 @@ export async function registerAdminProductRoutes(
   app.get<{ Params: { id: string } }>(
     '/admin/products/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (
@@ -65,7 +65,7 @@ export async function registerAdminProductRoutes(
   app.post(
     '/admin/products',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -77,7 +77,7 @@ export async function registerAdminProductRoutes(
   app.put<{ Params: { id: string } }>(
     '/admin/products/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (
@@ -92,7 +92,7 @@ export async function registerAdminProductRoutes(
   app.delete<{ Params: { id: string } }>(
     '/admin/products/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (
@@ -110,7 +110,7 @@ export async function registerAdminProductRoutes(
   }>(
     '/admin/products/:id/stock',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (
@@ -128,7 +128,7 @@ export async function registerAdminProductRoutes(
   app.post<{ Params: { id: string } }>(
     '/admin/products/:id/stock/movements',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (

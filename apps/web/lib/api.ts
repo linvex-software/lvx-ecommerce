@@ -1,21 +1,22 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'
 
 export async function fetchAPI(path: string, options: RequestInit = {}) {
-    const headers = {
+    const headers: Record<string, string> = {
         'Content-Type': 'application/json',
-        ...options.headers,
+        ...(options.headers as Record<string, string>),
     }
 
-    // Se houver um store ID configurado, envia no header
+    // Buscar storeId apenas de variável de ambiente (não usa localStorage)
+    // No Next.js, variáveis NEXT_PUBLIC_* são expostas no cliente no build time
+    const storeId = process.env.NEXT_PUBLIC_STORE_ID
 
-    let storeId = process.env.NEXT_PUBLIC_STORE_ID
-
-    if (!storeId && typeof window !== 'undefined') {
-        storeId = localStorage.getItem('storeId') || undefined
+    // Debug temporário - remover depois
+    if (typeof window !== 'undefined' && !storeId) {
+        console.warn('[API] NEXT_PUBLIC_STORE_ID não está definido. Verifique o arquivo .env da aplicação web.')
     }
 
     if (storeId) {
-        (headers as Record<string, string>)['x-store-id'] = storeId
+        headers['x-store-id'] = storeId
     }
 
     const response = await fetch(`${API_URL}${path}`, {
