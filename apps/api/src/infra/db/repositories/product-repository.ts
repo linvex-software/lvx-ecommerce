@@ -51,25 +51,97 @@ export class ProductRepository {
       }
     }
 
-    // Filter by sizes (using sizeChart)
+    // Filter by sizes (considering both size chart and variants)
     if (filters?.sizes && filters.sizes.length > 0) {
-      // Query products that have a size chart with any of the requested sizes as keys
-      const productsWithSizes = await db
-        .selectDistinct({ product_id: schema.productSizeChart.product_id })
+      // Get products with sizes from size chart
+      // Fetch all size charts for the store and filter in memory
+      // This is necessary because jsonb_object_keys requires a subquery that's complex with Drizzle
+      const allSizeCharts = await db
+        .select({
+          product_id: schema.productSizeChart.product_id,
+          chart_json: schema.productSizeChart.chart_json
+        })
         .from(schema.productSizeChart)
-        .where(
-          and(
-            eq(schema.productSizeChart.store_id, storeId),
-            // Check if any of the requested sizes exist as keys in chart_json
-            sql`EXISTS (
-              SELECT 1 FROM jsonb_object_keys(${schema.productSizeChart.chart_json}) AS key
-              WHERE key = ANY(${filters.sizes})
-            )`
-          )!
-        )
+        .where(eq(schema.productSizeChart.store_id, storeId))
 
-      if (productsWithSizes.length > 0) {
-        const productIds = productsWithSizes.map((p) => p.product_id)
+      // Filter in memory to handle cases where chart_json might be stored as string or have issues
+      const validSizeCharts = allSizeCharts.filter((chart) => {
+        if (!chart.chart_json) return false
+
+        // Check if it's a valid JSON object
+        try {
+          let chartData: unknown = chart.chart_json
+
+          // If it's a string, try to parse it
+          if (typeof chart.chart_json === 'string') {
+            chartData = JSON.parse(chart.chart_json)
+          }
+
+          // Check if it's an object (not array, not null)
+          if (typeof chartData !== 'object' || chartData === null || Array.isArray(chartData)) {
+            return false
+          }
+
+          return true
+        } catch {
+          return false
+        }
+      })
+
+      // Filter size charts that have any of the requested sizes as keys
+      // Normalize sizes for comparison (trim and case-insensitive)
+      const normalizedRequestedSizes = filters.sizes!.map((s) => s.trim().toUpperCase())
+
+      const productsWithSizesFromChart = validSizeCharts
+        .filter((chart) => {
+          if (!chart.chart_json) {
+            return false
+          }
+
+          // Handle case where chart_json might be a string (shouldn't happen with JSONB, but just in case)
+          let chartData: Record<string, unknown>
+          if (typeof chart.chart_json === 'string') {
+            try {
+              chartData = JSON.parse(chart.chart_json) as Record<string, unknown>
+            } catch {
+              return false
+            }
+          } else if (typeof chart.chart_json === 'object' && !Array.isArray(chart.chart_json)) {
+            chartData = chart.chart_json as Record<string, unknown>
+          } else {
+            return false
+          }
+
+          const sizeKeys = Object.keys(chartData).map((k) => k.trim().toUpperCase())
+          return normalizedRequestedSizes.some((requestedSize) => sizeKeys.includes(requestedSize))
+        })
+        .map((chart) => ({ product_id: chart.product_id }))
+
+      // Get products with sizes from variants
+      // Also normalize variant sizes for comparison
+      const allVariants = await db
+        .selectDistinct({
+          product_id: schema.productVariants.product_id,
+          size: schema.productVariants.size
+        })
+        .from(schema.productVariants)
+        .where(eq(schema.productVariants.store_id, storeId))
+
+      const productsWithSizesFromVariants = allVariants
+        .filter((variant) => {
+          if (!variant.size) return false
+          const normalizedVariantSize = variant.size.trim().toUpperCase()
+          return normalizedRequestedSizes.includes(normalizedVariantSize)
+        })
+        .map((variant) => ({ product_id: variant.product_id }))
+
+      // Combine both sources (union)
+      const allProductIds = new Set<string>()
+      productsWithSizesFromChart.forEach((p) => allProductIds.add(p.product_id))
+      productsWithSizesFromVariants.forEach((p) => allProductIds.add(p.product_id))
+
+      if (allProductIds.size > 0) {
+        const productIds = Array.from(allProductIds)
         conditions.push(inArray(schema.products.id, productIds))
       } else {
         // Se não há produtos com esses tamanhos, retornar vazio
