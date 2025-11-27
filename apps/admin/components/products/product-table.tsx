@@ -20,7 +20,7 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import type { Product } from '@/lib/hooks/use-products'
-import { useToggleProductStatus, useDeleteProduct } from '@/lib/hooks/use-products'
+import { useToggleProductStatus, useDeleteProduct, useProductStock } from '@/lib/hooks/use-products'
 import { useState } from 'react'
 
 interface ProductTableProps {
@@ -155,127 +155,165 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
         </TableHeader>
         <TableBody>
           {products.map((product) => (
-            <TableRow key={product.id}>
-              <TableCell>
-                {(() => {
-                  const mainImage = getMainImage(product)
-
-                  if (!mainImage) {
-                    return (
-                      <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
-                        <span className="text-xs font-medium text-gray-400">
-                          {product.name.slice(0, 2).toUpperCase()}
-                        </span>
-                      </div>
-                    )
-                  }
-
-                  return (
-                    <div className="relative h-12 w-12 overflow-hidden rounded-lg">
-                      {mainImage.startsWith('data:') ? (
-                        <img src={mainImage} alt={product.name} className="h-full w-full object-cover" />
-                      ) : (
-                        <Image
-                          src={mainImage}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                          unoptimized={mainImage.startsWith('http://localhost')}
-                        />
-                      )}
-                    </div>
-                  )
-                })()}
-              </TableCell>
-              <TableCell>
-                <div>
-                  <p className="font-medium text-gray-900">{product.name}</p>
-                  {product.slug && (
-                    <p className="text-xs text-gray-500">{product.slug}</p>
-                  )}
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className="text-sm text-gray-600">{getCategoryLabel(product)}</span>
-              </TableCell>
-              <TableCell>
-                <span className="font-medium text-gray-900">
-                  {currencyFormatter.format(parseFloat(product.base_price))}
-                </span>
-              </TableCell>
-              <TableCell>
-                <span className="text-sm text-gray-600">-</span>
-              </TableCell>
-              <TableCell>
-                <Badge
-                  variant={
-                    product.status === 'active'
-                      ? 'success'
-                      : product.status === 'draft'
-                        ? 'secondary'
-                        : 'secondary'
-                  }
-                >
-                  {product.status === 'active'
-                    ? 'Ativo'
-                    : product.status === 'draft'
-                      ? 'Rascunho'
-                      : 'Inativo'}
-                </Badge>
-              </TableCell>
-              <TableCell className="text-right">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      className="h-8 w-8 p-0"
-                      disabled={deletingId === product.id}
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-48">
-                    <DropdownMenuItem asChild>
-                      <Link
-                        href={`/products/${product.id}`}
-                        className="flex w-full cursor-pointer items-center gap-2"
-                      >
-                        <Edit className="h-4 w-4" />
-                        Editar
-                      </Link>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleToggleStatus(product.id, product.status)}
-                      className="cursor-pointer"
-                    >
-                      {product.status === 'active' ? (
-                        <>
-                          <EyeOff className="mr-2 h-4 w-4" />
-                          Desativar
-                        </>
-                      ) : (
-                        <>
-                          <Eye className="mr-2 h-4 w-4" />
-                          Ativar
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => handleDelete(product.id)}
-                      className="cursor-pointer text-rose-600 focus:text-rose-600"
-                      disabled={deletingId === product.id}
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      {deletingId === product.id ? 'Excluindo...' : 'Excluir'}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
+            <ProductTableRow
+              key={product.id}
+              product={product}
+              getMainImage={getMainImage}
+              getCategoryLabel={getCategoryLabel}
+              handleToggleStatus={handleToggleStatus}
+              handleDelete={handleDelete}
+              deletingId={deletingId}
+            />
           ))}
         </TableBody>
       </Table>
     </div>
+  )
+}
+
+interface ProductTableRowProps {
+  product: Product
+  getMainImage: (product: Product) => string | null
+  getCategoryLabel: (product: Product) => string
+  handleToggleStatus: (id: string, currentStatus: 'draft' | 'active' | 'inactive') => void
+  handleDelete: (id: string) => void
+  deletingId: string | null
+}
+
+function ProductTableRow({
+  product,
+  getMainImage,
+  getCategoryLabel,
+  handleToggleStatus,
+  handleDelete,
+  deletingId
+}: ProductTableRowProps) {
+  // Buscar estoque do produto (sem variante específica para pegar o total)
+  const { data: stockData } = useProductStock(product.id, undefined)
+
+  // Calcular estoque total (soma de todas as variantes + produto base)
+  const totalStock = stockData?.stocks
+    ? stockData.stocks.reduce((sum, stock) => sum + stock.current_stock, 0)
+    : stockData?.stock?.current_stock ?? 0
+
+  return (
+    <TableRow>
+      <TableCell>
+        {(() => {
+          const mainImage = getMainImage(product)
+
+          if (!mainImage) {
+            return (
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
+                <span className="text-xs font-medium text-gray-400">
+                  {product.name.slice(0, 2).toUpperCase()}
+                </span>
+              </div>
+            )
+          }
+
+          return (
+            <div className="relative h-12 w-12 overflow-hidden rounded-lg">
+              {mainImage.startsWith('data:') ? (
+                <img src={mainImage} alt={product.name} className="h-full w-full object-cover" />
+              ) : (
+                <Image
+                  src={mainImage}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  unoptimized={mainImage.startsWith('http://localhost')}
+                />
+              )}
+            </div>
+          )
+        })()}
+      </TableCell>
+      <TableCell>
+        <div>
+          <p className="font-medium text-gray-900">{product.name}</p>
+          {product.slug && (
+            <p className="text-xs text-gray-500">{product.slug}</p>
+          )}
+        </div>
+      </TableCell>
+      <TableCell>
+        <span className="text-sm text-gray-600">{getCategoryLabel(product)}</span>
+      </TableCell>
+      <TableCell>
+        <span className="font-medium text-gray-900">
+          {currencyFormatter.format(parseFloat(product.base_price))}
+        </span>
+      </TableCell>
+      <TableCell>
+        <span className="text-sm text-gray-600">{totalStock} unidades</span>
+      </TableCell>
+      <TableCell>
+        <Badge
+          variant={
+            product.status === 'active'
+              ? 'success'
+              : product.status === 'draft'
+                ? 'secondary'
+                : 'secondary'
+          }
+        >
+          {product.status === 'active'
+            ? 'Ativo'
+            : product.status === 'draft'
+              ? 'Rascunho'
+              : 'Inativo'}
+        </Badge>
+      </TableCell>
+      <TableCell className="text-right">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              disabled={deletingId === product.id}
+            >
+              <MoreVertical className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem asChild>
+              <Link
+                href={`/products/${product.id}`}
+                className="flex w-full cursor-pointer items-center gap-2"
+              >
+                <Edit className="h-4 w-4" />
+                Editar
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleToggleStatus(product.id, product.status)}
+              className="cursor-pointer"
+            >
+              {product.status === 'active' ? (
+                <>
+                  <EyeOff className="mr-2 h-4 w-4" />
+                  Desativar
+                </>
+              ) : (
+                <>
+                  <Eye className="mr-2 h-4 w-4" />
+                  Ativar
+                </>
+              )}
+            </DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() => handleDelete(product.id)}
+              className="cursor-pointer text-rose-600 focus:text-rose-600"
+              disabled={deletingId === product.id}
+            >
+              <Trash2 className="mr-2 h-4 w-4" />
+              {deletingId === product.id ? 'Excluindo...' : 'Excluir'}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
   )
 }
 

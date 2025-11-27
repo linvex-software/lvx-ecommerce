@@ -199,6 +199,12 @@ importers:
       '@white-label/ui':
         specifier: workspace:*
         version: link:../../packages/ui
+      axios:
+        specifier: ^1.7.0
+        version: 1.13.2
+      lucide-react:
+        specifier: ^0.454.0
+        version: 0.454.0(react@18.3.1)
       next:
         specifier: latest
         version: 16.0.3(@babel/core@7.28.5)(@playwright/test@1.56.1)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
