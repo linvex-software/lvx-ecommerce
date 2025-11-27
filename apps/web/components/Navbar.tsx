@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ShoppingBag, Search, User, Menu, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
+import { useStoreTheme } from "@/lib/hooks/use-store-theme";
 
 interface NavbarProps {
     cartCount: number;
@@ -13,6 +14,7 @@ interface NavbarProps {
 const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
+    const { data: theme } = useStoreTheme();
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     const closeMenu = () => setIsMenuOpen(false);
@@ -36,11 +38,17 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                         <div className="flex items-center justify-between gap-4">
                             {/* Logo - Left on Mobile, Center on Desktop */}
                             <div className="flex items-center gap-3 md:flex-1">
-                                <img
-                                    src="https://preview.redd.it/cattle-genetics-logo-design-v0-yity09vemffc1.jpg?width=640&crop=smart&auto=webp&s=337f86bb42a13711a9f42fdeec15d44e4ee72ba6"
-                                    alt="Logo"
-                                    className="w-12 h-12 md:w-14 md:h-14 object-contain"
-                                />
+                                {theme?.logo_url ? (
+                                    <img
+                                        src={theme.logo_url}
+                                        alt="Logo"
+                                        className="w-12 h-12 md:w-14 md:h-14 object-contain"
+                                    />
+                                ) : (
+                                    <div className="w-12 h-12 md:w-14 md:h-14 bg-muted rounded flex items-center justify-center">
+                                        <span className="text-xs font-semibold">Logo</span>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Search Bar - Desktop Only */}

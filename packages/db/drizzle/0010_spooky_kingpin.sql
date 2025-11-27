@@ -1,0 +1,1 @@
+ALTER TABLE "store_theme_config" ADD COLUMN "banner_url" text;

@@ -2,7 +2,10 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { db, schema } from '@white-label/db'
 import { eq } from 'drizzle-orm'
 import { requireAuth } from '../../infra/http/middlewares/auth'
+import { tenantMiddleware } from '../../infra/http/middlewares/tenant'
 import { createStoreUseCase } from '../../application/stores/use-cases/create-store'
+import { updateStoreLogoUseCase } from '../../application/stores/use-cases/update-store-logo'
+import { updateStoreBannerUseCase } from '../../application/stores/use-cases/update-store-banner'
 import { randomUUID } from 'crypto'
 import { UserRepository } from '../../infra/db/repositories/user-repository'
 import { AuthSessionRepository } from '../../infra/db/repositories/auth-session-repository'
@@ -25,6 +28,46 @@ export async function registerStoreRoutes(app: FastifyInstance): Promise<void> {
       throw new Error(`JWT sign error: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
+  // Endpoint público para buscar tema da loja (usado pela aplicação web)
+  app.get(
+    '/stores/theme/public',
+    {
+      onRequest: [tenantMiddleware]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const storeId = (request as any).storeId as string | undefined
+
+        if (!storeId) {
+          await reply.code(400).send({ error: 'Store ID is required' })
+          return
+        }
+
+        const themeConfig = await db
+          .select()
+          .from(schema.storeThemeConfig)
+          .where(eq(schema.storeThemeConfig.store_id, storeId))
+          .limit(1)
+
+        if (themeConfig.length === 0) {
+          await reply.send({
+            logo_url: null,
+            banner_url: null
+          })
+          return
+        }
+
+        await reply.send({
+          logo_url: themeConfig[0].logo_url,
+          banner_url: themeConfig[0].banner_url
+        })
+      } catch (error) {
+        request.log.error(error)
+        await reply.code(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
   // Endpoint público para buscar storeId por domain (usado pelo admin no login)
   app.get<{
     Querystring: {
@@ -170,6 +213,122 @@ export async function registerStoreRoutes(app: FastifyInstance): Promise<void> {
           await reply.code(statusCode).send({ error: error.message })
           return
         }
+        await reply.code(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  // Endpoint para buscar configuração de tema da loja
+  app.get(
+    '/stores/theme',
+    {
+      onRequest: [requireAuth, tenantMiddleware]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const storeId = (request as any).storeId as string | undefined
+
+        if (!storeId) {
+          await reply.code(400).send({ error: 'Store ID is required' })
+          return
+        }
+
+        const themeConfig = await db
+          .select()
+          .from(schema.storeThemeConfig)
+          .where(eq(schema.storeThemeConfig.store_id, storeId))
+          .limit(1)
+
+        if (themeConfig.length === 0) {
+          await reply.send({
+            logo_url: null,
+            banner_url: null
+          })
+          return
+        }
+
+        await reply.send({
+          logo_url: themeConfig[0].logo_url,
+          banner_url: themeConfig[0].banner_url
+        })
+      } catch (error) {
+        request.log.error(error)
+        await reply.code(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  // Endpoint para atualizar logo da loja
+  app.put<{ Body: { logo_url: string | null } }>(
+    '/stores/logo',
+    {
+      onRequest: [requireAuth, tenantMiddleware]
+    },
+    async (
+      request: FastifyRequest<{ Body: { logo_url: string | null } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const storeId = (request as any).storeId as string | undefined
+
+        if (!storeId) {
+          await reply.code(400).send({ error: 'Store ID is required' })
+          return
+        }
+
+        const { logo_url } = request.body
+
+        await updateStoreLogoUseCase({
+          storeId,
+          logoUrl: logo_url ?? null
+        })
+
+        await reply.send({ success: true })
+      } catch (error) {
+        if (error instanceof Error) {
+          const statusCode = error.message === 'Store not found' ? 404 : 500
+          await reply.code(statusCode).send({ error: error.message })
+          return
+        }
+        request.log.error(error)
+        await reply.code(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  // Endpoint para atualizar banner da loja
+  app.put<{ Body: { banner_url: string | null } }>(
+    '/stores/banner',
+    {
+      onRequest: [requireAuth, tenantMiddleware]
+    },
+    async (
+      request: FastifyRequest<{ Body: { banner_url: string | null } }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const storeId = (request as any).storeId as string | undefined
+
+        if (!storeId) {
+          await reply.code(400).send({ error: 'Store ID is required' })
+          return
+        }
+
+        const { banner_url } = request.body
+
+        await updateStoreBannerUseCase({
+          storeId,
+          bannerUrl: banner_url ?? null
+        })
+
+        await reply.send({ success: true })
+      } catch (error) {
+        if (error instanceof Error) {
+          const statusCode = error.message === 'Store not found' ? 404 : 500
+          await reply.code(statusCode).send({ error: error.message })
+          return
+        }
+        request.log.error(error)
         await reply.code(500).send({ error: 'Internal server error' })
       }
     }
