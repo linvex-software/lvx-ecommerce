@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 
 export interface ProductVariant {
@@ -207,8 +208,11 @@ export function useCreateProduct() {
       const response = await apiClient.post<{ product: Product }>('/admin/products', data)
       return response.data.product
     },
-    onSuccess: () => {
+    onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY })
+      toast.success('Produto criado com sucesso!', {
+        description: `${product.name} foi adicionado ao catálogo.`
+      })
       router.push('/products')
     }
   })
@@ -226,8 +230,11 @@ export function useUpdateProduct() {
       )
       return response.data.product
     },
-    onSuccess: () => {
+    onSuccess: (product) => {
       queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY })
+      toast.success('Produto atualizado com sucesso!', {
+        description: `${product.name} foi atualizado com sucesso.`
+      })
     }
   })
 }
@@ -241,6 +248,22 @@ export function useDeleteProduct() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: PRODUCTS_QUERY_KEY })
+      toast.success('Produto excluído com sucesso!', {
+        description: 'O produto foi removido permanentemente.'
+      })
+    },
+    onError: (error: any) => {
+      const errorMessage = error?.response?.data?.error || 'Erro ao excluir produto'
+      
+      if (errorMessage.includes('associated orders') || errorMessage.includes('associated physical sales')) {
+        toast.error('Não é possível excluir este produto', {
+          description: 'O produto possui pedidos ou vendas físicas associadas. Não é possível excluí-lo permanentemente.'
+        })
+      } else {
+        toast.error('Erro ao excluir produto', {
+          description: errorMessage
+        })
+      }
     }
   })
 }
@@ -299,7 +322,14 @@ export function useProductStock(productId: string | null, variantId?: string | n
     queryFn: async () => {
       if (!productId) return null
       const params = new URLSearchParams()
-      if (variantId) params.append('variant_id', variantId)
+      
+      // Se variantId for undefined, buscar todos os estoques (produto + variantes)
+      // Passando variant_id vazio, a API retorna todos
+      if (variantId === undefined) {
+        params.append('variant_id', '')
+      } else if (variantId !== null) {
+        params.append('variant_id', variantId)
+      }
 
       const response = await apiClient.get<{ stock?: StockInfo; stocks?: StockInfo[] }>(
         `/admin/products/${productId}/stock?${params.toString()}`

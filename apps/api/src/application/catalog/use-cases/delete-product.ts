@@ -11,12 +11,8 @@ export async function deleteProductUseCase(
 ): Promise<void> {
   const { productRepository } = dependencies
 
-  // Verificar se produto existe
-  const existingProduct = await productRepository.findById(id, storeId)
-  if (!existingProduct) {
-    throw new Error('Product not found')
-  }
-
-  await productRepository.softDelete(id, storeId)
+  // Hard delete do produto (deleta do banco de dados)
+  // O método já valida existência e relacionamentos
+  await productRepository.delete(id, storeId)
 }
 

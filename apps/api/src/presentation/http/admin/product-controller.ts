@@ -196,7 +196,17 @@ export class ProductController {
       await reply.code(204).send()
     } catch (error) {
       if (error instanceof Error) {
-        const statusCode = error.message === 'Product not found' ? 404 : 500
+        let statusCode = 500
+        
+        if (error.message === 'Product not found') {
+          statusCode = 404
+        } else if (
+          error.message.includes('associated orders') ||
+          error.message.includes('associated physical sales')
+        ) {
+          statusCode = 409 // Conflict
+        }
+        
         await reply.code(statusCode).send({ error: error.message })
         return
       }
