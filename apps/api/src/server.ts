@@ -20,7 +20,27 @@ import { registerPhysicalSalesRoutes } from './presentation/http/physical-sales/
 
 async function buildServer() {
   const app = Fastify({
-    logger: true
+    logger: true,
+    querystringParser: (str) => {
+      // Parse query string supporting arrays (e.g., sizes=G&sizes=GG)
+      const params = new URLSearchParams(str)
+      const result: Record<string, string | string[]> = {}
+      
+      for (const [key, value] of params.entries()) {
+        // Check if this key appears multiple times in the query string
+        const allValues = params.getAll(key)
+        
+        if (allValues.length > 1) {
+          // Multiple values = array
+          result[key] = allValues
+        } else {
+          // Single value = string
+          result[key] = value
+        }
+      }
+      
+      return result
+    }
   })
 
   // Parser customizado para application/json

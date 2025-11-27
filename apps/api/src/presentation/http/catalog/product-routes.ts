@@ -1,13 +1,18 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { PublicProductController } from './product-controller'
 import { ProductRepository } from '../../../infra/db/repositories/product-repository'
+import { StockMovementRepository } from '../../../infra/db/repositories/stock-movement-repository'
 import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
 
 export async function registerCatalogRoutes(
   app: FastifyInstance
 ): Promise<void> {
   const productRepository = new ProductRepository()
-  const productController = new PublicProductController(productRepository)
+  const stockMovementRepository = new StockMovementRepository()
+  const productController = new PublicProductController(
+    productRepository,
+    stockMovementRepository
+  )
 
   // GET /products - Lista produtos públicos (apenas ativos)
   app.get<{
@@ -56,6 +61,17 @@ export async function registerCatalogRoutes(
       reply: FastifyReply
     ) => {
       await productController.getBySlug(request, reply)
+    }
+  )
+
+  // GET /products/filters/sizes - Lista tamanhos disponíveis
+  app.get(
+    '/products/filters/sizes',
+    {
+      onRequest: [tenantMiddleware]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await productController.getAvailableSizes(request, reply)
     }
   )
 }
