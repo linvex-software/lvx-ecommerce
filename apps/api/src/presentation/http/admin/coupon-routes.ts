@@ -13,7 +13,7 @@ export async function registerAdminCouponRoutes(app: FastifyInstance): Promise<v
   app.get<{ Querystring: { active?: string } }>(
     '/admin/coupons',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request: FastifyRequest<{ Querystring: { active?: string } }>, reply: FastifyReply) => {
@@ -25,7 +25,7 @@ export async function registerAdminCouponRoutes(app: FastifyInstance): Promise<v
   app.post(
     '/admin/coupons',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -37,7 +37,7 @@ export async function registerAdminCouponRoutes(app: FastifyInstance): Promise<v
   app.put<{ Params: { id: string } }>(
     '/admin/coupons/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
@@ -49,7 +49,7 @@ export async function registerAdminCouponRoutes(app: FastifyInstance): Promise<v
   app.delete<{ Params: { id: string } }>(
     '/admin/coupons/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {

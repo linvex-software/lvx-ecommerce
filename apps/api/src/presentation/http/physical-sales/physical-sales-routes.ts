@@ -31,7 +31,7 @@ export async function registerPhysicalSalesRoutes(
   app.post(
     '/physical-sales',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -52,7 +52,7 @@ export async function registerPhysicalSalesRoutes(
   }>(
     '/physical-sales',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
     },
     async (
@@ -82,7 +82,7 @@ export async function registerPhysicalSalesRoutes(
   }>(
     '/physical-sales/report-by-product',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (
@@ -103,7 +103,7 @@ export async function registerPhysicalSalesRoutes(
   app.post(
     '/physical-sales/cart',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
@@ -115,7 +115,7 @@ export async function registerPhysicalSalesRoutes(
   app.post<{ Params: { id: string } }>(
     '/physical-sales/cart/:id/abandon',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador', 'vendedor'])],
       schema: {
         body: false // Não espera body
@@ -133,7 +133,7 @@ export async function registerPhysicalSalesRoutes(
   app.get(
     '/physical-sales/cart/abandoned',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {

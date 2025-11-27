@@ -50,16 +50,84 @@ export class UserRepository {
     }
   }
 
-  async findById(id: string, storeId: string): Promise<User | null> {
+  async findByEmail(email: string): Promise<UserWithStore | null> {
+    // Buscar usuário primeiro (sem join para garantir que password_hash seja retornado)
+    const userResult = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.email, email))
+      .limit(1)
+
+    if (userResult.length === 0) {
+      return null
+    }
+
+    const userRow = userResult[0]
+
+    // Se não tiver store_id, retornar usuário sem store
+    if (!userRow.store_id) {
+      return {
+        id: userRow.id,
+        store_id: null,
+        name: userRow.name,
+        email: userRow.email,
+        password_hash: userRow.password_hash,
+        role: userRow.role as User['role'],
+        created_at: userRow.created_at,
+        store: null
+      }
+    }
+
+    // Buscar store separadamente
+    const storeResult = await db
+      .select()
+      .from(schema.stores)
+      .where(eq(schema.stores.id, userRow.store_id))
+      .limit(1)
+
+    if (storeResult.length === 0) {
+      // Store não existe ou foi deletada, retornar usuário sem store
+      return {
+        id: userRow.id,
+        store_id: null,
+        name: userRow.name,
+        email: userRow.email,
+        password_hash: userRow.password_hash,
+        role: userRow.role as User['role'],
+        created_at: userRow.created_at,
+        store: null
+      }
+    }
+
+    const storeRow = storeResult[0]
+
+    return {
+      id: userRow.id,
+      store_id: userRow.store_id,
+      name: userRow.name,
+      email: userRow.email,
+      password_hash: userRow.password_hash,
+      role: userRow.role as User['role'],
+      created_at: userRow.created_at,
+      store: {
+        id: storeRow.id,
+        name: storeRow.name,
+        domain: storeRow.domain,
+        active: storeRow.active
+      }
+    }
+  }
+
+  async findById(id: string, storeId?: string): Promise<User | null> {
+    const conditions = [eq(schema.users.id, id)]
+    if (storeId) {
+      conditions.push(eq(schema.users.store_id, storeId))
+    }
+
     const result = await db
       .select()
       .from(schema.users)
-      .where(
-        and(
-          eq(schema.users.id, id),
-          eq(schema.users.store_id, storeId)
-        )
-      )
+      .where(and(...conditions))
       .limit(1)
 
     if (result.length === 0) {
@@ -75,6 +143,59 @@ export class UserRepository {
       password_hash: row.password_hash,
       role: row.role as User['role'],
       created_at: row.created_at
+    }
+  }
+
+  async findByIdWithStore(id: string): Promise<UserWithStore | null> {
+    const result = await db
+      .select({
+        id: schema.users.id,
+        store_id: schema.users.store_id,
+        name: schema.users.name,
+        email: schema.users.email,
+        password_hash: schema.users.password_hash,
+        role: schema.users.role,
+        created_at: schema.users.created_at,
+        store: {
+          id: schema.stores.id,
+          name: schema.stores.name,
+          domain: schema.stores.domain,
+          active: schema.stores.active
+        }
+      })
+      .from(schema.users)
+      .leftJoin(schema.stores, eq(schema.users.store_id, schema.stores.id))
+      .where(eq(schema.users.id, id))
+      .limit(1)
+
+    if (result.length === 0) {
+      return null
+    }
+
+    const row = result[0]
+    
+    if (!row.store_id || !row.store.id) {
+      return {
+        id: row.id,
+        store_id: null,
+        name: row.name,
+        email: row.email,
+        password_hash: row.password_hash,
+        role: row.role as User['role'],
+        created_at: row.created_at,
+        store: null
+      }
+    }
+
+    return {
+      id: row.id,
+      store_id: row.store_id,
+      name: row.name,
+      email: row.email,
+      password_hash: row.password_hash,
+      role: row.role as User['role'],
+      created_at: row.created_at,
+      store: row.store
     }
   }
 }

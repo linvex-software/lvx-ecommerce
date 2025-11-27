@@ -57,6 +57,20 @@
       "when": 1764204603780,
       "tag": "0007_ambitious_serpent_society",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1764266285770,
+      "tag": "0008_cultured_gamora",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1764267729163,
+      "tag": "0009_round_chameleon",
+      "breakpoints": true
     }
   ]
 }

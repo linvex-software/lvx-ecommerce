@@ -5,10 +5,11 @@ import type { AuthUser } from '@white-label/types'
 interface AuthState {
   user: AuthUser | null
   accessToken: string | null
-  storeId: string | null
-  setSession: (user: AuthUser, token: string, storeId: string) => void
+  activeStoreId: string | null
+  setSession: (user: AuthUser, token: string | null, storeId?: string) => void
   clearSession: () => void
   isAuthenticated: () => boolean
+  needsOnboarding: () => boolean
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -16,31 +17,43 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       user: null,
       accessToken: null,
-      storeId: null,
+      activeStoreId: null,
 
-      setSession: (user: AuthUser, token: string, storeId: string) => {
-        set({ user, accessToken: token, storeId })
-        // Sincronizar com localStorage para o api-client
+      setSession: (user: AuthUser, token: string | null, storeId?: string) => {
+        const selectedStoreId = storeId || user.storeId || null
+        
+        set({ user, accessToken: token, activeStoreId: selectedStoreId })
+        
+        // Sincronizar apenas token e user no localStorage (storeId vem do JWT)
         if (typeof window !== 'undefined') {
+          if (token) {
           localStorage.setItem('accessToken', token)
-          localStorage.setItem('storeId', storeId)
+          } else {
+            localStorage.removeItem('accessToken')
+          }
+          
           localStorage.setItem('user', JSON.stringify(user))
         }
       },
 
       clearSession: () => {
-        set({ user: null, accessToken: null, storeId: null })
+        set({ user: null, accessToken: null, activeStoreId: null })
         // Limpar localStorage
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken')
-          localStorage.removeItem('storeId')
           localStorage.removeItem('user')
         }
       },
 
       isAuthenticated: () => {
         const state = get()
-        return !!(state.user && state.accessToken && state.storeId)
+        return !!(state.user && state.accessToken && state.activeStoreId)
+      },
+
+      needsOnboarding: () => {
+        const state = get()
+        if (!state.user) return false
+        return !state.user.storeId && !state.user.store
       }
     }),
     {
@@ -48,7 +61,7 @@ export const useAuthStore = create<AuthState>()(
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
-        storeId: state.storeId
+        activeStoreId: state.activeStoreId
       })
     }
   )

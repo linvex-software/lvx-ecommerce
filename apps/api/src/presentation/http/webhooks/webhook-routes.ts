@@ -28,7 +28,7 @@ export async function registerWebhookRoutes(app: FastifyInstance): Promise<void>
   app.post<{ Params: { id: string } }>(
     '/admin/webhooks/:id/retry',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (

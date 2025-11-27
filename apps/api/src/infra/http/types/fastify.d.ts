@@ -20,8 +20,8 @@ declare module 'fastify' {
       id: string
       email: string
       name: string
-      role: UserRole
-      storeId: string
+      role?: UserRole
+      storeId?: string
     }
   }
 }

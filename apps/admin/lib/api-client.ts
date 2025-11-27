@@ -11,20 +11,15 @@ export const apiClient = axios.create({
   withCredentials: true // Importante para cookies HttpOnly
 })
 
-// Interceptor para adicionar token e store-id
+// Interceptor para adicionar token (storeId vem do JWT, não precisa enviar no header)
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Obter token do localStorage (será gerenciado pelo auth-store)
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken')
-      const storeId = localStorage.getItem('storeId')
 
       if (token) {
         config.headers.Authorization = `Bearer ${token}`
-      }
-
-      if (storeId) {
-        config.headers['x-store-id'] = storeId
       }
     }
 
@@ -108,7 +103,6 @@ apiClient.interceptors.response.use(
         if (typeof window !== 'undefined') {
           localStorage.removeItem('accessToken')
           localStorage.removeItem('user')
-          localStorage.removeItem('storeId')
           window.location.href = '/login'
         }
 

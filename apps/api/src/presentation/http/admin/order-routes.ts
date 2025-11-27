@@ -19,7 +19,7 @@ export async function registerAdminOrderRoutes(app: FastifyInstance): Promise<vo
   }>(
     '/admin/orders',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request, reply) => {
@@ -31,7 +31,7 @@ export async function registerAdminOrderRoutes(app: FastifyInstance): Promise<vo
   app.get<{ Params: { id: string } }>(
     '/admin/orders/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request, reply) => {
@@ -43,7 +43,7 @@ export async function registerAdminOrderRoutes(app: FastifyInstance): Promise<vo
   app.put<{ Params: { id: string } }>(
     '/admin/orders/:id',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin'])]
     },
     async (request, reply) => {
@@ -55,7 +55,7 @@ export async function registerAdminOrderRoutes(app: FastifyInstance): Promise<vo
   app.get<{ Params: { id: string } }>(
     '/admin/orders/:id/shipping-label',
     {
-      onRequest: [tenantMiddleware, requireAuth],
+      onRequest: [requireAuth, tenantMiddleware],
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request, reply) => {

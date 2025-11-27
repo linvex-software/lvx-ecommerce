@@ -15,6 +15,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated())
   const user = useAuthStore((state) => state.user)
 
+  // Calcular se precisa onboarding diretamente
+  const needsOnboarding = !user?.storeId && !user?.store
+
   // Aguardar montagem no cliente (hidratação do Zustand)
   useEffect(() => {
     setIsMounted(true)
@@ -24,10 +27,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       if (typeof window === 'undefined') return false
       
       const token = localStorage.getItem('accessToken')
-      const storeId = localStorage.getItem('storeId')
       const userStr = localStorage.getItem('user')
       
-      return !!(token && storeId && userStr)
+      return !!(token && userStr)
     }
 
     // Se já tem dados no localStorage, aguardar pouco tempo para Zustand hidratar
@@ -46,17 +48,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   useEffect(() => {
     if (!isMounted || isChecking) return
 
-    if (!isAuthenticated || !user) {
+    if (!user) {
+      router.push('/login')
+      return
+    }
+
+    // Verificar se precisa fazer onboarding
+    if (needsOnboarding) {
+      router.push('/onboarding')
+      return
+    }
+
+
+    // Verificar se está autenticado (tem token e store selecionada)
+    if (!isAuthenticated) {
       router.push('/login')
       return
     }
 
     // Verificar se o usuário tem role permitida
-    if (!ALLOWED_ROLES.includes(user.role)) {
+    if (user.role && !ALLOWED_ROLES.includes(user.role)) {
       router.push('/unauthorized')
       return
     }
-  }, [isMounted, isChecking, isAuthenticated, user, router])
+  }, [isMounted, isChecking, isAuthenticated, user, needsOnboarding, router])
 
   // Mostrar loading enquanto verifica autenticação ou não está montado
   if (!isMounted || isChecking || !isAuthenticated || !user) {
