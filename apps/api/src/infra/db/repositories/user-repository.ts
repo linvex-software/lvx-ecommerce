@@ -1,6 +1,15 @@
 import { db, schema } from '@white-label/db'
 import { eq, and } from 'drizzle-orm'
+import bcrypt from 'bcryptjs'
 import type { User, UserWithStore } from '../../../domain/users/user-types'
+
+export interface CreateUserInput {
+  store_id: string
+  name: string
+  email: string
+  password: string
+  role: 'admin' | 'operador' | 'vendedor'
+}
 
 export class UserRepository {
   async findByEmailWithStore(
@@ -197,6 +206,82 @@ export class UserRepository {
       created_at: row.created_at,
       store: row.store
     }
+  }
+
+  async listByStore(storeId: string): Promise<User[]> {
+    const result = await db
+      .select()
+      .from(schema.users)
+      .where(eq(schema.users.store_id, storeId))
+
+    return result.map((row) => ({
+      id: row.id,
+      store_id: row.store_id,
+      name: row.name,
+      email: row.email,
+      password_hash: row.password_hash,
+      role: row.role as User['role'],
+      created_at: row.created_at
+    }))
+  }
+
+  async create(data: CreateUserInput): Promise<User> {
+    const passwordHash = await bcrypt.hash(data.password, 10)
+
+    const result = await db
+      .insert(schema.users)
+      .values({
+        store_id: data.store_id,
+        name: data.name,
+        email: data.email,
+        password_hash: passwordHash,
+        role: data.role
+      })
+      .returning()
+
+    const row = result[0]
+    return {
+      id: row.id,
+      store_id: row.store_id,
+      name: row.name,
+      email: row.email,
+      password_hash: row.password_hash,
+      role: row.role as User['role'],
+      created_at: row.created_at
+    }
+  }
+
+  async update(
+    id: string,
+    storeId: string,
+    data: Partial<{ name: string; email: string; role: 'admin' | 'operador' | 'vendedor' }>
+  ): Promise<User> {
+    const result = await db
+      .update(schema.users)
+      .set(data)
+      .where(and(eq(schema.users.id, id), eq(schema.users.store_id, storeId)))
+      .returning()
+
+    if (result.length === 0) {
+      throw new Error('User not found')
+    }
+
+    const row = result[0]
+    return {
+      id: row.id,
+      store_id: row.store_id,
+      name: row.name,
+      email: row.email,
+      password_hash: row.password_hash,
+      role: row.role as User['role'],
+      created_at: row.created_at
+    }
+  }
+
+  async delete(id: string, storeId: string): Promise<void> {
+    await db
+      .delete(schema.users)
+      .where(and(eq(schema.users.id, id), eq(schema.users.store_id, storeId)))
   }
 }
 

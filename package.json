@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "dev": "turbo dev --filter=@white-label/api --filter=@white-label/web --filter=@white-label/admin",
+    "dev": "turbo dev --filter=@white-label/api --filter=@white-label/web --filter=@white-label/admin --filter=@white-label/pdv",
     "dev:all": "turbo dev",
     "build": "turbo build",
     "lint": "turbo lint",
