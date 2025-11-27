@@ -14,6 +14,9 @@ export interface Product {
   virtual_config_json: Record<string, unknown> | null
   main_image: string | null
   category_name?: string | null
+  variants?: string[]
+  colors?: string[]
+  sizes?: string[]
   created_at: Date
   updated_at: Date
 }
@@ -67,7 +70,7 @@ export interface ProductSizeChart {
   updated_at: Date
 }
 
-export interface ProductWithRelations extends Product {
+export interface ProductWithRelations extends Omit<Product, 'variants'> {
   variants: ProductVariant[]
   images: ProductImage[]
   categories: Array<{

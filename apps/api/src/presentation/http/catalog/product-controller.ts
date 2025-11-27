@@ -113,5 +113,27 @@ export class PublicProductController {
       await reply.code(500).send({ error: 'Internal server error' })
     }
   }
+
+  async getAvailableSizes(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ) {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const sizes = await this.productRepository.getAvailableSizes(storeId)
+      await reply.send({ sizes })
+    } catch (error) {
+      if (error instanceof Error) {
+        await reply.code(500).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
 }
 
