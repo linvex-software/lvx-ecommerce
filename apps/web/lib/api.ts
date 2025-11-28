@@ -10,7 +10,6 @@ export async function fetchAPI(path: string, options: RequestInit = {}) {
     // No Next.js, variáveis NEXT_PUBLIC_* são expostas no cliente no build time
     const storeId = process.env.NEXT_PUBLIC_STORE_ID
 
-    // Debug temporário - remover depois
     if (typeof window !== 'undefined' && !storeId) {
         console.warn('[API] NEXT_PUBLIC_STORE_ID não está definido. Verifique o arquivo .env da aplicação web.')
     }
