@@ -5,6 +5,7 @@ import { ShoppingBag, Search, User, Menu, X, ChevronDown, ChevronRight } from "l
 import { Input } from "@/components/ui/input";
 import { useStoreTheme } from "@/lib/hooks/use-store-theme";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 
 interface NavbarProps {
     cartCount: number;
@@ -38,7 +39,7 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                     <div className="container mx-auto px-4 py-3 md:py-4">
                         <div className="flex items-center justify-between gap-4">
                             {/* Logo - Left on Mobile, Center on Desktop */}
-                            <div className="flex items-center gap-3 md:flex-1">
+                            <Link href="/" className="flex items-center gap-3 md:flex-1 cursor-pointer">
                                 {theme?.logo_url ? (
                                     <img
                                         src={theme.logo_url}
@@ -50,7 +51,7 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                                         <span className="text-xs font-semibold">Logo</span>
                                     </div>
                                 )}
-                            </div>
+                            </Link>
 
                             {/* Search Bar - Desktop Only */}
                             <div className="flex-1 max-w-md hidden md:block">
