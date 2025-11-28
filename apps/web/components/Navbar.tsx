@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ShoppingBag, Search, User, Menu, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useStoreTheme } from "@/lib/hooks/use-store-theme";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface NavbarProps {
     cartCount: number;
@@ -85,14 +86,26 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                                     className="flex flex-col items-center cursor-pointer hover:text-muted-foreground transition-colors relative"
                                     onClick={onCartClick}
                                 >
-                                    <div className="relative">
+                                    <motion.div
+                                        className="relative"
+                                        animate={cartCount > 0 ? { scale: [1, 1.15, 1] } : {}}
+                                        transition={{ duration: 0.25, ease: 'easeOut' }}
+                                    >
                                         <ShoppingBag className="h-5 w-5" />
-                                        {cartCount > 0 && (
-                                            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-foreground text-background text-[9px] flex items-center justify-center font-bold">
-                                                {cartCount}
-                                            </span>
-                                        )}
-                                    </div>
+                                        <AnimatePresence>
+                                            {cartCount > 0 && (
+                                                <motion.span
+                                                    initial={{ scale: 0 }}
+                                                    animate={{ scale: 1 }}
+                                                    exit={{ scale: 0 }}
+                                                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                                    className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-foreground text-background text-[9px] flex items-center justify-center font-bold"
+                                                >
+                                                    {cartCount}
+                                                </motion.span>
+                                            )}
+                                        </AnimatePresence>
+                                    </motion.div>
                                     <span className="text-[10px] mt-1 hidden md:block">Carrinho</span>
                                 </div>
 
