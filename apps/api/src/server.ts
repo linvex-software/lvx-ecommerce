@@ -14,6 +14,7 @@ import { registerAdminOrderRoutes } from './presentation/http/admin/order-routes
 import { registerCatalogRoutes } from './presentation/http/catalog/product-routes'
 import { registerCatalogCategoryRoutes } from './presentation/http/catalog/category-routes'
 import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
+import { registerCartRoutes } from './presentation/http/carts/cart-routes'
 import { registerWebhookRoutes } from './presentation/http/webhooks/webhook-routes'
 import { registerStoreRoutes } from './presentation/http/store-routes'
 import { registerPhysicalSalesRoutes } from './presentation/http/physical-sales/physical-sales-routes'
@@ -27,11 +28,11 @@ async function buildServer() {
       // Parse query string supporting arrays (e.g., sizes=G&sizes=GG)
       const params = new URLSearchParams(str)
       const result: Record<string, string | string[]> = {}
-      
+
       for (const [key, value] of params.entries()) {
         // Check if this key appears multiple times in the query string
         const allValues = params.getAll(key)
-        
+
         if (allValues.length > 1) {
           // Multiple values = array
           result[key] = allValues
@@ -40,7 +41,7 @@ async function buildServer() {
           result[key] = value
         }
       }
-      
+
       return result
     }
   })
@@ -131,6 +132,7 @@ async function buildServer() {
   await registerCatalogRoutes(app)
   await registerCatalogCategoryRoutes(app)
   await registerCheckoutRoutes(app)
+  await registerCartRoutes(app)
   await registerWebhookRoutes(app)
   await registerStoreRoutes(app)
   await registerPhysicalSalesRoutes(app)

@@ -1,12 +1,13 @@
-import { X, Plus, Minus, ShoppingBag } from "lucide-react";
+import { X, Plus, Minus, ShoppingBag, ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useCartStore } from "@/lib/store/useCartStore";
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 
 const Cart = () => {
-  const { items, closeCart, removeItem, updateQuantity } = useCartStore();
+  const { items, isOpen, closeCart, removeItem, updateQuantity } = useCartStore();
   const router = useRouter();
 
   const total = useMemo(() => {
@@ -18,6 +19,11 @@ const Cart = () => {
     router.push("/checkout");
   };
 
+  const handleBackToStore = () => {
+    closeCart();
+    router.push("/");
+  };
+
   const handleQuantityChange = (id: number | string, newQuantity: number) => {
     if (newQuantity <= 0) {
       removeItem(id);
@@ -26,11 +32,34 @@ const Cart = () => {
     updateQuantity(id, newQuantity);
   };
 
+  if (!isOpen) return null
+
   return (
-    <div className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50 flex justify-end">
-      <div className="bg-background w-full max-w-md h-full shadow-2xl flex flex-col">
+    <AnimatePresence>
+      {isOpen && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          className="fixed inset-0 bg-foreground/20 backdrop-blur-sm z-50 flex justify-end"
+          onClick={closeCart}
+        >
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="bg-background w-full max-w-md h-full shadow-2xl flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
         <div className="p-6 border-b border-border flex items-center justify-between">
-          <h2 className="text-2xl font-bold">Carrinho</h2>
+          <div className="flex items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={handleBackToStore} title="Voltar para a loja">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <h2 className="text-2xl font-bold">Carrinho</h2>
+          </div>
           <Button variant="ghost" size="icon" onClick={closeCart}>
             <X className="h-5 w-5" />
           </Button>
@@ -41,8 +70,16 @@ const Cart = () => {
             <p className="text-center text-muted-foreground mt-8">Carrinho vazio</p>
           ) : (
             <div className="space-y-4">
-              {items.map((item) => (
-                <div key={item.id} className="flex gap-4 border-b border-border pb-4">
+              <AnimatePresence mode="popLayout">
+                {items.map((item, index) => (
+                  <motion.div
+                    key={`${item.id}-${item.variant_id || 'default'}-${index}`}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, x: 20, scale: 0.95 }}
+                    transition={{ duration: 0.15, delay: index * 0.02 }}
+                    className="flex gap-4 border-b border-border pb-4"
+                  >
                   <img
                     src={item.image}
                     alt={item.name}
@@ -85,8 +122,9 @@ const Cart = () => {
                   >
                     <X className="h-4 w-4" />
                   </Button>
-                </div>
-              ))}
+                  </motion.div>
+                ))}
+              </AnimatePresence>
             </div>
           )}
         </div>
@@ -118,8 +156,10 @@ const Cart = () => {
             </Button>
           </div>
         )}
-      </div>
-    </div>
+          </motion.div>
+        </motion.div>
+      )}
+    </AnimatePresence>
   );
 };
 
