@@ -13,6 +13,7 @@ import Link from 'next/link'
 import SizeChart from '@/components/SizeChart'
 import VirtualTryOn from '@/components/VirtualTryOn'
 import ProductCard, { type Product } from '@/components/ProductCard'
+import { ProductShippingSimulator } from '@/components/shipping/ProductShippingSimulator'
 
 // Types baseados na resposta da API
 interface ProductImage {
@@ -319,6 +320,14 @@ export default function ProductDetailPage() {
                 />
               </div>
             )}
+
+            {/* Simulador de Frete */}
+            <div className="pt-4">
+              <ProductShippingSimulator
+                productId={product.id}
+                quantity={1}
+              />
+            </div>
 
             {/* Botão Adicionar ao Carrinho */}
             <div className="pt-4">

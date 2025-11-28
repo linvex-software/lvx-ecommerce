@@ -38,7 +38,7 @@ function StoreBanner() {
   }
 
   return (
-    <div className="w-full mb-8 sm:mb-12 relative overflow-hidden flex items-center justify-center bg-muted -mt-px">
+    <div className="w-full mb-8 sm:mb-12 relative overflow-hidden flex items-center justify-center bg-muted -mt-px lg:max-h-[800px]">
       {/* Banner image */}
       <div className="w-full h-full flex items-center justify-center">
         <img

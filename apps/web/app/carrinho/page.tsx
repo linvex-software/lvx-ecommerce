@@ -1,22 +1,31 @@
 'use client'
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Minus, X, ShoppingBag, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCartStore } from '@/lib/store/useCartStore'
+import { ShippingCalculator } from '@/components/shipping/ShippingCalculator'
 import Navbar from '@/components/Navbar'
 import Link from 'next/link'
+import type { ShippingQuote } from '@/lib/types/shipping'
 
 export default function CarrinhoPage() {
   const { items, removeItem, updateQuantity, openCart } = useCartStore()
   const router = useRouter()
+  const [selectedShipping, setSelectedShipping] = useState<ShippingQuote | null>(null)
 
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   }, [items])
 
-  const total = subtotal
+  const shippingCost = useMemo(() => {
+    if (!selectedShipping) return 0
+    const price = parseFloat(selectedShipping.custom_price || selectedShipping.price)
+    return isNaN(price) ? 0 : price
+  }, [selectedShipping])
+
+  const total = subtotal + shippingCost
   const totalItems = useMemo(() => {
     return items.reduce((sum, item) => sum + item.quantity, 0)
   }, [items])
@@ -139,42 +148,50 @@ export default function CarrinhoPage() {
             </div>
 
             <div className="lg:col-span-1">
-              <div className="sticky top-24 bg-card border border-border rounded-lg p-6 space-y-6">
-                <h2 className="text-2xl font-bold">Resumo do Pedido</h2>
+              <div className="sticky top-24 space-y-6">
+                <div className="bg-card border border-border rounded-lg p-6 space-y-6">
+                  <h2 className="text-2xl font-bold">Resumo do Pedido</h2>
 
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Subtotal</span>
-                    <span className="font-medium">R$ {subtotal.toFixed(2)}</span>
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Subtotal</span>
+                      <span className="font-medium">R$ {subtotal.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Frete</span>
+                      <span className="font-medium">
+                        {shippingCost === 0 ? 'Grátis' : `R$ ${shippingCost.toFixed(2)}`}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Frete</span>
-                    <span className="font-medium">Grátis</span>
+
+                  <div className="border-t border-border pt-4">
+                    <div className="flex justify-between text-lg font-bold mb-6">
+                      <span>Total</span>
+                      <span>R$ {total.toFixed(2)}</span>
+                    </div>
+
+                    <Button
+                      className="w-full bg-foreground text-background hover:bg-accent"
+                      size="lg"
+                      onClick={handleCheckout}
+                    >
+                      Finalizar Compra
+                    </Button>
+
+                    <Button
+                      variant="outline"
+                      className="w-full mt-3"
+                      onClick={handleContinueShopping}
+                    >
+                      <ArrowLeft className="h-4 w-4 mr-2" />
+                      Continuar Comprando
+                    </Button>
                   </div>
                 </div>
 
-                <div className="border-t border-border pt-4">
-                  <div className="flex justify-between text-lg font-bold mb-6">
-                    <span>Total</span>
-                    <span>R$ {total.toFixed(2)}</span>
-                  </div>
-
-                  <Button
-                    className="w-full bg-foreground text-background hover:bg-accent"
-                    size="lg"
-                    onClick={handleCheckout}
-                  >
-                    Finalizar Compra
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    className="w-full mt-3"
-                    onClick={handleContinueShopping}
-                  >
-                    <ArrowLeft className="h-4 w-4 mr-2" />
-                    Continuar Comprando
-                  </Button>
+                <div className="bg-card border border-border rounded-lg p-6">
+                  <ShippingCalculator onShippingSelected={setSelectedShipping} />
                 </div>
               </div>
             </div>
