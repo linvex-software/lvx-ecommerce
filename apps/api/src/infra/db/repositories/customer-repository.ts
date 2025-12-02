@@ -174,5 +174,26 @@ export class CustomerRepository {
       created_at: row.created_at
     }
   }
+
+  async updatePassword(
+    id: string,
+    storeId: string,
+    passwordHash: string
+  ): Promise<void> {
+    const result = await db
+      .update(schema.customers)
+      .set({ password_hash: passwordHash })
+      .where(
+        and(
+          eq(schema.customers.id, id),
+          eq(schema.customers.store_id, storeId)
+        )
+      )
+      .returning()
+
+    if (result.length === 0) {
+      throw new Error('Customer not found')
+    }
+  }
 }
 

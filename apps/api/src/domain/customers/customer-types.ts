@@ -18,7 +18,7 @@ export interface RegisterCustomerInput {
 }
 
 export interface LoginCustomerInput {
-  cpf: string
+  identifier: string // Pode ser email ou CPF
   password: string
 }
 
