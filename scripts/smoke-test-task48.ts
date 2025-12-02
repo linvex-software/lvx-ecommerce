@@ -77,7 +77,7 @@ async function smokeTest() {
 
     const deliveryOptions = await deliveryOptionsResponse.json()
     const shippingOption = deliveryOptions.shippingOptions?.find((opt: any) => opt.price > 0) || deliveryOptions.shippingOptions?.[0]
-    
+
     if (!shippingOption) {
       throw new Error('No shipping options available')
     }
@@ -121,7 +121,7 @@ async function smokeTest() {
     console.log(`   ✓ Order created: ${order.order.id}`)
     console.log(`   ✓ delivery_type: ${order.order.delivery_type}`)
     console.log(`   ✓ shipping_cost: ${order.order.shipping_cost} (expected > 0)`)
-    
+
     if (order.order.delivery_type !== 'shipping') {
       throw new Error(`Expected delivery_type='shipping', got '${order.order.delivery_type}'`)
     }
@@ -170,7 +170,7 @@ async function smokeTest() {
 
       const deliveryOptions = await deliveryOptionsResponse.json()
       const freeShippingOption = deliveryOptions.shippingOptions?.find((opt: any) => opt.price === 0)
-      
+
       if (!freeShippingOption) {
         console.log(`   ⚠️  No free shipping option found (subtotal: ${subtotal}, min: ${freeShippingMin})`)
         console.log('   ⚠️  FRETE GRÁTIS: SKIPPED (no free option available)\n')
@@ -260,7 +260,7 @@ async function smokeTest() {
 
     const deliveryOptions = await deliveryOptionsResponse.json()
     const pickupOption = deliveryOptions.pickupOptions?.[0]
-    
+
     if (!pickupOption) {
       console.log('   ⚠️  No pickup points available')
       console.log('   ⚠️  RETIRADA: SKIPPED (no pickup points configured)\n')
@@ -309,6 +309,78 @@ async function smokeTest() {
     }
   } catch (error) {
     console.error(`   ❌ RETIRADA: FAIL - ${error instanceof Error ? error.message : error}\n`)
+    throw error
+  }
+
+  // 4. Bloqueio sem entrega
+  console.log('4️⃣  TESTE: Bloqueio sem entrega (sem delivery_type/delivery_option_id)')
+  try {
+    // Teste 4a: Sem delivery_type e delivery_option_id
+    const orderResponse1 = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST',
+      headers: {
+        'x-store-id': STORE_ID,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        items: [{
+          product_id: product.id,
+          variant_id: null,
+          quantity: 1,
+          price: product.price
+        }],
+        shipping_cost: 0
+        // delivery_type e delivery_option_id ausentes
+      })
+    })
+
+    if (orderResponse1.status === 201) {
+      throw new Error('Order should be rejected without delivery_type and delivery_option_id')
+    }
+
+    const error1 = await orderResponse1.json()
+    console.log(`   ✓ Order rejected: ${orderResponse1.status}`)
+    console.log(`   ✓ Error message: ${error1.error || error1.message || 'Validation error'}`)
+
+    if (![400, 422].includes(orderResponse1.status)) {
+      throw new Error(`Expected status 400/422, got ${orderResponse1.status}`)
+    }
+
+    // Teste 4b: Com delivery_type mas sem delivery_option_id
+    const orderResponse2 = await fetch(`${API_BASE_URL}/orders`, {
+      method: 'POST',
+      headers: {
+        'x-store-id': STORE_ID,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        items: [{
+          product_id: product.id,
+          variant_id: null,
+          quantity: 1,
+          price: product.price
+        }],
+        shipping_cost: 0,
+        delivery_type: 'shipping'
+        // delivery_option_id ausente
+      })
+    })
+
+    if (orderResponse2.status === 201) {
+      throw new Error('Order should be rejected without delivery_option_id')
+    }
+
+    const error2 = await orderResponse2.json()
+    console.log(`   ✓ Order rejected: ${orderResponse2.status}`)
+    console.log(`   ✓ Error message: ${error2.error || error2.message || 'Validation error'}`)
+
+    if (![400, 422].includes(orderResponse2.status)) {
+      throw new Error(`Expected status 400/422, got ${orderResponse2.status}`)
+    }
+
+    console.log('   ✅ BLOQUEIO SEM ENTREGA: PASS\n')
+  } catch (error) {
+    console.error(`   ❌ BLOQUEIO SEM ENTREGA: FAIL - ${error instanceof Error ? error.message : error}\n`)
     throw error
   }
 
