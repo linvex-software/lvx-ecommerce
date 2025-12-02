@@ -12,8 +12,12 @@ declare module 'fastify' {
     webhookContext?: WebhookRequestContext
     bodyAsJson?: Record<string, unknown>
     rawBody?: Buffer // Raw body para validação HMAC em webhooks
+    customer?: {
+      id: string
+      storeId: string
+    }
   }
-  
+
   // Estende o user do JWT com nosso tipo customizado
   namespace FastifyJWT {
     interface User {

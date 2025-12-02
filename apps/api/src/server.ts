@@ -21,6 +21,7 @@ import { registerPhysicalSalesRoutes } from './presentation/http/physical-sales/
 import { registerPDVRoutes } from './presentation/http/pdv/pdv-routes'
 import { registerAdminUserRoutes } from './presentation/http/admin/user-routes'
 import { registerShippingRoutes } from './presentation/http/shipping/shipping-routes'
+import { registerCustomerRoutes } from './presentation/http/customers/customer-routes'
 
 async function buildServer() {
   const app = Fastify({
@@ -140,6 +141,7 @@ async function buildServer() {
   await registerPDVRoutes(app)
   await registerAdminUserRoutes(app)
   await registerShippingRoutes(app)
+  await registerCustomerRoutes(app)
 
   return app
 }
