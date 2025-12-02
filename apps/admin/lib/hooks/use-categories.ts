@@ -6,6 +6,7 @@ export interface Category {
   store_id: string
   name: string
   slug: string
+  icon?: string | null
   created_at: string
 }
 
@@ -26,11 +27,13 @@ export interface CategoryListResult {
 export interface CreateCategoryInput {
   name: string
   slug?: string
+  icon?: string
 }
 
 export interface UpdateCategoryInput {
   name?: string
   slug?: string
+  icon?: string
 }
 
 export function useCategories(filters?: CategoryListFilters) {

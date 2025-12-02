@@ -47,12 +47,32 @@ export function useCartSync() {
         const sid = sessionId || getOrCreateSessionId()
 
         // Converte itens do frontend para formato do backend
-        const cartItems = items.map((item) => ({
+        const cartItems = items
+            .map((item) => {
+                // Garantir que price seja número válido
+                let price: number
+                if (typeof item.price === 'string') {
+                    price = parseFloat(item.price)
+                } else if (typeof item.price === 'number') {
+                    price = item.price
+                } else {
+                    price = 0
+                }
+                
+                // Validar preço antes de incluir
+                if (!Number.isFinite(price) || price <= 0) {
+                    console.warn('[CartSync] Item com preço inválido ignorado:', item)
+                    return null
+                }
+                
+                return {
             product_id: String(item.id),
             variant_id: item.variant_id ?? null,
             quantity: item.quantity,
-            price: item.price
-        }))
+                    price: price
+                }
+            })
+            .filter((item): item is NonNullable<typeof item> => item !== null)
 
         try {
             const response = await fetchAPI('/carts', {

@@ -4,7 +4,8 @@ import type { Category, UpdateCategoryInput } from '../../../domain/catalog/cate
 
 const updateCategorySchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').min(3, 'Nome deve ter pelo menos 3 caracteres').optional(),
-  slug: z.string().regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens').optional()
+  slug: z.string().regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens').optional(),
+  icon: z.string().optional()
 })
 
 export interface UpdateCategoryDependencies {
@@ -41,7 +42,8 @@ export async function updateCategoryUseCase(
 
   const updated = await categoryRepository.update(id, storeId, {
     name: validated.name,
-    slug: validated.slug
+    slug: validated.slug,
+    icon: validated.icon
   })
 
   if (!updated) {

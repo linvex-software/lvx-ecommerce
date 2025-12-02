@@ -1,271 +1,212 @@
 'use client'
 
-import { useState, useMemo, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
-import Link from 'next/link'
+import { Editor, Frame } from '@craftjs/core'
 import Navbar from '@/components/Navbar'
-import ProductCard, { Product } from '@/components/ProductCard'
-import ProductFilters, { FilterState } from '@/components/ProductFilters'
-import Pagination from '@/components/Pagination'
-import { SlidersHorizontal } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { fetchAPI } from '@/lib/api'
+import {
+  Hero,
+  Banner,
+  ProductGrid,
+  Newsletter,
+  Testimonials,
+  FAQ,
+  FooterSection,
+  Categories,
+  ProdutosBentoGrid,
+  Navbar as NavbarStore
+} from '@/components/store'
 import { useCartStore } from '@/lib/store/useCartStore'
-import { useStoreTheme } from '@/lib/hooks/use-store-theme'
+import { fetchAPI } from '@/lib/api'
 
-// Available filter options (Static for now as API doesn't provide them yet)
-const AVAILABLE_SIZES = ['P', 'M', 'G', 'GG', 'XG', '38', '39', '40', '41', '42', '43', '44', '46', 'Único']
-const AVAILABLE_COLORS = [
-  { name: 'Preto', hex: '#000000' },
-  { name: 'Branco', hex: '#FFFFFF' },
-  { name: 'Cinza', hex: '#808080' },
-  { name: 'Marrom', hex: '#8B4513' },
-  { name: 'Bege', hex: '#D2B48C' },
-  { name: 'Verde Militar', hex: '#4B5320' },
-  { name: 'Navy', hex: '#000080' },
-  { name: 'Dourado', hex: '#FFD700' },
-  { name: 'Prata', hex: '#C0C0C0' },
-]
+// Wrapper para conectar o Navbar ao carrinho
+function NavbarWrapper() {
+  const { items, openCart } = useCartStore()
+  const cartCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  
+  return <Navbar cartCount={cartCount} onCartClick={openCart} />
+}
 
-const ITEMS_PER_PAGE = 8
-
-function StoreBanner() {
-  const { data: theme } = useStoreTheme()
-
-  if (!theme?.banner_url) {
-    return null
+// Função para remover Navbar do layout do editor
+function removeNavbarFromLayout(layout: Record<string, unknown>): Record<string, unknown> {
+  if (!layout || typeof layout !== 'object') {
+    return layout
   }
 
-  return (
-    <div className="w-full mb-8 sm:mb-12 relative overflow-hidden flex items-center justify-center bg-muted -mt-px lg:max-h-[800px]">
-      {/* Banner image */}
-      <div className="w-full h-full flex items-center justify-center">
-        <img
-          src={theme.banner_url}
-          alt="Banner Principal"
-          className="w-full h-full object-cover object-center"
-        />
-      </div>
-      {/* Gradient overlay - fade from bottom to top */}
-      <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-transparent pointer-events-none"></div>
-    </div>
-  )
-}
+  const cleaned = JSON.parse(JSON.stringify(layout)) as Record<string, unknown>
+  const nodes = cleaned.nodes as Record<string, unknown> | undefined
 
-interface APIProduct {
-  id: string
-  name: string
-  slug: string
-  base_price: string
-  main_image: string | null
-  description: string | null
-  category_name?: string
-}
+  if (!nodes) {
+    return cleaned
+  }
 
-interface Category {
-  id: string
-  name: string
-  slug: string
-}
+  // Identificar todos os IDs de nós Navbar
+  const navbarIds = new Set<string>()
+  
+  for (const [nodeId, nodeData] of Object.entries(nodes)) {
+    const node = nodeData as Record<string, unknown> | undefined
+    if (!node) continue
+    
+    const type = node.type as Record<string, unknown> | undefined
+    const resolvedName = type?.resolvedName as string | undefined
+    
+    if (resolvedName === 'Navbar') {
+      navbarIds.add(nodeId)
+    }
+  }
 
-const HomePage = () => {
-  const { addItem, items } = useCartStore()
-  const router = useRouter()
-  const [showFilters, setShowFilters] = useState(false)
-  const [currentPage, setCurrentPage] = useState(1)
+  if (navbarIds.size === 0) {
+    return cleaned
+  }
 
-  const [filters, setFilters] = useState<FilterState>({
-    categories: [],
-    priceRange: { min: 0, max: 1000 },
-    sizes: [],
-    colors: [],
-    searchQuery: '',
-  })
+  // Função recursiva para limpar filhos
+  const cleanChildren = (children: string[]): string[] => {
+    return children.filter(childId => {
+      if (navbarIds.has(childId)) {
+        return false
+      }
+      
+      const childNode = nodes[childId] as Record<string, unknown> | undefined
+      if (!childNode) return true
+      
+      const childChildren = childNode.nodes as string[] | undefined
+      if (childChildren && Array.isArray(childChildren)) {
+        childNode.nodes = cleanChildren(childChildren)
+      }
+      
+      return true
+    })
+  }
 
-  // Fetch Categories
-  const { data: categoriesData } = useQuery<{ categories: Category[] }>({
-    queryKey: ['categories'],
-    queryFn: () => fetchAPI('/categories')
-  })
+  // Remover nós Navbar
+  const cleanedNodes: Record<string, unknown> = {}
+  
+  for (const [nodeId, nodeData] of Object.entries(nodes)) {
+    if (navbarIds.has(nodeId)) {
+      continue
+    }
+    
+    const node = nodeData as Record<string, unknown>
+    const children = node.nodes as string[] | undefined
+    
+    if (children && Array.isArray(children)) {
+      cleanedNodes[nodeId] = {
+        ...node,
+        nodes: cleanChildren(children)
+      }
+    } else {
+      cleanedNodes[nodeId] = nodeData
+    }
+  }
 
-  const availableCategories = useMemo(() => {
-    return categoriesData?.categories.map(c => c.name) || []
-  }, [categoriesData])
-
-  // Fetch Products
-  const { data: productsData, isLoading } = useQuery<{ products: APIProduct[], total: number, totalPages: number }>({
-    queryKey: ['products', filters, currentPage],
-    queryFn: () => {
-      const params = new URLSearchParams()
-      if (filters.searchQuery) params.append('q', filters.searchQuery)
-
-      // Map category names to IDs
-      if (filters.categories.length > 0 && categoriesData) {
-        const categoryIds = filters.categories
-          .map(name => categoriesData.categories.find(c => c.name === name)?.id)
-          .filter(Boolean) as string[]
-
-        if (categoryIds.length > 0) {
-          // API currently supports only one category_id filter
-          params.append('category_id', categoryIds[0])
+  // Limpar a raiz se necessário
+  const rootNodeId = cleaned.ROOT as string | undefined
+  if (rootNodeId) {
+    if (navbarIds.has(rootNodeId)) {
+      // Se a raiz for Navbar, encontrar o primeiro filho que não seja Navbar
+      const rootNode = nodes[rootNodeId] as Record<string, unknown> | undefined
+      const rootChildren = rootNode?.nodes as string[] | undefined
+      
+      if (rootChildren && Array.isArray(rootChildren)) {
+        const firstNonNavbar = rootChildren.find(id => !navbarIds.has(id))
+        if (firstNonNavbar) {
+          cleaned.ROOT = firstNonNavbar
         }
       }
-
-      // Add size filters
-      if (filters.sizes.length > 0) {
-        filters.sizes.forEach(size => params.append('sizes', size))
+    } else {
+      // Limpar os filhos da raiz
+      const rootNode = nodes[rootNodeId] as Record<string, unknown> | undefined
+      const rootChildren = rootNode?.nodes as string[] | undefined
+      
+      if (rootChildren && Array.isArray(rootChildren)) {
+        const cleanedRootChildren = cleanChildren(rootChildren)
+        if (cleanedNodes[rootNodeId]) {
+          (cleanedNodes[rootNodeId] as Record<string, unknown>).nodes = cleanedRootChildren
+        }
       }
-
-      // Add color filters
-      if (filters.colors.length > 0) {
-        filters.colors.forEach(color => params.append('colors', color))
-      }
-
-      // Add price filters - sempre envia para garantir que o filtro funcione
-      params.append('min_price', filters.priceRange.min.toString())
-      params.append('max_price', filters.priceRange.max.toString())
-
-
-      params.append('page', currentPage.toString())
-      params.append('limit', ITEMS_PER_PAGE.toString())
-
-      const url = `/products?${params.toString()}`
-
-      return fetchAPI(url)
     }
-  })
-
-  // Map API products to UI products
-  const products: (Product & { slug: string })[] = useMemo(() => {
-    if (!productsData?.products) return []
-    return productsData.products.map(p => ({
-      id: p.id,
-      name: p.name,
-      slug: p.slug,
-      price: parseFloat(p.base_price),
-      image: p.main_image || 'https://via.placeholder.com/500', // Fallback image
-      category: p.category_name || 'Geral',
-      sizes: [], // Not available in API list yet
-      colors: [], // Not available in API list yet
-      stock: 10, // Mock stock
-      description: p.description || ''
-    }))
-  }, [productsData])
-
-  // Reset to page 1 when filters change
-  const handleFilterChange = useCallback((newFilters: FilterState) => {
-    setFilters(newFilters)
-    setCurrentPage(1)
-  }, [])
-
-  const handleSearch = useCallback((query: string) => {
-    setFilters((prev) => ({ ...prev, searchQuery: query }))
-    setCurrentPage(1)
-  }, [])
-
-  const handleAddToCart = (product: Product) => {
-    addItem(product)
   }
 
-  const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
+  cleaned.nodes = cleanedNodes
 
+  return cleaned
+}
+
+const resolver = {
+  Hero,
+  Banner,
+  ProductGrid,
+  Newsletter,
+  Testimonials,
+  FAQ,
+  FooterSection,
+  Categories,
+  ProdutosBentoGrid,
+  Navbar: NavbarStore
+}
+
+export default function HomePage() {
+  const [layoutData, setLayoutData] = useState<Record<string, unknown> | null>(null)
+  const [useDefaultLayout, setUseDefaultLayout] = useState(false)
+
+  // Carregar layout do banco (rota pública)
+  const { data: layoutResponse, isLoading } = useQuery<{
+    layout_json: Record<string, unknown> | null
+  }>({
+    queryKey: ['store-layout'],
+    queryFn: () => fetchAPI('/editor/layout'),
+    retry: false,
+    refetchOnWindowFocus: false
+  })
+
+  useEffect(() => {
+    if (layoutResponse?.layout_json) {
+      // Remover Navbar do layout antes de salvar
+      const cleanedLayout = removeNavbarFromLayout(layoutResponse.layout_json)
+      setLayoutData(cleanedLayout)
+      setUseDefaultLayout(false)
+    } else if (!isLoading && layoutResponse?.layout_json === null) {
+      // Se não houver layout salvo, usar layout default
+      setUseDefaultLayout(true)
+    }
+  }, [layoutResponse, isLoading])
+
+  // Layout default caso não tenha layout salvo
+  if (useDefaultLayout || (!layoutData && !isLoading)) {
+    return (
+      <div className="min-h-screen">
+        <NavbarWrapper />
+        <main className="container mx-auto px-4 py-8">
+          <Hero />
+          <ProductGrid />
+          <Newsletter />
+        </main>
+      </div>
+    )
+  }
+
+  // Renderizar layout do editor
+  // O Navbar fixo usa o componente antigo, o Navbar do editor usa o componente do store
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar cartCount={totalItems} onCartClick={() => router.push('/carrinho')} onSearch={handleSearch} />
-
-      {/* Hero Section - Banner */}
-      <StoreBanner />
-
-      <main className="container mx-auto px-4 pb-12">
-        {/* Mobile Filter Toggle */}
-        <div className="lg:hidden mb-6">
-          <Button
-            variant="outline"
-            onClick={() => setShowFilters(!showFilters)}
-            className="w-full border-2"
-          >
-            <SlidersHorizontal className="w-4 h-4 mr-2" />
-            {showFilters ? 'Ocultar Filtros' : 'Mostrar Filtros'}
-          </Button>
-        </div>
-
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-          {/* Filters Sidebar */}
-          <aside className={`lg:block ${showFilters ? 'block' : 'hidden'}`}>
-            <ProductFilters
-              filters={filters}
-              onFilterChange={handleFilterChange}
-              availableCategories={availableCategories}
-              availableSizes={AVAILABLE_SIZES}
-              availableColors={AVAILABLE_COLORS}
-            />
-          </aside>
-
-          {/* Products Grid */}
-          <div className="lg:col-span-3">
-            {/* Results Count */}
-            <div className="mb-6 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {isLoading ? (
-                  'Carregando...'
-                ) : products.length === 0 ? (
-                  'Nenhum produto encontrado'
-                ) : (
-                  <>
-                    <span className="font-semibold text-foreground">{productsData?.total}</span>{' '}
-                    {productsData?.total === 1 ? 'produto encontrado' : 'produtos encontrados'}
-                  </>
-                )}
-              </p>
-            </div>
-
-            {/* Products Grid */}
-            {products.length > 0 ? (
-              <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                  {products.map((product) => (
-                    <Link key={product.id} href={`/products/${product.slug}`}>
-                      <ProductCard product={product} onAddToCart={handleAddToCart} />
-                    </Link>
-                  ))}
-                </div>
-
-                {/* Pagination */}
-                <Pagination
-                  currentPage={currentPage}
-                  totalPages={productsData?.totalPages || 1}
-                  onPageChange={setCurrentPage}
-                  itemsPerPage={ITEMS_PER_PAGE}
-                  totalItems={productsData?.total || 0}
-                />
-              </>
-            ) : (
-              !isLoading && (
-                <div className="text-center py-16">
-                  <p className="text-2xl font-bold mb-2">Nenhum produto encontrado</p>
-                  <p className="text-muted-foreground mb-6">
-                    Tente ajustar os filtros ou fazer uma nova busca
-                  </p>
-                  <Button onClick={() => handleFilterChange({
-                    categories: [],
-                    priceRange: { min: 0, max: 1000 },
-                    sizes: [],
-                    colors: [],
-                    searchQuery: '',
-                  })}>
-                    Limpar todos os filtros
-                  </Button>
-                </div>
-              )
-            )}
-          </div>
+    <div className="min-h-screen">
+      <NavbarWrapper />
+      <main className="overflow-x-hidden">
+        <style dangerouslySetInnerHTML={{__html: `
+          /* Esconder qualquer Navbar que venha do layout do editor (dentro do main) */
+          main .store-navbar-editor,
+          main nav.store-navbar-editor,
+          main [role="navigation"].store-navbar-editor {
+            display: none !important;
+          }
+        `}} />
+        <div className="container mx-auto">
+          {layoutData && (
+            <Editor enabled={false} resolver={resolver}>
+              <Frame data={layoutData as any} />
+            </Editor>
+          )}
         </div>
       </main>
-
     </div>
   )
 }
-
-export default HomePage

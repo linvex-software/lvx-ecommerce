@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
 import { AdminShell } from '@/components/layout/admin-shell'
 
@@ -10,10 +10,14 @@ const ALLOWED_ROLES: Array<'admin' | 'operador' | 'vendedor'> = ['admin', 'opera
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
+  const pathname = usePathname()
   const [isMounted, setIsMounted] = useState(false)
   const [isChecking, setIsChecking] = useState(true)
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated())
   const user = useAuthStore((state) => state.user)
+  
+  // Verificar se é a rota do editor (que tem seu próprio layout)
+  const isEditorRoute = pathname?.startsWith('/editor')
 
   // Calcular se precisa onboarding diretamente
   const needsOnboarding = !user?.storeId && !user?.store
@@ -94,6 +98,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </div>
     )
+  }
+
+  // Se for a rota do editor, não aplicar AdminShell (ele tem seu próprio layout com sidebar)
+  if (isEditorRoute) {
+    return <>{children}</>
   }
 
   return <AdminShell>{children}</AdminShell>

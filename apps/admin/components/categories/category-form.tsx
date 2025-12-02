@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@white-label/ui'
+import { CATEGORY_ICONS, getIconComponent } from '@/lib/constants/category-icons'
 import type { Category, CreateCategoryInput, UpdateCategoryInput } from '@/lib/hooks/use-categories'
 
 const categorySchema = z.object({
@@ -15,7 +16,8 @@ const categorySchema = z.object({
     .string()
     .regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens')
     .optional()
-    .or(z.literal(''))
+    .or(z.literal('')),
+  icon: z.string().optional().or(z.literal(''))
 })
 
 type CategoryFormData = z.infer<typeof categorySchema>
@@ -40,11 +42,23 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
     resolver: zodResolver(categorySchema),
     defaultValues: {
       name: category?.name || '',
-      slug: category?.slug || ''
+      slug: category?.slug || '',
+      icon: category?.icon || ''
     }
   })
+  
+  const selectedIcon = watch('icon')
 
   const nameValue = watch('name')
+
+  // Atualizar valores do formulário quando a categoria for carregada
+  useEffect(() => {
+    if (category) {
+      setValue('name', category.name || '')
+      setValue('slug', category.slug || '')
+      setValue('icon', category.icon || '')
+    }
+  }, [category, setValue])
 
   // Auto-gerar slug quando nome mudar
   useEffect(() => {
@@ -62,7 +76,9 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
   const handleFormSubmit = async (data: CategoryFormData) => {
     const submitData: CreateCategoryInput | UpdateCategoryInput = {
       name: data.name,
-      ...(data.slug && { slug: data.slug })
+      ...(data.slug && { slug: data.slug }),
+      // Sempre enviar icon quando definido (mesmo se string vazia, será tratado como undefined)
+      ...(data.icon !== undefined && { icon: data.icon || undefined })
     }
     await onSubmit(submitData)
   }
@@ -92,6 +108,34 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
         {errors.slug && <p className="mt-1 text-sm text-red-500">{errors.slug.message}</p>}
         <p className="mt-1 text-xs text-gray-500">
           URL amigável para a categoria (opcional, será gerado automaticamente se não informado)
+        </p>
+      </div>
+
+      <div>
+        <Label htmlFor="icon">Ícone</Label>
+        <div className="mt-2 grid grid-cols-6 gap-3">
+          {CATEGORY_ICONS.map((icon) => {
+            const IconComponent = icon.component
+            const isSelected = selectedIcon === icon.value
+            return (
+              <button
+                key={icon.value}
+                type="button"
+                onClick={() => setValue('icon', isSelected ? '' : icon.value)}
+                className={`p-3 border-2 rounded-lg transition-all hover:border-[#7c3aed] ${
+                  isSelected
+                    ? 'border-[#7c3aed] bg-[#7c3aed]/10'
+                    : 'border-gray-200 hover:bg-gray-50'
+                }`}
+                title={icon.name}
+              >
+                <IconComponent className={`w-6 h-6 mx-auto ${isSelected ? 'text-[#7c3aed]' : 'text-gray-600'}`} />
+              </button>
+            )
+          })}
+        </div>
+        <p className="mt-2 text-xs text-gray-500">
+          Selecione um ícone para representar esta categoria (opcional)
         </p>
       </div>
 

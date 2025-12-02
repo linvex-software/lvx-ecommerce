@@ -1,0 +1,187 @@
+---
+description: "Sincronização de Componentes Store — Admin e Web"
+globs:
+  - "apps/admin/components/store/**/*.tsx"
+  - "apps/web/components/store/**/*.tsx"
+alwaysApply: true
+---
+
+# 🎨 Regras de Sincronização de Componentes Store
+
+## 📋 Princípio Fundamental
+
+**Todo componente localizado no diretório `/components/store` — tanto na aplicação admin quanto na web — deve ser EXATAMENTE IGUAL em estrutura, props, UI, lógica e comportamento.**
+
+## ✅ O Que Deve Ser Idêntico
+
+### 1. Estrutura do Código
+- Mesma estrutura de arquivo
+- Mesmas importações (exceto wrappers do Craft.js)
+- Mesma organização de funções e hooks
+- Mesma ordem de declarações
+
+### 2. Props e Interface
+- **Exatamente as mesmas props** (mesmos nomes, tipos, valores padrão)
+- Mesma interface TypeScript/PropTypes
+- Mesmos valores opcionais e obrigatórios
+
+### 3. UI e Design
+- **Mesmo design visual** (classes CSS, estilos, cores)
+- **Mesma responsividade** (breakpoints, layouts mobile/desktop)
+- **Mesmas animações e transições**
+- **Mesmos estados visuais** (hover, focus, disabled, loading)
+
+### 4. Lógica e Comportamento
+- **Mesma lógica de negócio**
+- **Mesmos cálculos e transformações de dados**
+- **Mesmos efeitos colaterais** (quando aplicável)
+- **Mesmos handlers de eventos**
+
+### 5. Acessibilidade
+- Mesmos atributos ARIA
+- Mesma navegação por teclado
+- Mesmos labels e descrições
+
+## 🔄 Diferença Permitida
+
+### Única Diferença: Modo de Renderização
+
+**No Admin (`apps/admin/components/store/`):**
+- O componente deve funcionar em **modo preview** para o editor da loja (Craft.js)
+- Pode ter wrappers do Craft.js para edição no editor
+- Deve renderizar exatamente como será visto no site final
+
+**Na Web (`apps/web/components/store/`):**
+- O componente deve funcionar como **renderização real** no site do cliente
+- Sem wrappers de editor
+- Renderização direta para o usuário final
+
+## 🚫 O Que NUNCA Deve Divergir
+
+### Proibido:
+- ❌ Adicionar props diferentes entre admin e web
+- ❌ Alterar estilos visuais em um e não no outro
+- ❌ Modificar lógica de negócio em apenas uma versão
+- ❌ Criar comportamentos diferentes
+- ❌ Adicionar funcionalidades extras em apenas uma versão
+- ❌ Alterar estrutura HTML/JSX
+- ❌ Mudar ordem de elementos
+- ❌ Adicionar ou remover classes CSS em apenas uma versão
+
+## 📐 Estrutura Esperada
+
+### Componente Base (Compartilhado)
+
+```typescript
+// apps/web/components/store/hero.tsx
+// apps/admin/components/store/hero.tsx
+// DEVEM SER IDÊNTICOS (exceto wrappers Craft.js no admin)
+
+interface HeroProps {
+  imageUrl?: string
+  // ... outras props
+}
+
+export function Hero({ imageUrl, ...props }: HeroProps) {
+  // Lógica idêntica
+  // UI idêntica
+  // Comportamento idêntico
+}
+```
+
+### Wrapper Craft.js (Apenas no Admin)
+
+```typescript
+// apps/admin/components/store/hero.tsx
+// Pode ter wrapper Craft.js APENAS se necessário para edição
+
+import { Hero as HeroBase } from '@/components/store/hero'
+
+// OU se o componente já tem craft configurado:
+Hero.craft = {
+  displayName: 'Hero',
+  props: { /* ... */ },
+  related: { settings: HeroSettings }
+}
+```
+
+## 🔍 Checklist de Sincronização
+
+Ao modificar um componente store, verificar:
+
+- [ ] As props são idênticas em ambas as versões?
+- [ ] A UI renderiza exatamente igual?
+- [ ] A lógica de negócio é a mesma?
+- [ ] Os estilos CSS são idênticos?
+- [ ] A responsividade funciona igual?
+- [ ] Os handlers de eventos são os mesmos?
+- [ ] Os tipos TypeScript são idênticos?
+- [ ] Os valores padrão são os mesmos?
+
+## 🛠️ Manutenção
+
+### Ao Criar um Novo Componente Store:
+
+1. Criar o componente base em `apps/web/components/store/`
+2. **Copiar EXATAMENTE** para `apps/admin/components/store/`
+3. Adicionar wrappers Craft.js apenas no admin (se necessário)
+4. Garantir que ambos renderizam identicamente
+
+### Ao Modificar um Componente Existente:
+
+1. Modificar o componente em **ambas as localizações simultaneamente**
+2. Manter as mudanças **idênticas** em ambos
+3. Testar que ambos renderizam igual
+4. Verificar que o preview no admin corresponde à renderização na web
+
+### Ao Adicionar Funcionalidade:
+
+1. Adicionar em **ambas as versões** ao mesmo tempo
+2. Manter a implementação **idêntica**
+3. Não criar "versões especiais" para admin ou web
+
+## 📝 Exemplo de Violação
+
+### ❌ ERRADO:
+
+```typescript
+// apps/web/components/store/hero.tsx
+export function Hero({ imageUrl }: HeroProps) {
+  return <img src={imageUrl} className="w-full" />
+}
+
+// apps/admin/components/store/hero.tsx
+export function Hero({ imageUrl, showEditButton }: HeroProps) { // ❌ Props diferentes!
+  return (
+    <div>
+      <img src={imageUrl} className="w-full h-auto" /> {/* ❌ Classes diferentes! */}
+      {showEditButton && <button>Editar</button>} {/* ❌ Funcionalidade extra! */}
+    </div>
+  )
+}
+```
+
+### ✅ CORRETO:
+
+```typescript
+// apps/web/components/store/hero.tsx
+export function Hero({ imageUrl }: HeroProps) {
+  return <img src={imageUrl} className="w-full h-auto" />
+}
+
+// apps/admin/components/store/hero.tsx
+// EXATAMENTE IGUAL
+export function Hero({ imageUrl }: HeroProps) {
+  return <img src={imageUrl} className="w-full h-auto" />
+}
+
+// Wrapper Craft.js separado (se necessário)
+Hero.craft = {
+  displayName: 'Hero',
+  props: { imageUrl: '' }
+}
+```
+
+## 🎯 Objetivo Final
+
+**Garantir que o preview no editor admin seja uma representação 100% fiel do que será renderizado no site do cliente, eliminando surpresas e inconsistências entre desenvolvimento e produção.**
