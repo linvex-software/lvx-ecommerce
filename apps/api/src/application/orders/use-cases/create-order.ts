@@ -4,9 +4,12 @@ import { ProductRepository } from '../../../infra/db/repositories/product-reposi
 import { StockMovementRepository } from '../../../infra/db/repositories/stock-movement-repository'
 import { CouponRepository } from '../../../infra/db/repositories/coupon-repository'
 import { CartRepository } from '../../../infra/db/repositories/cart-repository'
+import { PickupPointRepository } from '../../../infra/db/repositories/pickup-point-repository'
 import { validateCouponForCheckoutUseCase } from '../../coupons/use-cases/validate-coupon-for-checkout'
-import { createStockMovementUseCase, createStockMovementSchema } from '../../catalog/use-cases/create-stock-movement'
-import type { OrderWithItems, CreateOrderInput } from '../../../domain/orders/order-types'
+import { createStockMovementUseCase } from '../../catalog/use-cases/create-stock-movement'
+import { getDeliveryOptionsUseCase } from '../../checkout/use-cases/get-delivery-options'
+import type { OrderWithItems } from '../../../domain/orders/order-types'
+import type { ShippingGateway } from '../../../domain/shipping/gateways'
 
 const createOrderSchema = z.object({
   customer_id: z.string().uuid().optional().nullable(),
@@ -20,7 +23,9 @@ const createOrderSchema = z.object({
       })
     )
     .min(1),
-  shipping_cost: z.number().int().nonnegative(), // em centavos
+  shipping_cost: z.number().int().nonnegative(), // em centavos (será calculado pelo backend)
+  delivery_type: z.enum(['shipping', 'pickup_point']), // obrigatório
+  delivery_option_id: z.string(), // ID da opção escolhida (quote.id ou pickup_point.id)
   coupon_code: z.string().optional().nullable(),
   shipping_address: z
     .object({
@@ -44,6 +49,8 @@ export interface CreateOrderDependencies {
   stockMovementRepository: StockMovementRepository
   couponRepository: CouponRepository
   cartRepository: CartRepository
+  pickupPointRepository: PickupPointRepository
+  shippingGateway: ShippingGateway
 }
 
 export async function createOrderUseCase(
@@ -56,7 +63,9 @@ export async function createOrderUseCase(
     productRepository,
     stockMovementRepository,
     couponRepository,
-    cartRepository
+    cartRepository,
+    pickupPointRepository,
+    shippingGateway
   } = dependencies
 
   // 1. Validar input
@@ -89,8 +98,59 @@ export async function createOrderUseCase(
     subtotal += item.price * item.quantity
   }
 
-  // 3. Validar e aplicar cupom se fornecido
-  let finalTotal = subtotal + validated.shipping_cost
+  // 3. Validar deliveryType e deliveryOptionId e calcular shipping_cost
+  let shippingCost = 0
+  const deliveryType: 'shipping' | 'pickup_point' = validated.delivery_type
+  const deliveryOptionId: string = validated.delivery_option_id
+
+  if (validated.delivery_type === 'pickup_point') {
+    // Validar se pickup_point existe e está ativo
+    const pickupPoint = await pickupPointRepository.findById(
+      validated.delivery_option_id,
+      storeId
+    )
+    if (!pickupPoint) {
+      throw new Error('Pickup point not found or does not belong to this store')
+    }
+    if (!pickupPoint.is_active) {
+      throw new Error('Pickup point is not active')
+    }
+    shippingCost = 0 // retirada sempre grátis
+  } else if (validated.delivery_type === 'shipping') {
+    // Validar se shipping option existe e recalcular preço
+    if (!validated.shipping_address?.zip_code) {
+      throw new Error('Shipping address with zip_code is required for shipping delivery')
+    }
+
+    // Buscar opções de entrega para validar e recalcular preço
+    const deliveryOptions = await getDeliveryOptionsUseCase(
+      {
+        destination_zip_code: validated.shipping_address.zip_code,
+        items: validated.items
+      },
+      storeId,
+      {
+        shippingGateway,
+        pickupPointRepository
+      }
+    )
+
+    // Encontrar a opção de frete escolhida
+    const selectedShipping = deliveryOptions.shippingOptions.find(
+      (opt) => opt.id === validated.delivery_option_id
+    )
+
+    if (!selectedShipping) {
+      throw new Error('Invalid shipping option selected')
+    }
+
+    shippingCost = selectedShipping.price // já está em centavos e com frete grátis aplicado se necessário
+  } else {
+    throw new Error('Invalid delivery_type')
+  }
+
+  // 4. Validar e aplicar cupom se fornecido
+  let finalTotal = subtotal + shippingCost
   let couponId: string | null = null
 
   if (validated.coupon_code) {
@@ -116,7 +176,7 @@ export async function createOrderUseCase(
     }
 
     // Recalcular total com desconto
-    finalTotal = (couponValidation.finalPrice ?? subtotal) + validated.shipping_cost
+    finalTotal = (couponValidation.finalPrice ?? subtotal) + shippingCost
   }
 
   // 4. Verificar e atualizar carrinho se fornecido
@@ -141,10 +201,17 @@ export async function createOrderUseCase(
       total: finalTotal,
       status: 'pending',
       payment_status: 'pending',
-      shipping_cost: validated.shipping_cost,
+      shipping_cost: shippingCost,
+      delivery_type: deliveryType,
+      delivery_option_id: deliveryOptionId,
       shipping_address: validated.shipping_address ?? null
     },
-    validated.items
+    validated.items.map(item => ({
+      product_id: item.product_id,
+      variant_id: item.variant_id ?? null,
+      quantity: item.quantity,
+      price: item.price
+    }))
   )
 
   // 6. Criar movimentações de estoque (saída) para cada item

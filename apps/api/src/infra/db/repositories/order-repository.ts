@@ -5,8 +5,7 @@ import type {
   OrderItem,
   OrderWithItems,
   ListOrdersFilters,
-  UpdateOrderInput,
-  CreateOrderInput
+  UpdateOrderInput
 } from '../../../domain/orders/order-types'
 
 export class OrderRepository {
@@ -18,6 +17,8 @@ export class OrderRepository {
       status: string
       payment_status: string
       shipping_cost: number // em centavos
+      delivery_type?: 'shipping' | 'pickup_point' | null
+      delivery_option_id?: string | null
       shipping_address: {
         zip_code: string
         street?: string
@@ -48,6 +49,8 @@ export class OrderRepository {
           status: orderData.status,
           payment_status: orderData.payment_status,
           shipping_cost: orderData.shipping_cost.toString(),
+          delivery_type: orderData.delivery_type ?? null,
+          delivery_option_id: orderData.delivery_option_id ?? null,
           shipping_label_url: null,
           tracking_code: null
         })
@@ -94,6 +97,8 @@ export class OrderRepository {
       shipping_cost: result.shipping_cost,
       shipping_label_url: result.shipping_label_url,
       tracking_code: result.tracking_code,
+      delivery_type: result.delivery_type as Order['delivery_type'],
+      delivery_option_id: result.delivery_option_id,
       created_at: result.created_at
     }
   }
@@ -129,6 +134,8 @@ export class OrderRepository {
       shipping_cost: row.shipping_cost,
       shipping_label_url: row.shipping_label_url,
       tracking_code: row.tracking_code,
+      delivery_type: row.delivery_type as Order['delivery_type'],
+      delivery_option_id: row.delivery_option_id,
       created_at: row.created_at
     }))
   }
@@ -160,6 +167,8 @@ export class OrderRepository {
       shipping_cost: row.shipping_cost,
       shipping_label_url: row.shipping_label_url,
       tracking_code: row.tracking_code,
+      delivery_type: row.delivery_type as Order['delivery_type'],
+      delivery_option_id: row.delivery_option_id,
       created_at: row.created_at
     }
   }
@@ -267,6 +276,8 @@ export class OrderRepository {
       shipping_cost: row.shipping_cost,
       shipping_label_url: row.shipping_label_url,
       tracking_code: row.tracking_code,
+      delivery_type: row.delivery_type as Order['delivery_type'],
+      delivery_option_id: row.delivery_option_id,
       created_at: row.created_at
     }
   }
