@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ShoppingBag, Search, User, Menu, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useStoreTheme } from "@/lib/hooks/use-store-theme";
+import { useAuthStore } from "@/lib/store/useAuthStore";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -17,6 +18,8 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const { data: theme } = useStoreTheme();
+    const { accessToken, customer } = useAuthStore();
+    const isAuthenticated = !!(accessToken && customer);
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     const closeMenu = () => setIsMenuOpen(false);
@@ -77,10 +80,13 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                                 </button>
 
                                 {/* User Icon - Desktop Only */}
-                                <div className="hidden md:flex flex-col items-center cursor-pointer hover:text-muted-foreground transition-colors">
+                                <Link
+                                    href={isAuthenticated ? "/minha-conta" : "/login"}
+                                    className="hidden md:flex flex-col items-center cursor-pointer hover:text-muted-foreground transition-colors"
+                                >
                                     <User className="h-5 w-5" />
                                     <span className="text-[10px] mt-1">Minha Conta</span>
-                                </div>
+                                </Link>
 
                                 {/* Cart Icon */}
                                 <div
@@ -211,14 +217,14 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
 
                 {/* Menu Footer */}
                 <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-background">
-                    <a
-                        href="#"
+                    <Link
+                        href={isAuthenticated ? "/minha-conta" : "/login"}
                         className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
                         onClick={closeMenu}
                     >
                         <User className="h-5 w-5" />
                         <span className="text-sm font-medium">Minha Conta</span>
-                    </a>
+                    </Link>
                 </div>
             </div>
         </>

@@ -137,5 +137,16 @@ export async function registerCustomerRoutes(
       await customerController.setDefaultAddress(request, reply)
     }
   )
+
+  // PUT /customers/me/password - Alterar senha (protegido)
+  app.put(
+    '/customers/me/password',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await customerController.updatePassword(request, reply)
+    }
+  )
 }
 
