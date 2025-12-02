@@ -12,7 +12,8 @@
     "db:migrate": "turbo run db:migrate --filter=@white-label/db",
     "test:setup": "tsx --tsconfig scripts/tsconfig.json scripts/setup-test-data.ts",
     "test:store-id": "tsx --tsconfig scripts/tsconfig.json scripts/get-store-id.ts",
-    "test:checkout": "tsx --tsconfig scripts/tsconfig.json scripts/test-checkout-orders.ts"
+    "test:checkout": "tsx --tsconfig scripts/tsconfig.json scripts/test-checkout-orders.ts",
+    "test:customer-addresses": "tsx --tsconfig scripts/tsconfig.json scripts/test-customer-addresses.ts"
   },
   "packageManager": "pnpm@9.0.0",
   "devDependencies": {
