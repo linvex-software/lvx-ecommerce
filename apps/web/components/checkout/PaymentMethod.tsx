@@ -1,3 +1,5 @@
+'use client'
+
 import { useCheckoutStore, PaymentMethod as PaymentMethodType } from "@/lib/store/useCheckoutStore";
 import { CreditCard, QrCode } from "lucide-react";
 import { Input } from "@/components/ui/input";

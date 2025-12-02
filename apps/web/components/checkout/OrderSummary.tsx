@@ -1,20 +1,25 @@
+'use client'
+
 import { useCartStore } from "@/lib/store/useCartStore";
+import { useCheckoutStore } from "@/lib/store/useCheckoutStore";
 import { Button } from "@/components/ui/button";
 import { useMemo } from "react";
 
 interface OrderSummaryProps {
     onCheckout: () => void;
     isLoading: boolean;
+    isDeliverySelected?: boolean;
 }
 
-const OrderSummary = ({ onCheckout, isLoading }: OrderSummaryProps) => {
+const OrderSummary = ({ onCheckout, isLoading, isDeliverySelected = false }: OrderSummaryProps) => {
     const { items } = useCartStore();
+    const { shippingCost } = useCheckoutStore();
 
     const subtotal = useMemo(() => {
         return items.reduce((sum, item) => sum + item.price * item.quantity, 0);
     }, [items]);
 
-    const shipping = 0; // Mock shipping
+    const shipping = shippingCost || 0;
     const total = subtotal + shipping;
 
     return (
@@ -57,10 +62,15 @@ const OrderSummary = ({ onCheckout, isLoading }: OrderSummaryProps) => {
                 className="w-full bg-foreground text-background hover:bg-accent"
                 size="lg"
                 onClick={onCheckout}
-                disabled={isLoading || items.length === 0}
+                disabled={isLoading || items.length === 0 || !isDeliverySelected}
             >
                 {isLoading ? "Processando..." : "Finalizar Pedido"}
             </Button>
+            {!isDeliverySelected && items.length > 0 && (
+                <p className="text-xs text-destructive text-center">
+                    Selecione uma opção de entrega para continuar
+                </p>
+            )}
         </div>
     );
 };
