@@ -1,6 +1,7 @@
 import type { FastifyInstance } from 'fastify'
 import { CustomerController } from './customer-controller'
 import { CustomerRepository } from '../../../infra/db/repositories/customer-repository'
+import { CustomerAddressRepository } from '../../../infra/db/repositories/customer-address-repository'
 import { AuthSessionRepository } from '../../../infra/db/repositories/auth-session-repository'
 import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
 import { requireCustomerAuth } from '../../../infra/http/middlewares/customer-auth'
@@ -9,6 +10,7 @@ export async function registerCustomerRoutes(
   app: FastifyInstance
 ): Promise<void> {
   const customerRepository = new CustomerRepository()
+  const customerAddressRepository = new CustomerAddressRepository()
   const authSessionRepository = new AuthSessionRepository()
 
   const jwtSign = async (payload: {
@@ -32,6 +34,7 @@ export async function registerCustomerRoutes(
 
   const customerController = new CustomerController(
     customerRepository,
+    customerAddressRepository,
     authSessionRepository,
     jwtSign
   )
@@ -77,6 +80,61 @@ export async function registerCustomerRoutes(
     },
     async (request, reply) => {
       await customerController.updateProfile(request, reply)
+    }
+  )
+
+  // GET /customers/me/addresses - Listar endereços do cliente (protegido)
+  app.get(
+    '/customers/me/addresses',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await customerController.listAddresses(request, reply)
+    }
+  )
+
+  // POST /customers/me/addresses - Criar endereço (protegido)
+  app.post(
+    '/customers/me/addresses',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await customerController.createAddress(request, reply)
+    }
+  )
+
+  // PUT /customers/me/addresses/:id - Atualizar endereço (protegido)
+  app.put(
+    '/customers/me/addresses/:id',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await customerController.updateAddress(request, reply)
+    }
+  )
+
+  // DELETE /customers/me/addresses/:id - Deletar endereço (protegido)
+  app.delete(
+    '/customers/me/addresses/:id',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await customerController.deleteAddress(request, reply)
+    }
+  )
+
+  // PATCH /customers/me/addresses/:id/default - Definir endereço como padrão (protegido)
+  app.patch(
+    '/customers/me/addresses/:id/default',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await customerController.setDefaultAddress(request, reply)
     }
   )
 }

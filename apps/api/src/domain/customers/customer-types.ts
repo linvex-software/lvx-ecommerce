@@ -38,3 +38,29 @@ export interface CustomerProfile {
   created_at: Date
 }
 
+export interface CustomerAddress {
+  id: string
+  customer_id: string
+  street: string
+  city: string
+  state: string
+  zip: string
+  is_default: boolean
+}
+
+export interface CreateCustomerAddressInput {
+  street: string
+  city: string
+  state: string
+  zip: string
+  is_default?: boolean
+}
+
+export interface UpdateCustomerAddressInput {
+  street?: string
+  city?: string
+  state?: string
+  zip?: string
+  is_default?: boolean
+}
+
