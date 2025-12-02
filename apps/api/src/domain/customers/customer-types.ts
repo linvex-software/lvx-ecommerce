@@ -18,7 +18,7 @@ export interface RegisterCustomerInput {
 }
 
 export interface LoginCustomerInput {
-  cpf: string
+  identifier: string // Pode ser email ou CPF
   password: string
 }
 
@@ -36,5 +36,31 @@ export interface CustomerProfile {
   cpf: string // CPF obrigatório
   phone: string | null
   created_at: Date
+}
+
+export interface CustomerAddress {
+  id: string
+  customer_id: string
+  street: string
+  city: string
+  state: string
+  zip: string
+  is_default: boolean
+}
+
+export interface CreateCustomerAddressInput {
+  street: string
+  city: string
+  state: string
+  zip: string
+  is_default?: boolean
+}
+
+export interface UpdateCustomerAddressInput {
+  street?: string
+  city?: string
+  state?: string
+  zip?: string
+  is_default?: boolean
 }
 

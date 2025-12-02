@@ -13,7 +13,7 @@ import type {
 } from '../../../domain/customers/customer-types'
 
 const loginCustomerSchema = z.object({
-  cpf: z.string().refine(validateCPF, 'CPF inválido'),
+  identifier: z.string().min(1, 'Email ou CPF é obrigatório'), // Pode ser email ou CPF
   password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres')
 })
 
@@ -43,11 +43,26 @@ export async function loginCustomerUseCase(
   // Validar input
   const validated = loginCustomerSchema.parse(input)
 
-  // Normalizar CPF
-  const normalizedCpf = normalizeCPF(validated.cpf)
-
-  // Buscar customer por CPF + store_id
-  const customer = await customerRepository.findByCpf(normalizedCpf, storeId)
+  // Detectar se é email ou CPF
+  const isEmail = validated.identifier.includes('@')
+  
+  let customer
+  
+  if (isEmail) {
+    // Buscar por email
+    customer = await customerRepository.findByEmail(
+      validated.identifier.trim(),
+      storeId
+    )
+  } else {
+    // Buscar por CPF
+    // Validar CPF antes de buscar
+    if (!validateCPF(validated.identifier)) {
+      throw new Error('CPF inválido')
+    }
+    const normalizedCpf = normalizeCPF(validated.identifier)
+    customer = await customerRepository.findByCpf(normalizedCpf, storeId)
+  }
 
   if (!customer) {
     throw new Error('Invalid credentials')
