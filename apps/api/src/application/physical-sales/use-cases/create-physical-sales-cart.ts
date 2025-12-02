@@ -3,10 +3,7 @@ import { PhysicalSalesCartRepository } from '../../../infra/db/repositories/phys
 import { ProductRepository } from '../../../infra/db/repositories/product-repository'
 import { CouponRepository } from '../../../infra/db/repositories/coupon-repository'
 import { validateCouponForCheckoutUseCase } from '../../coupons/use-cases/validate-coupon-for-checkout'
-import type {
-  PhysicalSalesCart,
-  CreatePhysicalSalesCartInput
-} from '../../../domain/physical-sales/physical-sales-types'
+import type { PhysicalSalesCart } from '../../../domain/physical-sales/physical-sales-types'
 
 const createPhysicalSalesCartSchema = z.object({
   items: z.array(
@@ -51,7 +48,7 @@ export async function createPhysicalSalesCartUseCase(
   }
 
   // Calcular total
-  let subtotal = validated.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const subtotal = validated.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   // Validar cupom se fornecido
   if (validated.coupon_code) {

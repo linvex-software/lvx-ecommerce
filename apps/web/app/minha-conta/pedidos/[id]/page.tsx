@@ -100,7 +100,7 @@ export default function PedidoDetalhePage({
         <div className="max-w-7xl mx-auto">
           <div className="flex flex-col lg:flex-row items-start gap-6 pt-16 lg:pt-0">
             <AccountNavMenu />
-            
+
             <div className="flex-1">
               <div className="flex justify-center mb-6">
                 <AccountBreadcrumb
@@ -114,87 +114,88 @@ export default function PedidoDetalhePage({
               </div>
 
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 mb-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900">
-              Pedido #{order.id.slice(0, 8).toUpperCase()}
-            </h1>
-            <span className="text-sm text-gray-600">
-              {formatDate(order.created_at)}
-            </span>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-6">
-            <div>
-              <p className="text-sm text-gray-600">Status</p>
-              <p className="font-semibold">{order.status}</p>
-            </div>
-            <div>
-              <p className="text-sm text-gray-600">Pagamento</p>
-              <p className="font-semibold">{order.payment_status}</p>
-            </div>
-          </div>
-
-          {order.tracking_code && (
-            <div className="mb-6">
-              <p className="text-sm text-gray-600 mb-1">Código de Rastreamento</p>
-              <p className="font-semibold text-blue-600">{order.tracking_code}</p>
-            </div>
-          )}
-
-          <div className="border-t pt-6">
-            <h2 className="font-semibold text-lg mb-4">Itens do Pedido</h2>
-            <div className="space-y-4">
-              {order.items.map((item) => (
-                <div key={item.id} className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">{item.product_name}</p>
-                    <p className="text-sm text-gray-600">
-                      Quantidade: {item.quantity} • {formatCurrency(item.price)} cada
-                    </p>
-                  </div>
-                  <p className="font-semibold">
-                    {formatCurrency(
-                      (parseFloat(item.price) * item.quantity).toString()
-                    )}
-                  </p>
+                <div className="flex items-center justify-between mb-6">
+                  <h1 className="text-2xl font-bold text-gray-900">
+                    Pedido #{order.id.slice(0, 8).toUpperCase()}
+                  </h1>
+                  <span className="text-sm text-gray-600">
+                    {formatDate(order.created_at)}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          <div className="border-t mt-6 pt-6">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-600">Subtotal</span>
-              <span>{formatCurrency(order.total)}</span>
-            </div>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-gray-600">Frete</span>
-              <span>{formatCurrency(order.shipping_cost || '0')}</span>
-            </div>
-            <div className="flex justify-between items-center pt-4 border-t font-bold text-lg">
-              <span>Total</span>
-              <span>{formatCurrency(order.total)}</span>
-            </div>
-          </div>
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div>
+                    <p className="text-sm text-gray-600">Status</p>
+                    <p className="font-semibold">{order.status}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-gray-600">Pagamento</p>
+                    <p className="font-semibold">{order.payment_status}</p>
+                  </div>
+                </div>
 
-          {order.shipping_address && (
-            <div className="border-t mt-6 pt-6">
-              <h2 className="font-semibold text-lg mb-4">Endereço de Entrega</h2>
-              <div className="text-gray-600">
-                <p>{order.shipping_address.street}</p>
-                {order.shipping_address.complement && (
-                  <p>{order.shipping_address.complement}</p>
+                {order.tracking_code && (
+                  <div className="mb-6">
+                    <p className="text-sm text-gray-600 mb-1">Código de Rastreamento</p>
+                    <p className="font-semibold text-blue-600">{order.tracking_code}</p>
+                  </div>
                 )}
-                {order.shipping_address.neighborhood && (
-                  <p>{order.shipping_address.neighborhood}</p>
+
+                <div className="border-t pt-6">
+                  <h2 className="font-semibold text-lg mb-4">Itens do Pedido</h2>
+                  <div className="space-y-4">
+                    {order.items.map((item) => (
+                      <div key={item.id} className="flex items-center justify-between">
+                        <div>
+                          <p className="font-medium">{item.product_name}</p>
+                          <p className="text-sm text-gray-600">
+                            Quantidade: {item.quantity} • {formatCurrency(item.price)} cada
+                          </p>
+                        </div>
+                        <p className="font-semibold">
+                          {formatCurrency(
+                            (parseFloat(item.price) * item.quantity).toString()
+                          )}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="border-t mt-6 pt-6">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-600">Subtotal</span>
+                    <span>{formatCurrency(order.total)}</span>
+                  </div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-gray-600">Frete</span>
+                    <span>{formatCurrency(order.shipping_cost || '0')}</span>
+                  </div>
+                  <div className="flex justify-between items-center pt-4 border-t font-bold text-lg">
+                    <span>Total</span>
+                    <span>{formatCurrency(order.total)}</span>
+                  </div>
+                </div>
+
+                {order.shipping_address && (
+                  <div className="border-t mt-6 pt-6">
+                    <h2 className="font-semibold text-lg mb-4">Endereço de Entrega</h2>
+                    <div className="text-gray-600">
+                      <p>{order.shipping_address.street}</p>
+                      {order.shipping_address.complement && (
+                        <p>{order.shipping_address.complement}</p>
+                      )}
+                      {order.shipping_address.neighborhood && (
+                        <p>{order.shipping_address.neighborhood}</p>
+                      )}
+                      <p>
+                        {order.shipping_address.city} - {order.shipping_address.state}
+                      </p>
+                      <p>CEP: {order.shipping_address.zip_code}</p>
+                    </div>
+                  </div>
                 )}
-                <p>
-                  {order.shipping_address.city} - {order.shipping_address.state}
-                </p>
-                <p>CEP: {order.shipping_address.zip_code}</p>
               </div>
-            </div>
-          )}
             </div>
           </div>
         </div>

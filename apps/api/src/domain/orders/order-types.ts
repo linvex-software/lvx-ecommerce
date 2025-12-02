@@ -11,6 +11,8 @@ export interface Order {
   shipping_cost: string // numeric como string do Drizzle
   shipping_label_url: string | null
   tracking_code: string | null
+  delivery_type: 'shipping' | 'pickup_point' | null
+  delivery_option_id: string | null
   created_at: Date
 }
 

@@ -9,7 +9,9 @@ interface CreateOrderInput {
     quantity: number
     price: number // em centavos
   }>
-  shipping_cost: number // em centavos
+  shipping_cost: number // em centavos (será recalculado pelo backend)
+  delivery_type: 'shipping' | 'pickup_point'
+  delivery_option_id: string
   coupon_code?: string | null
   shipping_address?: {
     zip_code: string

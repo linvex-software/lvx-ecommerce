@@ -29,6 +29,8 @@ export const orders = pgTable(
     shipping_cost: numeric('shipping_cost', { precision: 12, scale: 2 })
       .notNull()
       .default('0'),
+    delivery_type: text('delivery_type'), // 'shipping' | 'pickup_point'
+    delivery_option_id: text('delivery_option_id'), // ID da opção escolhida (quote.id ou pickup_point.id)
     shipping_label_url: text('shipping_label_url'),
     tracking_code: text('tracking_code'),
     created_at: timestamp('created_at', { withTimezone: true })

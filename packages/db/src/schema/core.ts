@@ -5,6 +5,7 @@ import {
   timestamp,
   boolean,
   jsonb,
+  numeric,
   uniqueIndex,
   index
 } from 'drizzle-orm/pg-core'
@@ -16,6 +17,10 @@ export const stores = pgTable(
     name: text('name').notNull(),
     domain: text('domain').notNull(),
     active: boolean('active').notNull().default(true),
+    free_shipping_min_total: numeric('free_shipping_min_total', {
+      precision: 12,
+      scale: 2
+    }),
     created_at: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull()
