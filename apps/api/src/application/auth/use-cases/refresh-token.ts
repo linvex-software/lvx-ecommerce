@@ -35,6 +35,11 @@ export async function refreshTokenUseCase(
     throw new Error('Session expired')
   }
 
+  // Validar que é sessão de usuário interno (não cliente)
+  if (!session.user_id || session.customer_id) {
+    throw new Error('Invalid refresh token')
+  }
+
   const user = await userRepository.findById(session.user_id, session.store_id)
 
   if (!user) {
