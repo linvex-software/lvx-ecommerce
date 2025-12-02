@@ -15,10 +15,11 @@ export class CartController {
         return
       }
 
-      // Extrair session_id e customer_id do body
+      // Extrair session_id e customer_id (prioridade: JWT > body)
       const body = request.body as any
       const sessionId = body.session_id
-      const customerId = body.customer_id // Por enquanto vem do body, pode vir de auth no futuro
+      const customer = request.customer
+      const customerId = customer?.id ?? body.customer_id ?? null
 
       const validated = saveCartSchema.parse({
         ...body,
@@ -79,6 +80,10 @@ export class CartController {
         cart_id?: string
       }
 
+      // Extrair customer_id do JWT se cliente estiver autenticado (prioridade sobre query)
+      const customer = request.customer
+      const customerId = customer?.id ?? query.customer_id
+
       // Validação: session_id não pode ser string vazia
       if (query.session_id !== undefined && query.session_id.trim() === '') {
         await reply.code(400).send({ error: 'session_id cannot be empty' })
@@ -86,9 +91,9 @@ export class CartController {
       }
 
       // Validação: customer_id deve ser UUID válido se fornecido
-      if (query.customer_id !== undefined && query.customer_id.trim() !== '') {
+      if (customerId !== undefined && customerId.trim() !== '') {
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-        if (!uuidRegex.test(query.customer_id)) {
+        if (!uuidRegex.test(customerId)) {
           await reply.code(400).send({ error: 'Invalid customer_id format' })
           return
         }
@@ -106,7 +111,7 @@ export class CartController {
       const cart = await getCartUseCase(
         storeId,
         query.session_id,
-        query.customer_id,
+        customerId,
         query.cart_id,
         {
           cartRepository: this.cartRepository

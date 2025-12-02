@@ -17,10 +17,17 @@ export async function requireAuth(
       sub: string
       storeId?: string
       role?: UserRole
+      type?: string
     }>()
 
     if (!decoded.sub) {
       await reply.code(401).send({ error: 'Invalid token payload' })
+      return
+    }
+
+    // Rejeitar tokens de cliente (type: 'customer')
+    if (decoded.type === 'customer') {
+      await reply.code(401).send({ error: 'Invalid token type. User token required.' })
       return
     }
 
@@ -77,7 +84,7 @@ export function requireRole(roles: UserRole[]) {
     reply: FastifyReply
   ): Promise<void> => {
     const user = request.user as { id: string; role: UserRole } | undefined
-    
+
     if (!user) {
       await reply.code(401).send({ error: 'Unauthorized' })
       return

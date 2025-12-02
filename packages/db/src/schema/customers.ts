@@ -4,7 +4,8 @@ import {
   text,
   timestamp,
   boolean,
-  index
+  index,
+  uniqueIndex
 } from 'drizzle-orm/pg-core'
 import { stores } from './core'
 
@@ -17,8 +18,9 @@ export const customers = pgTable(
       .references(() => stores.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     email: text('email'),
-    cpf: text('cpf'),
+    cpf: text('cpf').notNull(), // CPF obrigatório para login
     phone: text('phone'),
+    password_hash: text('password_hash'),
     created_at: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull()
@@ -28,7 +30,17 @@ export const customers = pgTable(
       table.store_id,
       table.email
     ),
-    storeCpfIdx: index('customers_store_cpf_idx').on(table.store_id, table.cpf)
+    storeCpfIdx: index('customers_store_cpf_idx').on(table.store_id, table.cpf),
+    storeCpfUnique: uniqueIndex('customers_store_cpf_unique').on(
+      table.store_id,
+      table.cpf
+    ),
+    // Unique index parcial para email (apenas onde email não é NULL)
+    // Isso permite múltiplos NULLs mas garante unicidade quando email existe
+    storeEmailUnique: uniqueIndex('customers_store_email_unique').on(
+      table.store_id,
+      table.email
+    )
   })
 )
 

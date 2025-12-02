@@ -21,13 +21,23 @@ export class CheckoutOrderController {
 
       const validated = createOrderSchema.parse(request.body)
 
+      // Extrair customer_id do JWT se cliente estiver autenticado
+      const customer = request.customer
+      const customerId = customer?.id ?? validated.customer_id ?? null
+
       const orderRepository = new OrderRepository()
       const productRepository = new ProductRepository()
       const stockMovementRepository = new StockMovementRepository()
       const couponRepository = new CouponRepository()
       const cartRepository = new CartRepository()
 
-      const order = await createOrderUseCase(validated, storeId, {
+      const order = await createOrderUseCase(
+        {
+          ...validated,
+          customer_id: customerId
+        },
+        storeId,
+        {
         orderRepository,
         productRepository,
         stockMovementRepository,
