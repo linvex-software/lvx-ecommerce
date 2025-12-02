@@ -4,6 +4,7 @@ import { useState } from 'react'
 import CheckoutForm from '@/components/checkout/CheckoutForm'
 import OrderSummary from '@/components/checkout/OrderSummary'
 import PaymentMethod from '@/components/checkout/PaymentMethod'
+import { DeliveryOptions } from '@/components/checkout/DeliveryOptions'
 import CheckoutSuccess from '@/components/checkout/CheckoutSuccess'
 import CheckoutError from '@/components/checkout/CheckoutError'
 import { useCartStore } from '@/lib/store/useCartStore'
@@ -11,12 +12,18 @@ import { useCheckoutStore } from '@/lib/store/useCheckoutStore'
 import { useCreateOrder } from '@/lib/hooks/use-create-order'
 import Navbar from '@/components/Navbar'
 
+interface SelectedDeliveryOption {
+  type: 'shipping' | 'pickup_point'
+  id: string
+}
+
 export default function CheckoutPage() {
     const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
     const [orderId, setOrderId] = useState<string>('')
     const [errorMessage, setErrorMessage] = useState<string>('')
+    const [selectedDeliveryOption, setSelectedDeliveryOption] = useState<SelectedDeliveryOption | null>(null)
 
-            const { items, clearCart } = useCartStore()
+    const { items, clearCart } = useCartStore()
     const { formData, resetFormData, shippingCost, couponCode } = useCheckoutStore()
     const { createOrder, isLoading: isCreatingOrder } = useCreateOrder()
 
@@ -35,6 +42,11 @@ export default function CheckoutPage() {
                 throw new Error('Seu carrinho está vazio.')
             }
 
+            // Validar seleção de entrega
+            if (!selectedDeliveryOption) {
+                throw new Error('Selecione uma opção de frete ou retirada para continuar.')
+            }
+
             // Converter itens do carrinho para formato da API
             // Preço está em reais (ex: 100.00), precisa converter para centavos (10000)
             const orderItems = items.map((item) => ({
@@ -44,24 +56,27 @@ export default function CheckoutPage() {
                 price: Math.round(item.price * 100) // converter para centavos
             }))
 
-            // 2. Preparar endereço de entrega
-            const shippingAddress = formData.zipCode
-                ? {
-                      zip_code: formData.zipCode.replace(/\D/g, ''),
-                      street: formData.address,
-                      number: formData.number,
-                      complement: formData.complement || undefined,
-                      neighborhood: formData.neighborhood,
-                      city: formData.city,
-                      state: formData.state,
-                      country: 'BR'
-                  }
-                : null
+            // 2. Preparar endereço de entrega (apenas se for shipping)
+            const shippingAddress =
+                selectedDeliveryOption.type === 'shipping' && formData.zipCode
+                    ? {
+                          zip_code: formData.zipCode.replace(/\D/g, ''),
+                          street: formData.address,
+                          number: formData.number,
+                          complement: formData.complement || undefined,
+                          neighborhood: formData.neighborhood,
+                          city: formData.city,
+                          state: formData.state,
+                          country: 'BR'
+                      }
+                    : null
 
             // 3. Criar pedido via API
             const order = await createOrder({
                 items: orderItems,
-                shipping_cost: Math.round((shippingCost || 0) * 100), // converter para centavos
+                shipping_cost: Math.round((shippingCost || 0) * 100), // converter para centavos (será recalculado pelo backend)
+                delivery_type: selectedDeliveryOption.type,
+                delivery_option_id: selectedDeliveryOption.id,
                 coupon_code: couponCode || null,
                 shipping_address: shippingAddress
                 // customer_id será criado/vinculado no backend se necessário
@@ -71,6 +86,7 @@ export default function CheckoutPage() {
             setStatus('success')
             clearCart()
             resetFormData()
+            setSelectedDeliveryOption(null)
         } catch (error) {
             setStatus('error')
             setErrorMessage(error instanceof Error ? error.message : 'Ocorreu um erro ao processar seu pedido.')
@@ -109,13 +125,26 @@ export default function CheckoutPage() {
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     <div className="lg:col-span-2 space-y-8">
                         <CheckoutForm />
+                        <DeliveryOptions
+                            onSelectionChange={(option) => {
+                                if (option) {
+                                    setSelectedDeliveryOption({
+                                        type: option.type,
+                                        id: option.id
+                                    })
+                                } else {
+                                    setSelectedDeliveryOption(null)
+                                }
+                            }}
+                        />
                         <PaymentMethod />
                     </div>
 
                     <div className="lg:col-span-1">
-                        <OrderSummary 
-                            onCheckout={handleCheckout} 
-                            isLoading={status === 'loading' || isCreatingOrder} 
+                        <OrderSummary
+                            onCheckout={handleCheckout}
+                            isLoading={status === 'loading' || isCreatingOrder}
+                            isDeliverySelected={selectedDeliveryOption !== null}
                         />
                     </div>
                 </div>
