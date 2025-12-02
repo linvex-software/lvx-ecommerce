@@ -11,7 +11,8 @@
     "db:generate": "turbo run db:generate --filter=@white-label/db --",
     "db:migrate": "turbo run db:migrate --filter=@white-label/db",
     "test:setup": "tsx --tsconfig scripts/tsconfig.json scripts/setup-test-data.ts",
-    "test:store-id": "tsx --tsconfig scripts/tsconfig.json scripts/get-store-id.ts"
+    "test:store-id": "tsx --tsconfig scripts/tsconfig.json scripts/get-store-id.ts",
+    "test:checkout": "tsx --tsconfig scripts/tsconfig.json scripts/test-checkout-orders.ts"
   },
   "packageManager": "pnpm@9.0.0",
   "devDependencies": {

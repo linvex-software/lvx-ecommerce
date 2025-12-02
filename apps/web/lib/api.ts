@@ -24,7 +24,19 @@ export async function fetchAPI(path: string, options: RequestInit = {}) {
     })
 
     if (!response.ok) {
-        const error = new Error(`API Error: ${response.statusText}`) as Error & { status: number }
+        // Tentar ler mensagem de erro da resposta
+        let errorMessage = response.statusText
+        try {
+            const errorData = await response.json()
+            errorMessage = errorData.error || errorData.message || response.statusText
+            if (errorData.details) {
+                errorMessage += `: ${JSON.stringify(errorData.details)}`
+            }
+        } catch {
+            // Se não conseguir parsear JSON, usa statusText
+        }
+        
+        const error = new Error(`API Error: ${errorMessage}`) as Error & { status: number }
         error.status = response.status
         throw error
     }

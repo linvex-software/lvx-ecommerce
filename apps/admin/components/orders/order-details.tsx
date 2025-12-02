@@ -130,7 +130,9 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
                 {order.items.map((item) => (
                   <div key={item.id} className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0 last:pb-0">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">Produto {item.product_id.slice(0, 8)}</p>
+                      <p className="text-sm font-medium text-gray-900">
+                        {item.product_name || `Produto ${item.product_id.slice(0, 8)}`}
+                      </p>
                       <p className="text-xs text-gray-500">Quantidade: {item.quantity}</p>
                     </div>
                     <p className="text-sm font-medium text-gray-900">
@@ -138,6 +140,34 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
                     </p>
                   </div>
                 ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Endereço de entrega */}
+          {order.shipping_address && (
+            <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-gray-900">Endereço de Entrega</h2>
+              <div className="space-y-2 text-sm text-gray-600">
+                {order.shipping_address.street && (
+                  <p>
+                    {order.shipping_address.street}
+                    {order.shipping_address.number && `, ${order.shipping_address.number}`}
+                    {order.shipping_address.complement && ` - ${order.shipping_address.complement}`}
+                  </p>
+                )}
+                {order.shipping_address.neighborhood && (
+                  <p>{order.shipping_address.neighborhood}</p>
+                )}
+                {(order.shipping_address.city || order.shipping_address.state) && (
+                  <p>
+                    {order.shipping_address.city}
+                    {order.shipping_address.state && `, ${order.shipping_address.state}`}
+                  </p>
+                )}
+                {order.shipping_address.zip_code && (
+                  <p className="font-medium">CEP: {order.shipping_address.zip_code.replace(/^(\d{5})(\d{3})$/, '$1-$2')}</p>
+                )}
               </div>
             </Card>
           )}

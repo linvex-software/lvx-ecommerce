@@ -182,3 +182,27 @@ export const physicalSalesCommissions = pgTable(
   })
 )
 
+export const shippingAddresses = pgTable(
+  'shipping_addresses',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    order_id: uuid('order_id')
+      .notNull()
+      .references(() => orders.id, { onDelete: 'cascade' }),
+    zip_code: text('zip_code').notNull(),
+    street: text('street'),
+    number: text('number'),
+    complement: text('complement'),
+    neighborhood: text('neighborhood'),
+    city: text('city'),
+    state: text('state'),
+    country: text('country'),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (table) => ({
+    orderIdIdx: index('shipping_addresses_order_id_idx').on(table.order_id)
+  })
+)
+

@@ -11,6 +11,18 @@ export interface OrderItem {
   variant_id: string | null
   quantity: number
   price: string
+  product_name?: string | null
+}
+
+export interface ShippingAddress {
+  zip_code: string
+  street?: string | null
+  number?: string | null
+  complement?: string | null
+  neighborhood?: string | null
+  city?: string | null
+  state?: string | null
+  country?: string | null
 }
 
 export interface Order {
@@ -25,6 +37,7 @@ export interface Order {
   tracking_code: string | null
   created_at: string
   items?: OrderItem[]
+  shipping_address?: ShippingAddress | null
 }
 
 export interface OrdersResponse {
