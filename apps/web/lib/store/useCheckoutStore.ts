@@ -20,7 +20,11 @@ export interface CheckoutFormData {
 
 interface CheckoutState {
     formData: CheckoutFormData
+    couponCode?: string | null
+    shippingCost: number
     setFormData: (data: Partial<CheckoutFormData>) => void
+    setCouponCode: (code: string | null) => void
+    setShippingCost: (cost: number) => void
     resetFormData: () => void
 }
 
@@ -41,9 +45,13 @@ const initialFormData: CheckoutFormData = {
 
 export const useCheckoutStore = create<CheckoutState>()((set) => ({
     formData: initialFormData,
+    couponCode: null,
+    shippingCost: 0,
     setFormData: (data) =>
         set((state) => ({
             formData: { ...state.formData, ...data },
         })),
-    resetFormData: () => set({ formData: initialFormData }),
+    setCouponCode: (code) => set({ couponCode: code }),
+    setShippingCost: (cost) => set({ shippingCost: cost }),
+    resetFormData: () => set({ formData: initialFormData, couponCode: null, shippingCost: 0 }),
 }))
