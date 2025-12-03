@@ -6,7 +6,8 @@ import { SalesChart } from '@/components/dashboard/sales-chart'
 import { TopProducts, type TopProduct } from '@/components/dashboard/top-products'
 import { OperationsCard } from '@/components/dashboard/operations-card'
 import { useAuthStore } from '@/store/auth-store'
-import { ShoppingBag, CreditCard, Package, AlertTriangle } from 'lucide-react'
+import { useTopProducts } from '@/lib/hooks/use-top-products'
+import { ShoppingBag } from 'lucide-react'
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   style: 'currency',
@@ -36,8 +37,6 @@ export function DashboardContent() {
 
   const baseValue = useMemo(() => 6000 + seed * 3, [seed])
 
-  const monthlyRevenueValue = useMemo(() => baseValue * 2.4, [baseValue])
-
   const summaryCards = useMemo<SummaryCard[]>(() => {
     const base = baseValue
     return [
@@ -48,72 +47,62 @@ export function DashboardContent() {
         hint: 'Comparado ao mesmo dia anterior',
         icon: ShoppingBag,
         change: { value: '+12%', trend: 'up' }
-      },
-      {
-        id: 'month',
-        label: 'Vendas do mês',
-        value: currencyFormatter.format(monthlyRevenueValue),
-        hint: 'Média diária x dias úteis',
-        icon: CreditCard,
-        change: { value: '+8%', trend: 'up' }
-      },
-      {
-        id: 'orders',
-        label: 'Pedidos pendentes',
-        value: `${Math.round((seed % 17) + 4)}`,
-        hint: 'Pagos aguardando expedição',
-        icon: Package,
-        change: { value: '-5%', trend: 'down' }
-      },
-      {
-        id: 'stock',
-        label: 'Estoque baixo',
-        value: `${Math.max(0, Math.round((seed % 9) - 2))}`,
-        hint: 'Produtos abaixo do mínimo',
-        icon: AlertTriangle,
-        change: null
       }
     ]
-  }, [baseValue, monthlyRevenueValue, seed])
+  }, [baseValue, seed])
+
+  const [period, setPeriod] = useState<7 | 30>(7)
 
   const salesData = useMemo(() => {
     const today = new Date()
-    return Array.from({ length: 7 }).map((_, index) => {
+    const days = period === 7 ? 7 : 30
+    const isWeekly = period === 7
+
+    return Array.from({ length: days }).map((_, index) => {
       const date = new Date(today)
-      date.setDate(today.getDate() - (6 - index))
-      const amount =
-        2000 +
-        Math.sin(index * 0.9 + seed) * 500 +
-        ((seed % 7) + 1) * 90 +
-        index * 120
+      date.setDate(today.getDate() - (days - 1 - index))
+      
+      let amount = 2000 + Math.sin(index * 0.9 + seed) * 500 + ((seed % days) + 1) * 90
+      
+      if (isWeekly) {
+        amount += index * 120
+      } else {
+        // Para 30 dias, variação mais suave
+        amount += index * 40
+      }
+
+      const formattedDate = isWeekly
+        ? date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
+        : date.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })
 
       return {
-        date: date.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', ''),
+        date: formattedDate,
         amount: Math.max(700, Math.round(amount))
       }
     })
-  }, [seed])
+  }, [seed, period])
 
+  // Calcular receita total do período
+  const totalRevenue = useMemo(() => {
+    return salesData.reduce((sum, item) => sum + item.amount, 0)
+  }, [salesData])
+
+  // Buscar top produtos da API
+  const { data: topProductsData, isLoading: isLoadingTopProducts } = useTopProducts()
+
+  // Converter dados da API para o formato do componente
   const topProducts = useMemo<TopProduct[]>(() => {
-    const baseProducts = [
-      { name: 'Blazer Essential', category: 'Alfaiataria' },
-      { name: 'Vestido Aurora', category: 'Coleção assinatura' },
-      { name: 'Bolsa Luna', category: 'Acessórios' },
-      { name: 'Sandália Riviera', category: 'Calçados' }
-    ]
+    if (!topProductsData) return []
 
-    return baseProducts.map((product, index) => {
-      const revenue = currencyFormatter.format(8500 + seed * (index + 1) * 6)
-      const unitsSold = 40 + ((seed + index * 3) % 35)
-      return {
-        id: `${product.name}-${index}`,
-        name: product.name,
-        category: product.category,
-        revenue,
-        unitsSold
-      }
-    })
-  }, [seed])
+    return topProductsData.map((product) => ({
+      id: product.id,
+      name: product.name,
+      sku: product.sku,
+      category: product.category || 'Sem categoria',
+      revenue: currencyFormatter.format(Number(product.revenue) / 100), // Converter de centavos para reais
+      unitsSold: product.unitsSold
+    }))
+  }, [topProductsData])
 
   return (
     <div className="w-full space-y-8">
@@ -128,15 +117,23 @@ export function DashboardContent() {
         </p>
       </div>
 
-      {/* Primeira linha: 4 cards de KPI */}
-      <SummaryCards cards={summaryCards} isLoading={isLoading} />
-
-      {/* Segunda linha: Gráfico + Status operacional */}
+      {/* Primeira linha: Gráfico + Status operacional */}
       <div className="grid gap-6 lg:grid-cols-3">
-        <div className="lg:col-span-2">
-          <SalesChart data={salesData} isLoading={isLoading} />
+        <div className="lg:col-span-2 space-y-6">
+          <SalesChart 
+            data={salesData} 
+            isLoading={isLoading}
+            period={period}
+            onPeriodChange={setPeriod}
+            totalRevenue={totalRevenue}
+          />
+          {/* Top produtos abaixo do gráfico */}
+          <TopProducts products={topProducts} isLoading={isLoadingTopProducts} />
         </div>
-        <div className="lg:col-span-1">
+        <div className="lg:col-span-1 flex flex-col gap-6">
+          {/* Card de vendas do dia */}
+          <SummaryCards cards={summaryCards} isLoading={isLoading} />
+          {/* Status operacional */}
           <OperationsCard
             pendingOrders={Math.round((seed % 17) + 4)}
             awaitingShipment={Math.round((seed % 11) + 2)}
@@ -144,9 +141,6 @@ export function DashboardContent() {
           />
         </div>
       </div>
-
-      {/* Terceira linha: Top produtos */}
-      <TopProducts products={topProducts} isLoading={isLoading} />
     </div>
   )
 }
