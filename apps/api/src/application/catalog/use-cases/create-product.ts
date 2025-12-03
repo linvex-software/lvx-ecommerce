@@ -6,10 +6,24 @@ import { generateSku } from '../../utils/sku'
 
 const createProductSchema = z.object({
   name: z.string().min(1).max(255),
-  slug: z.string().min(1).max(255).regex(/^[a-z0-9-]+$/),
+  slug: z
+    .string()
+    .max(255)
+    .optional()
+    .transform((val) => {
+      const trimmed = val?.trim()
+      return trimmed && trimmed.length > 0 ? normalizeSlug(trimmed) : undefined
+    }),
   description: z.string().max(5000).optional().nullable(),
   base_price: z.number().positive(),
-  sku: z.string().min(1).max(100).optional(),
+  sku: z
+    .string()
+    .max(100)
+    .optional()
+    .transform((val) => {
+      const trimmed = val?.trim()
+      return trimmed && trimmed.length > 0 ? trimmed : undefined
+    }),
   status: z.enum(['draft', 'active', 'inactive']).optional(),
   virtual_model_url: z.string().url().optional().nullable(),
   virtual_provider: z.string().max(100).optional().nullable(),
@@ -65,8 +79,16 @@ export async function createProductUseCase(
 
   const validated = createProductSchema.parse(input)
 
-  // Normalizar slug
-  const normalizedSlug = normalizeSlug(validated.slug)
+  // Gerar slug automaticamente se não foi fornecido
+  const rawSlug = (validated.slug && validated.slug.trim().length > 0)
+    ? validated.slug
+    : validated.name
+
+  if (!rawSlug || (typeof rawSlug === 'string' && rawSlug.trim().length === 0)) {
+    throw new Error('Product name is required to generate slug')
+  }
+
+  const normalizedSlug = normalizeSlug(rawSlug)
 
   // Verificar se slug já existe (usando query direta)
   const existingBySlug = await productRepository.findByStoreAndSlug(storeId, normalizedSlug)
@@ -74,9 +96,9 @@ export async function createProductUseCase(
     throw new Error('Product slug already exists for this store')
   }
 
-  // Gerar SKU automático se vazio
+  // Gerar SKU automático se vazio ou undefined
   let finalSku = validated.sku?.trim() || ''
-  if (!finalSku) {
+  if (!finalSku || finalSku === '') {
     let attempts = 0
     const maxAttempts = 5
     do {
