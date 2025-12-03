@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -19,6 +20,31 @@ import type { Product } from '@/lib/hooks/use-products'
 import { isClothingProduct, generateDefaultSizeChart } from '@/lib/utils/product-detection'
 import { useCategories } from '@/lib/hooks/use-categories'
 
+// Função para converter string BR (99,90) para número (99.90)
+function parsePriceBR(priceString: string): number {
+  if (!priceString || priceString.trim() === '') {
+    return 0
+  }
+  
+  // Remove espaços, símbolo R$ e separador de milhar
+  let cleaned = priceString
+    .trim()
+    .replace(/R\$\s*/g, '')
+    .replace(/\./g, '') // Remove separador de milhar
+    .replace(/,/g, '.') // Substitui vírgula por ponto
+  
+  const parsed = parseFloat(cleaned)
+  return isNaN(parsed) ? 0 : parsed
+}
+
+// Função para formatar número para string BR (99.90 -> "99,90")
+function formatPriceBR(price: number): string {
+  if (!price || price === 0) {
+    return ''
+  }
+  return price.toFixed(2).replace('.', ',')
+}
+
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').min(3, 'Nome deve ter pelo menos 3 caracteres'),
   slug: z
@@ -27,8 +53,17 @@ const productSchema = z.object({
     .regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
   description: z.string().optional(),
   category_ids: z.array(z.string().uuid()).optional(),
-  base_price: z.number().min(0.01, 'Preço deve ser maior que zero'),
-  sku: z.string().min(1, 'SKU é obrigatório'),
+  base_price: z
+    .union([z.string(), z.number()])
+    .refine(
+      (val) => {
+        const num = typeof val === 'string' ? parsePriceBR(val) : val
+        return !isNaN(num) && num > 0
+      },
+      { message: 'Preço deve ser maior que zero' }
+    )
+    .transform((val) => (typeof val === 'string' ? parsePriceBR(val) : val)),
+  sku: z.string().min(1, 'SKU é obrigatório').optional(),
   status: z.enum(['draft', 'active', 'inactive']).default('draft'),
   variants: z
     .array(
@@ -121,6 +156,9 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   const [seo, setSeo] = useState<ProductSEO>(initialSEO)
   const [sizeChart, setSizeChart] = useState<SizeChartData | null>(initialSizeChart)
   const [autoSizeChartCreated, setAutoSizeChartCreated] = useState(false)
+  const [priceDisplay, setPriceDisplay] = useState<string>(
+    product ? formatPriceBR(parseFloat(product.base_price.toString())) : ''
+  )
 
   const {
     register,
@@ -164,6 +202,14 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
         }
   })
 
+  // Sincronizar priceDisplay quando produto é carregado
+  React.useEffect(() => {
+    if (product) {
+      const price = parseFloat(product.base_price.toString())
+      setPriceDisplay(formatPriceBR(price))
+    }
+  }, [product])
+
 
   const generateSlug = (name: string) => {
     return name
@@ -194,6 +240,16 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   }
 
   const handleFormSubmit = async (data: ProductFormData) => {
+    // Converter preço de string BR para número antes de enviar
+    const finalPrice = typeof data.base_price === 'string' 
+      ? parsePriceBR(data.base_price) 
+      : data.base_price
+
+    // Validar preço
+    if (isNaN(finalPrice) || finalPrice <= 0) {
+      throw new Error('Preço inválido. Informe um preço maior que zero.')
+    }
+
     // Filtrar variantes vazias (sem tamanho e sem cor)
     const validVariants = variants.filter((v) => v.size || v.color)
 
@@ -234,6 +290,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
 
     const submitData = {
       ...data,
+      base_price: finalPrice,
       variants: validVariants.length > 0 ? validVariants : undefined,
       images: validImages.length > 0 ? validImages : undefined,
       seo: hasSEO ? seo : undefined,
@@ -309,31 +366,54 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="base_price">Preço base (R$) *</Label>
-                  <Input
-                    id="base_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...register('base_price', { valueAsNumber: true })}
-                    placeholder="0.00"
-                    className={errors.base_price ? 'border-rose-300' : ''}
-                  />
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                    <Input
+                      id="base_price"
+                      type="text"
+                      value={priceDisplay}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        setPriceDisplay(value)
+                        // Converter e atualizar o valor do form
+                        const numValue = parsePriceBR(value)
+                        setValue('base_price', numValue, { shouldValidate: true })
+                      }}
+                      onBlur={() => {
+                        // Formatar ao perder foco
+                        const numValue = parsePriceBR(priceDisplay)
+                        if (numValue > 0) {
+                          const formatted = formatPriceBR(numValue)
+                          setPriceDisplay(formatted)
+                          setValue('base_price', numValue, { shouldValidate: true })
+                        }
+                      }}
+                      placeholder="99,90"
+                      className={`pl-10 ${errors.base_price ? 'border-rose-300' : ''}`}
+                    />
+                  </div>
                   {errors.base_price && (
                     <p className="text-xs text-rose-600">{errors.base_price.message}</p>
                   )}
+                  <p className="text-xs text-gray-500">
+                    Digite o preço com vírgula (ex: 99,90)
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sku">SKU *</Label>
+                  <Label htmlFor="sku">SKU</Label>
                   <Input
                     id="sku"
                     {...register('sku')}
-                    placeholder="SKU-001"
+                    placeholder="SKU-001 (opcional - será gerado automaticamente se vazio)"
                     className={errors.sku ? 'border-rose-300' : ''}
                   />
                   {errors.sku && (
                     <p className="text-xs text-rose-600">{errors.sku.message}</p>
                   )}
+                  <p className="text-xs text-gray-500">
+                    Deixe vazio para gerar automaticamente
+                  </p>
                 </div>
               </div>
 
