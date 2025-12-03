@@ -24,3 +24,21 @@ export async function getCategoryUseCase(
   return category
 }
 
+export async function getCategoryBySlugUseCase(
+  slug: string,
+  storeId: string,
+  dependencies: GetCategoryDependencies
+): Promise<Category> {
+  const { categoryRepository } = dependencies
+
+  const category = await categoryRepository.findBySlug(slug, storeId)
+
+  if (!category) {
+    const error = new Error('Categoria não encontrada')
+    ;(error as any).statusCode = 404
+    throw error
+  }
+
+  return category
+}
+

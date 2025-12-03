@@ -6,6 +6,7 @@ import { tenantMiddleware } from '../../infra/http/middlewares/tenant'
 import { createStoreUseCase } from '../../application/stores/use-cases/create-store'
 import { updateStoreLogoUseCase } from '../../application/stores/use-cases/update-store-logo'
 import { updateStoreBannerUseCase } from '../../application/stores/use-cases/update-store-banner'
+import { updateStorePreferencesUseCase } from '../../application/stores/use-cases/update-store-preferences'
 import { randomUUID } from 'crypto'
 import { UserRepository } from '../../infra/db/repositories/user-repository'
 import { AuthSessionRepository } from '../../infra/db/repositories/auth-session-repository'
@@ -52,14 +53,22 @@ export async function registerStoreRoutes(app: FastifyInstance): Promise<void> {
         if (themeConfig.length === 0) {
           await reply.send({
             logo_url: null,
-            banner_url: null
+            banner_url: null,
+            primary_color: null,
+            secondary_color: null,
+            text_color: null,
+            icon_color: null
           })
           return
         }
 
         await reply.send({
           logo_url: themeConfig[0].logo_url,
-          banner_url: themeConfig[0].banner_url
+          banner_url: themeConfig[0].banner_url,
+          primary_color: themeConfig[0].primary_color,
+          secondary_color: themeConfig[0].secondary_color,
+          text_color: themeConfig[0].text_color,
+          icon_color: themeConfig[0].icon_color
         })
       } catch (error) {
         request.log.error(error)
@@ -242,16 +251,128 @@ export async function registerStoreRoutes(app: FastifyInstance): Promise<void> {
         if (themeConfig.length === 0) {
           await reply.send({
             logo_url: null,
-            banner_url: null
+            banner_url: null,
+            primary_color: null,
+            secondary_color: null,
+            text_color: null,
+            icon_color: null
           })
           return
         }
 
         await reply.send({
           logo_url: themeConfig[0].logo_url,
-          banner_url: themeConfig[0].banner_url
+          banner_url: themeConfig[0].banner_url,
+          primary_color: themeConfig[0].primary_color,
+          secondary_color: themeConfig[0].secondary_color,
+          text_color: themeConfig[0].text_color,
+          icon_color: themeConfig[0].icon_color
         })
       } catch (error) {
+        request.log.error(error)
+        await reply.code(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  // Endpoint para buscar preferências da loja
+  app.get(
+    '/stores/preferences',
+    {
+      onRequest: [requireAuth, tenantMiddleware]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const storeId = (request as any).storeId as string | undefined
+
+        if (!storeId) {
+          await reply.code(400).send({ error: 'Store ID is required' })
+          return
+        }
+
+        const themeConfig = await db
+          .select()
+          .from(schema.storeThemeConfig)
+          .where(eq(schema.storeThemeConfig.store_id, storeId))
+          .limit(1)
+
+        if (themeConfig.length === 0) {
+          await reply.send({
+            logo_url: null,
+            primary_color: null,
+            secondary_color: null,
+            text_color: null,
+            icon_color: null
+          })
+          return
+        }
+
+        await reply.send({
+          logo_url: themeConfig[0].logo_url,
+          primary_color: themeConfig[0].primary_color,
+          secondary_color: themeConfig[0].secondary_color,
+          text_color: themeConfig[0].text_color,
+          icon_color: themeConfig[0].icon_color
+        })
+      } catch (error) {
+        request.log.error(error)
+        await reply.code(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  // Endpoint para atualizar preferências da loja
+  app.put<{ 
+    Body: { 
+      logo_url?: string | null
+      primary_color?: string | null
+      secondary_color?: string | null
+      text_color?: string | null
+      icon_color?: string | null
+    } 
+  }>(
+    '/stores/preferences',
+    {
+      onRequest: [requireAuth, tenantMiddleware]
+    },
+    async (
+      request: FastifyRequest<{ 
+        Body: { 
+          logo_url?: string | null
+          primary_color?: string | null
+          secondary_color?: string | null
+          text_color?: string | null
+          icon_color?: string | null
+        } 
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const storeId = (request as any).storeId as string | undefined
+
+        if (!storeId) {
+          await reply.code(400).send({ error: 'Store ID is required' })
+          return
+        }
+
+        const { logo_url, primary_color, secondary_color, text_color, icon_color } = request.body
+
+        await updateStorePreferencesUseCase({
+          storeId,
+          logo_url,
+          primary_color,
+          secondary_color,
+          text_color,
+          icon_color
+        })
+
+        await reply.send({ success: true })
+      } catch (error) {
+        if (error instanceof Error) {
+          const statusCode = error.message === 'Store not found' ? 404 : 500
+          await reply.code(statusCode).send({ error: error.message })
+          return
+        }
         request.log.error(error)
         await reply.code(500).send({ error: 'Internal server error' })
       }

@@ -4,6 +4,10 @@ import { fetchAPI } from '../api'
 interface StoreTheme {
   logo_url: string | null
   banner_url: string | null
+  primary_color: string | null
+  secondary_color: string | null
+  text_color: string | null
+  icon_color: string | null
 }
 
 export function useStoreTheme() {
@@ -16,4 +20,7 @@ export function useStoreTheme() {
     refetchOnWindowFocus: false
   })
 }
+
+
+
 

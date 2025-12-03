@@ -1,0 +1,12 @@
+export { Hero } from './hero'
+export { Banner } from './banner'
+export { ProductGrid } from './product-grid'
+export { ProductCard } from './product-card'
+export { Newsletter } from './newsletter'
+export { Testimonials } from './testimonials'
+export { FAQ } from './faq'
+export { FooterSection } from './footer-section'
+export { Categories } from './categories'
+export { ProdutosBentoGrid } from './produtos-bento-grid'
+export { Navbar } from './navbar'
+

@@ -90,7 +90,8 @@ export class CategoryRepository {
       .values({
         store_id: storeId,
         name: input.name,
-        slug
+        slug,
+        icon: input.icon || null
       })
       .returning()
 
@@ -105,6 +106,7 @@ export class CategoryRepository {
     const updateData: {
       name?: string
       slug?: string
+      icon?: string | null
     } = {}
 
     if (input.name !== undefined) {
@@ -116,6 +118,10 @@ export class CategoryRepository {
     } else if (input.name !== undefined) {
       // Se o nome mudou mas o slug não foi fornecido, gerar novo slug
       updateData.slug = this.generateSlug(input.name)
+    }
+
+    if (input.icon !== undefined) {
+      updateData.icon = input.icon || null
     }
 
     const [category] = await db
@@ -142,6 +148,7 @@ export class CategoryRepository {
       store_id: row.store_id,
       name: row.name,
       slug: row.slug,
+      icon: row.icon || undefined,
       created_at: row.created_at
     }
   }

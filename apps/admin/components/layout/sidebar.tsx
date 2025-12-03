@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { LayoutDashboard, Package, Ticket, Settings, Tags, ShoppingCart, Warehouse, Store, Building2, Users } from 'lucide-react'
+import { LayoutDashboard, Package, Ticket, Settings, Tags, ShoppingCart, Warehouse, Store, Building2, Users, Palette } from 'lucide-react'
 import { cn } from '@white-label/ui'
 
 interface NavItem {
@@ -51,6 +51,11 @@ const navItems: NavItem[] = [
     title: 'Loja',
     href: '/store',
     icon: Building2
+  },
+  {
+    title: 'Editor',
+    href: '/editor',
+    icon: Palette
   },
   {
     title: 'Cupons',

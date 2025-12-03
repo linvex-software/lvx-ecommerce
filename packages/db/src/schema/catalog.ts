@@ -106,6 +106,7 @@ export const categories = pgTable(
       .references(() => stores.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     slug: text('slug').notNull(),
+    icon: text('icon'),
     created_at: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull()

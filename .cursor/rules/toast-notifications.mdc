@@ -1,0 +1,195 @@
+# 🔔 Padronização de Notificações Toast (react-hot-toast)
+
+## 📋 Regra Obrigatória
+
+**TODAS as notificações toast na aplicação `/web` DEVEM usar `react-hot-toast`.**
+
+## ✅ Importação Padrão
+
+```typescript
+import toast from 'react-hot-toast'
+```
+
+**NUNCA usar:**
+- ❌ `import { toast } from 'sonner'`
+- ❌ `import { toast } from 'react-toastify'`
+- ❌ Qualquer outra biblioteca de toast
+
+## 🎯 Configuração do Toaster
+
+O componente `<Toaster />` deve estar configurado no `layout.tsx` principal:
+
+```typescript
+import { Toaster } from 'react-hot-toast'
+
+// No layout:
+<Toaster position="top-center" reverseOrder={false} />
+```
+
+**Configuração padrão:**
+- `position="top-center"` (sempre no centro superior)
+- `reverseOrder={false}` (ordem normal)
+
+## 📝 Exemplos de Uso Padronizado
+
+### 1. Notificação de Sucesso
+
+```typescript
+toast.success('Operação realizada com sucesso!')
+```
+
+### 2. Notificação de Erro
+
+```typescript
+toast.error('Ocorreu um erro ao processar a solicitação.')
+```
+
+### 3. Notificação Simples
+
+```typescript
+toast('Mensagem informativa')
+```
+
+### 4. Notificação com Duração Customizada
+
+```typescript
+toast.success('Produto adicionado ao carrinho!', {
+  duration: 3000, // 3 segundos
+})
+```
+
+### 5. Notificação com Ícone Customizado
+
+```typescript
+toast('Bom trabalho!', {
+  icon: '👏',
+})
+```
+
+### 6. Notificação com Estilo Customizado
+
+```typescript
+toast.success('Configurações salvas!', {
+  style: {
+    borderRadius: '10px',
+    background: '#333',
+    color: '#fff',
+  },
+})
+```
+
+### 7. Notificação de Promise (Loading/Success/Error)
+
+```typescript
+toast.promise(
+  saveSettings(settings),
+  {
+    loading: 'Salvando...',
+    success: <b>Configurações salvas!</b>,
+    error: <b>Não foi possível salvar.</b>,
+  }
+)
+```
+
+### 8. Notificação Customizada com JSX
+
+```typescript
+toast((t) => (
+  <span>
+    Custom and <b>bold</b>
+    <button onClick={() => toast.dismiss(t.id)}>
+      Dismiss
+    </button>
+  </span>
+))
+```
+
+### 9. Notificação com Tema de Ícone
+
+```typescript
+toast.success('Look at my styles.', {
+  style: {
+    border: '1px solid #713200',
+    padding: '16px',
+    color: '#713200',
+  },
+  iconTheme: {
+    primary: '#713200',
+    secondary: '#FFFAEE',
+  },
+})
+```
+
+### 10. Notificação em Posição Diferente (casos especiais)
+
+```typescript
+toast.success('Always at the bottom.', {
+  position: "bottom-center"
+})
+```
+
+## 🚫 O Que NUNCA Fazer
+
+### Proibido:
+- ❌ Usar outras bibliotecas de toast (sonner, react-toastify, etc.)
+- ❌ Mudar a posição padrão do Toaster sem justificativa (sempre `top-center`)
+- ❌ Criar wrappers customizados sem necessidade
+- ❌ Usar toast em componentes do admin (apenas em `/web`)
+- ❌ Usar toast em componentes do `/api` (apenas em `/web`)
+
+## 📐 Padrão para Adicionar ao Carrinho
+
+```typescript
+// Exemplo padrão para adicionar produto ao carrinho
+const handleAddToCart = (product: Product) => {
+  addItem(cartProduct)
+  
+  toast.success('Produto adicionado ao carrinho!', {
+    duration: 3000,
+  })
+  
+  openCart()
+}
+```
+
+## 📐 Padrão para Operações Assíncronas
+
+```typescript
+// Exemplo para operações que podem falhar
+const handleSave = async () => {
+  try {
+    await saveData(data)
+    toast.success('Dados salvos com sucesso!')
+  } catch (error) {
+    toast.error('Erro ao salvar dados. Tente novamente.')
+  }
+}
+
+// OU usando toast.promise (recomendado)
+const handleSave = async () => {
+  await toast.promise(
+    saveData(data),
+    {
+      loading: 'Salvando...',
+      success: 'Dados salvos com sucesso!',
+      error: 'Erro ao salvar dados. Tente novamente.',
+    }
+  )
+}
+```
+
+## 🎯 Objetivo
+
+**Garantir consistência visual e de experiência do usuário em todas as notificações da aplicação web, usando uma única biblioteca padronizada (`react-hot-toast`) com configuração centralizada.**
+
+## 📌 Notas Importantes
+
+1. **Apenas em `/web`**: Toast notifications devem ser usadas apenas na aplicação web (`apps/web`), não no admin ou API.
+
+2. **Configuração Centralizada**: O `<Toaster />` deve estar apenas no `layout.tsx` principal, não em componentes individuais.
+
+3. **Duração Padrão**: Se não especificada, a duração padrão é 4 segundos. Para ações importantes, use 3-5 segundos.
+
+4. **Mensagens Claras**: Sempre use mensagens claras e objetivas. Evite mensagens muito longas.
+
+5. **Ícones**: Use ícones emoji apenas quando fizer sentido contextualmente. Para ações de sucesso/erro, deixe o toast usar os ícones padrão.

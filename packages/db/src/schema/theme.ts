@@ -21,6 +21,8 @@ export const storeThemeConfig = pgTable(
     banner_url: text('banner_url'),
     primary_color: text('primary_color'),
     secondary_color: text('secondary_color'),
+    text_color: text('text_color'),
+    icon_color: text('icon_color'),
     banner_config_json: jsonb('banner_config_json').$type<
       Record<string, unknown>
     >(),
