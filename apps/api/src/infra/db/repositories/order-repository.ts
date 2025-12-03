@@ -1,5 +1,5 @@
 import { db, schema } from '@white-label/db'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, sql, gte, inArray } from 'drizzle-orm'
 import type {
   Order,
   OrderItem,
@@ -7,6 +7,7 @@ import type {
   ListOrdersFilters,
   UpdateOrderInput
 } from '../../../domain/orders/order-types'
+import type { TopProduct } from '../../../domain/dashboard/dashboard-types'
 
 export class OrderRepository {
   async create(
@@ -280,6 +281,117 @@ export class OrderRepository {
       delivery_option_id: row.delivery_option_id,
       created_at: row.created_at
     }
+  }
+
+  async getTopProducts(storeId: string, days: number = 30, limit: number = 10): Promise<TopProduct[]> {
+    // Calcular data de início (últimos N dias)
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+
+    // Query para agrupar order_items por product_id e somar quantidades
+    const topProductsResult = await db
+      .select({
+        product_id: schema.orderItems.product_id,
+        unitsSold: sql<number>`COALESCE(SUM(${schema.orderItems.quantity}), 0)::int`.as('units_sold'),
+        revenue: sql<string>`COALESCE(SUM(${schema.orderItems.quantity} * ${schema.orderItems.price}), 0)`.as('revenue')
+      })
+      .from(schema.orderItems)
+      .innerJoin(
+        schema.orders,
+        eq(schema.orderItems.order_id, schema.orders.id)
+      )
+      .where(
+        and(
+          eq(schema.orders.store_id, storeId),
+          gte(schema.orders.created_at, startDate)
+        )
+      )
+      .groupBy(schema.orderItems.product_id)
+      .orderBy(desc(sql`COALESCE(SUM(${schema.orderItems.quantity}), 0)::int`))
+      .limit(limit)
+
+    if (topProductsResult.length === 0) {
+      return []
+    }
+
+    // Buscar informações dos produtos
+    const productIds = topProductsResult.map((p) => p.product_id)
+    
+    if (productIds.length === 0) {
+      return []
+    }
+
+    const products = await db
+      .select({
+        id: schema.products.id,
+        name: schema.products.name,
+        sku: schema.products.sku
+      })
+      .from(schema.products)
+      .where(
+        and(
+          eq(schema.products.store_id, storeId),
+          inArray(schema.products.id, productIds)
+        )
+      )
+
+    const productsMap = new Map(products.map((p) => [p.id, p]))
+
+    // Buscar categorias dos produtos
+    const productCategories = await db
+      .selectDistinct({
+        product_id: schema.productCategory.product_id,
+        category_name: schema.categories.name
+      })
+      .from(schema.productCategory)
+      .leftJoin(
+        schema.categories,
+        eq(schema.productCategory.category_id, schema.categories.id)
+      )
+      .where(inArray(schema.productCategory.product_id, productIds))
+
+    const categoriesMap = new Map<string, string>()
+    for (const pc of productCategories) {
+      if (pc.category_name && !categoriesMap.has(pc.product_id)) {
+        categoriesMap.set(pc.product_id, pc.category_name)
+      }
+    }
+
+    // Montar resultado final
+    return topProductsResult.map((item) => {
+      const product = productsMap.get(item.product_id)
+      const category = categoriesMap.get(item.product_id) || null
+
+      // Converter unitsSold e revenue corretamente
+      const unitsSold = typeof item.unitsSold === 'number' 
+        ? item.unitsSold 
+        : Number(item.unitsSold) || 0
+      
+      const revenue = typeof item.revenue === 'string' 
+        ? item.revenue 
+        : String(item.revenue || '0')
+
+      if (!product) {
+        // Se produto não encontrado, criar um placeholder
+        return {
+          id: item.product_id,
+          name: 'Produto não encontrado',
+          sku: 'N/A',
+          unitsSold,
+          revenue,
+          category: null
+        }
+      }
+
+      return {
+        id: product.id,
+        name: product.name,
+        sku: product.sku,
+        unitsSold,
+        revenue,
+        category
+      }
+    })
   }
 }
 
