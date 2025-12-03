@@ -5,7 +5,16 @@ import { normalizeSlug } from '../../utils/slug'
 
 const updateProductSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  slug: z.string().min(1).max(255).regex(/^[a-z0-9-]+$/).optional(),
+  slug: z
+    .string()
+    .max(255)
+    .optional()
+    .transform((val) => {
+      if (!val || val.trim().length === 0) {
+        return undefined
+      }
+      return normalizeSlug(val.trim())
+    }),
   description: z.string().max(5000).optional().nullable(),
   base_price: z.number().positive().optional(),
   sku: z.string().min(1).max(100).optional(),
@@ -73,18 +82,21 @@ export async function updateProductUseCase(
     throw new Error('Product not found')
   }
 
-  // Normalizar slug se estiver sendo alterado
-  let finalSlug = validated.slug
-  if (validated.slug && validated.slug !== existingProduct.slug) {
-    finalSlug = normalizeSlug(validated.slug)
-    
-    // Verificar se slug já existe em outro produto (usando query direta)
-    const existingBySlug = await productRepository.findByStoreAndSlug(storeId, finalSlug)
-    if (existingBySlug && existingBySlug.id !== id) {
-      throw new Error('Product slug already exists for this store')
+  // Se slug não foi fornecido, manter o slug atual
+  const finalSlug = validated.slug !== undefined 
+    ? validated.slug 
+    : existingProduct.slug
+
+  // Se slug foi fornecido e é diferente do atual, normalizar e validar
+  if (validated.slug !== undefined && validated.slug !== existingProduct.slug) {
+    // Slug já está normalizado pelo schema
+    if (validated.slug) {
+      // Verificar se slug já existe em outro produto (usando query direta)
+      const existingBySlug = await productRepository.findByStoreAndSlug(storeId, validated.slug)
+      if (existingBySlug && existingBySlug.id !== id) {
+        throw new Error('Product slug already exists for this store')
+      }
     }
-  } else if (validated.slug) {
-    finalSlug = normalizeSlug(validated.slug)
   }
 
   // Verificar se SKU já existe em outro produto (se estiver sendo alterado)

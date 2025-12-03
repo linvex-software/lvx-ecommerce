@@ -20,50 +20,64 @@ import type { Product } from '@/lib/hooks/use-products'
 import { isClothingProduct, generateDefaultSizeChart } from '@/lib/utils/product-detection'
 import { useCategories } from '@/lib/hooks/use-categories'
 
-// Função para converter string BR (99,90) para número (99.90)
-function parsePriceBR(priceString: string): number {
-  if (!priceString || priceString.trim() === '') {
-    return 0
+// Função para formatar dígitos para moeda BR (123456 -> "R$ 1.234,56")
+function formatCurrencyFromDigits(digits: string): string {
+  if (!digits || digits === '') {
+    return 'R$ 0,00'
   }
-  
-  // Remove espaços, símbolo R$ e separador de milhar
-  let cleaned = priceString
-    .trim()
-    .replace(/R\$\s*/g, '')
-    .replace(/\./g, '') // Remove separador de milhar
-    .replace(/,/g, '.') // Substitui vírgula por ponto
-  
-  const parsed = parseFloat(cleaned)
-  return isNaN(parsed) ? 0 : parsed
+  const int = parseInt(digits, 10) || 0
+  const cents = int / 100
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents)
 }
 
-// Função para formatar número para string BR (99.90 -> "99,90")
-function formatPriceBR(price: number): string {
+// Função para converter dígitos para número (123456 -> 1234.56)
+function digitsToNumber(digits: string): number {
+  if (!digits || digits === '') {
+    return 0
+  }
+  const int = parseInt(digits, 10) || 0
+  return int / 100
+}
+
+// Função para converter número para dígitos (1234.56 -> "123456")
+function numberToDigits(price: number): string {
   if (!price || price === 0) {
     return ''
   }
-  return price.toFixed(2).replace('.', ',')
+  return Math.round(price * 100).toString()
 }
 
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').min(3, 'Nome deve ter pelo menos 3 caracteres'),
   slug: z
     .string()
-    .min(1, 'Slug é obrigatório')
-    .regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
+    .optional()
+    .transform((value) => {
+      const v = value?.trim()
+      return v === '' || !v ? undefined : v
+    }),
   description: z.string().optional(),
   category_ids: z.array(z.string().uuid()).optional(),
-  base_price: z
-    .union([z.string(), z.number()])
+  priceDigits: z
+    .string()
+    .min(1, 'Preço é obrigatório')
     .refine(
-      (val) => {
-        const num = typeof val === 'string' ? parsePriceBR(val) : val
-        return !isNaN(num) && num > 0
+      (digits) => {
+        const int = parseInt(digits || '0', 10)
+        return int > 0
       },
       { message: 'Preço deve ser maior que zero' }
-    )
-    .transform((val) => (typeof val === 'string' ? parsePriceBR(val) : val)),
-  sku: z.string().min(1, 'SKU é obrigatório').optional(),
+    ),
+  sku: z
+    .string()
+    .optional()
+    .transform((value) => {
+      const v = value?.trim() ?? ''
+      return v === '' ? undefined : v
+    }),
   status: z.enum(['draft', 'active', 'inactive']).default('draft'),
   variants: z
     .array(
@@ -156,8 +170,8 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   const [seo, setSeo] = useState<ProductSEO>(initialSEO)
   const [sizeChart, setSizeChart] = useState<SizeChartData | null>(initialSizeChart)
   const [autoSizeChartCreated, setAutoSizeChartCreated] = useState(false)
-  const [priceDisplay, setPriceDisplay] = useState<string>(
-    product ? formatPriceBR(parseFloat(product.base_price.toString())) : ''
+  const [priceDigits, setPriceDigits] = useState<string>(
+    product ? numberToDigits(parseFloat(product.base_price.toString())) : ''
   )
 
   const {
@@ -174,7 +188,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
           slug: product.slug,
           description: product.description || '',
           category_ids: (product as any).categories?.map((c: any) => c.id) || [],
-          base_price: parseFloat(product.base_price.toString()) || 0,
+          priceDigits: numberToDigits(parseFloat(product.base_price.toString()) || 0),
           sku: product.sku || '',
           status: product.status || 'draft',
           variants: initialVariants,
@@ -187,7 +201,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
           slug: '',
           description: '',
           category_ids: [],
-          base_price: 0,
+          priceDigits: '',
           sku: '',
           status: 'draft',
           variants: [],
@@ -202,11 +216,11 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
         }
   })
 
-  // Sincronizar priceDisplay quando produto é carregado
+  // Sincronizar priceDigits quando produto é carregado
   React.useEffect(() => {
     if (product) {
       const price = parseFloat(product.base_price.toString())
-      setPriceDisplay(formatPriceBR(price))
+      setPriceDigits(numberToDigits(price))
     }
   }, [product])
 
@@ -240,10 +254,8 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   }
 
   const handleFormSubmit = async (data: ProductFormData) => {
-    // Converter preço de string BR para número antes de enviar
-    const finalPrice = typeof data.base_price === 'string' 
-      ? parsePriceBR(data.base_price) 
-      : data.base_price
+    // Converter dígitos para número antes de enviar
+    const finalPrice = digitsToNumber((data as any).priceDigits || priceDigits)
 
     // Validar preço
     if (isNaN(finalPrice) || finalPrice <= 0) {
@@ -288,8 +300,11 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     // Filtrar size chart vazio
     const hasSizeChart = finalSizeChart && finalSizeChart.name.trim() !== '' && Object.keys(finalSizeChart.chart_json).length > 0
 
+    const { priceDigits, ...restData } = data as any
     const submitData = {
-      ...data,
+      ...restData,
+      slug: data.slug || undefined, // Enviar undefined se vazio para o backend gerar
+      sku: data.sku || undefined, // Enviar undefined se vazio para o backend gerar
       base_price: finalPrice,
       variants: validVariants.length > 0 ? validVariants : undefined,
       images: validImages.length > 0 ? validImages : undefined,
@@ -326,7 +341,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug *</Label>
+                <Label htmlFor="slug">Slug</Label>
                 <Input
                   id="slug"
                   {...register('slug')}
@@ -337,7 +352,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
                   <p className="text-xs text-rose-600">{errors.slug.message}</p>
                 )}
                 <p className="text-xs text-gray-500">
-                  URL amigável (gerado automaticamente se deixar vazio)
+                  Deixe vazio para gerar automaticamente a partir do nome.
                 </p>
               </div>
 
@@ -367,36 +382,32 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
                 <div className="space-y-2">
                   <Label htmlFor="base_price">Preço base (R$) *</Label>
                   <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
                     <Input
                       id="base_price"
                       type="text"
-                      value={priceDisplay}
+                      value={formatCurrencyFromDigits(priceDigits)}
                       onChange={(e) => {
-                        const value = e.target.value
-                        setPriceDisplay(value)
-                        // Converter e atualizar o valor do form
-                        const numValue = parsePriceBR(value)
-                        setValue('base_price', numValue, { shouldValidate: true })
+                        // Remove tudo que não for dígito
+                        const digits = e.target.value.replace(/\D/g, '')
+                        setPriceDigits(digits)
+                        // Atualizar o valor do form para validação
+                        setValue('priceDigits' as any, digits, { shouldValidate: true })
                       }}
                       onBlur={() => {
-                        // Formatar ao perder foco
-                        const numValue = parsePriceBR(priceDisplay)
-                        if (numValue > 0) {
-                          const formatted = formatPriceBR(numValue)
-                          setPriceDisplay(formatted)
-                          setValue('base_price', numValue, { shouldValidate: true })
+                        // Manter formatação ao perder foco
+                        if (priceDigits) {
+                          setValue('priceDigits' as any, priceDigits, { shouldValidate: true })
                         }
                       }}
-                      placeholder="99,90"
-                      className={`pl-10 ${errors.base_price ? 'border-rose-300' : ''}`}
+                      placeholder="R$ 0,00"
+                      className={errors.priceDigits ? 'border-rose-300' : ''}
                     />
                   </div>
-                  {errors.base_price && (
-                    <p className="text-xs text-rose-600">{errors.base_price.message}</p>
+                  {errors.priceDigits && (
+                    <p className="text-xs text-rose-600">{errors.priceDigits.message}</p>
                   )}
                   <p className="text-xs text-gray-500">
-                    Digite o preço com vírgula (ex: 99,90)
+                    Digite apenas números. O valor será formatado automaticamente.
                   </p>
                 </div>
 
@@ -405,14 +416,14 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
                   <Input
                     id="sku"
                     {...register('sku')}
-                    placeholder="SKU-001 (opcional - será gerado automaticamente se vazio)"
+                    placeholder="SKU-001"
                     className={errors.sku ? 'border-rose-300' : ''}
                   />
                   {errors.sku && (
                     <p className="text-xs text-rose-600">{errors.sku.message}</p>
                   )}
                   <p className="text-xs text-gray-500">
-                    Deixe vazio para gerar automaticamente
+                    Deixe vazio para gerar automaticamente.
                   </p>
                 </div>
               </div>
