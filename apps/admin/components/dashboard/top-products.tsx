@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 export interface TopProduct {
   id: string
   name: string
+  sku?: string
   category: string
   revenue: string
   unitsSold: number
@@ -43,7 +44,14 @@ export function TopProducts({ products, isLoading = false }: TopProductsProps) {
               {product ? (
                 <>
                   <p className="text-base font-medium text-gray-900">{product.name}</p>
-                  <p className="text-sm text-gray-500">{product.category}</p>
+                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                    {product.sku && (
+                      <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+                        {product.sku}
+                      </code>
+                    )}
+                    <span>{product.category || 'Sem categoria'}</span>
+                  </div>
                 </>
               ) : (
                 <>
