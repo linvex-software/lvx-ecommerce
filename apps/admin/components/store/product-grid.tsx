@@ -73,7 +73,7 @@ export function ProductGrid({
       }}
     >
       {title && (
-        <h2 className="text-2xl font-bold mb-6 text-center">{title}</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: 'var(--store-text-color, #000000)' }}>{title}</h2>
       )}
       <div className={`grid ${gridCols} gap-4`}>
         {mockProducts.map((product) => (

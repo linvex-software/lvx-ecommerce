@@ -47,13 +47,13 @@ export function Banner({
           className="w-full h-full object-cover"
         />
       ) : (
-        <div className="w-full h-full flex items-center justify-center text-gray-400">
+        <div className="w-full h-full flex items-center justify-center" style={{ color: 'var(--store-text-color, #000000)' }}>
           <span>Adicione uma URL de imagem</span>
         </div>
       )}
       {title && (
         <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <h2 className="text-white text-2xl font-bold">{title}</h2>
+          <h2 className="text-2xl font-bold" style={{ color: '#ffffff' }}>{title}</h2>
         </div>
       )}
     </div>

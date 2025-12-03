@@ -80,7 +80,11 @@ export function Newsletter({
             />
             <button
               type="submit"
-              className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="px-6 py-2 rounded-md hover:opacity-90 transition-colors"
+              style={{ 
+                backgroundColor: 'var(--store-primary-color, #000000)',
+                color: '#ffffff'
+              }}
             >
               {buttonText}
             </button>

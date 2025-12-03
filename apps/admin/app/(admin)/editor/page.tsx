@@ -9,6 +9,7 @@ import { EditorToolbox } from '@/components/editor/editor-toolbox'
 import { EditorSettingsPanel } from '@/components/editor/editor-settings-panel'
 import { EditorTopbar } from '@/components/editor/editor-topbar'
 import { PreviewProvider, usePreviewMode } from '@/components/editor/preview-context'
+import { ThemeProvider } from '@/components/theme/theme-provider'
 import {
   Hero,
   Banner,
@@ -77,26 +78,28 @@ function EditorContent() {
 
   if (isLoading || savedLayout === undefined) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <div className="flex  items-center justify-center">
         <div className="text-sm text-gray-500">Carregando editor...</div>
       </div>
     )
   }
 
   return (
-    <PreviewProvider>
-      <div className="h-full flex flex-col overflow-hidden">
-        <Editor
-          resolver={resolver}
-          enabled={!isPreview}
-        >
-          <EditorContentInner 
-            savedLayout={savedLayout} 
-            isPreview={isPreview} 
-          />
-        </Editor>
-      </div>
-    </PreviewProvider>
+    <ThemeProvider>
+      <PreviewProvider>
+        <div className="h-full flex flex-col overflow-hidden">
+          <Editor
+            resolver={resolver}
+            enabled={!isPreview}
+          >
+            <EditorContentInner 
+              savedLayout={savedLayout} 
+              isPreview={isPreview} 
+            />
+          </Editor>
+        </div>
+      </PreviewProvider>
+    </ThemeProvider>
   )
 }
 
@@ -109,9 +112,42 @@ function EditorContentInner({
 }) {
   const { previewMode } = usePreviewMode()
   const frameRef = useRef<HTMLDivElement>(null)
-  const { enabled } = useEditor((state) => ({
+  const { enabled } = useEditor((state: any) => ({
     enabled: state.options.enabled
   }))
+  
+  // Aplicar tema no Frame do Craft.js (o Frame renderiza dentro do frameRef)
+  useEffect(() => {
+    const applyThemeToFrame = () => {
+      if (frameRef.current) {
+        // O Craft.js renderiza diretamente no DOM, não em iframe
+        // Aplicar as variáveis CSS no elemento do frame
+        const computedStyle = getComputedStyle(document.documentElement)
+        const primaryColor = computedStyle.getPropertyValue('--store-primary-color').trim()
+        const secondaryColor = computedStyle.getPropertyValue('--store-secondary-color').trim()
+        const textColor = computedStyle.getPropertyValue('--store-text-color').trim()
+        const iconColor = computedStyle.getPropertyValue('--store-icon-color').trim()
+        
+        if (primaryColor) {
+          frameRef.current.style.setProperty('--store-primary-color', primaryColor)
+        }
+        if (secondaryColor) {
+          frameRef.current.style.setProperty('--store-secondary-color', secondaryColor)
+        }
+        if (textColor) {
+          frameRef.current.style.setProperty('--store-text-color', textColor)
+        }
+        if (iconColor) {
+          frameRef.current.style.setProperty('--store-icon-color', iconColor)
+        }
+      }
+    }
+    
+    // Aplicar imediatamente e depois de um delay para garantir que o Frame foi renderizado
+    applyThemeToFrame()
+    const timer = setTimeout(applyThemeToFrame, 100)
+    return () => clearTimeout(timer)
+  }, [])
 
   // Interceptar todos os cliques em links quando o editor está habilitado
   useEffect(() => {
@@ -194,7 +230,7 @@ export default function EditorPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex min-h-screen items-center justify-center">
+        <div className="flex items-center justify-center">
           <div className="text-sm text-gray-500">Carregando editor...</div>
         </div>
       }

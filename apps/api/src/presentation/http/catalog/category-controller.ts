@@ -3,7 +3,7 @@ import { ZodError } from 'zod'
 import {
     listCategoriesUseCase,
 } from '../../../application/catalog/use-cases/list-categories'
-import { getCategoryUseCase } from '../../../application/catalog/use-cases/get-category'
+import { getCategoryUseCase, getCategoryBySlugUseCase } from '../../../application/catalog/use-cases/get-category'
 import { CategoryRepository } from '../../../infra/db/repositories/category-repository'
 
 export class PublicCategoryController {
@@ -65,6 +65,35 @@ export class PublicCategoryController {
             }
 
             const category = await getCategoryUseCase(request.params.id, storeId, {
+                categoryRepository: this.categoryRepository
+            })
+
+            await reply.code(200).send({ category })
+        } catch (error: any) {
+            if (error.statusCode === 404) {
+                await reply.code(404).send({ error: error.message })
+                return
+            }
+
+            request.log.error(error)
+            await reply.code(500).send({ error: 'Internal server error' })
+        }
+    }
+
+    async getBySlug(
+        request: FastifyRequest<{
+            Params: { slug: string }
+        }>,
+        reply: FastifyReply
+    ) {
+        try {
+            const storeId = request.storeId
+            if (!storeId) {
+                await reply.code(400).send({ error: 'Store ID is required' })
+                return
+            }
+
+            const category = await getCategoryBySlugUseCase(request.params.slug, storeId, {
                 categoryRepository: this.categoryRepository
             })
 

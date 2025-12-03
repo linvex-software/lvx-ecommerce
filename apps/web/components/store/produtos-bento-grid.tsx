@@ -273,14 +273,15 @@ export function ProdutosBentoGrid({
             background: 'linear-gradient(to top, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0.5) 50%, transparent 100%)'
           }}
         >
-          <div className="text-white">
+          <div style={{ color: '#ffffff' }}>
             <h3 className="text-lg font-semibold mb-1">{product.name}</h3>
             {product.base_price && (
               <p className="text-sm mb-3 font-medium">{formatPrice(product.base_price)}</p>
             )}
             <button
               onClick={(e) => handleAddToCart(e, product)}
-              className="bg-white text-black px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1.5 w-auto"
+              className="bg-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-gray-100 transition-colors flex items-center justify-center gap-1.5 w-auto"
+              style={{ color: 'var(--store-text-color, #000000)' }}
             >
               <ShoppingCart className="w-3.5 h-3.5" />
               Adicionar
@@ -300,7 +301,7 @@ export function ProdutosBentoGrid({
       }}
     >
       {title && (
-        <h2 className="text-3xl md:text-4xl font-semibold mb-8 text-base-content">
+        <h2 className="text-3xl md:text-4xl font-semibold mb-8" style={{ color: 'var(--store-text-color, #000000)' }}>
           {title}
         </h2>
       )}

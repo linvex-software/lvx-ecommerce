@@ -3,6 +3,7 @@ import './globals.css'
 
 import Providers from '@/components/providers'
 import { CartSyncProvider } from '@/components/CartSyncProvider'
+import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from 'react-hot-toast'
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -10,10 +11,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
     <html lang="pt-BR">
       <body>
         <Providers>
-          <CartSyncProvider>
-            {children}
-            <Toaster position="top-center" reverseOrder={false} />
-          </CartSyncProvider>
+          <ThemeProvider>
+            <CartSyncProvider>
+              {children}
+              <Toaster position="top-center" reverseOrder={false} />
+            </CartSyncProvider>
+          </ThemeProvider>
         </Providers>
       </body>
     </html>

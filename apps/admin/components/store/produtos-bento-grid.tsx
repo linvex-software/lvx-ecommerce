@@ -167,7 +167,7 @@ export function ProdutosBentoGrid({
       }}
     >
       {title && (
-        <h2 className="text-3xl md:text-4xl font-semibold mb-8 text-base-content">
+        <h2 className="text-3xl md:text-4xl font-semibold mb-8" style={{ color: 'var(--store-text-color, #000000)' }}>
           {title}
         </h2>
       )}

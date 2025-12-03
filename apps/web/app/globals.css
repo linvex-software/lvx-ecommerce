@@ -67,6 +67,24 @@ All colors MUST be HSL.
     
     --font-display: 'Outfit', sans-serif;
     --font-sans: 'Inter Tight', sans-serif;
+    
+    /* Store Theme Variables - Will be overridden by theme provider */
+    --store-primary-color: #000000;
+    --store-secondary-color: #6366F1;
+    --store-text-color: #000000;
+    --store-icon-color: #000000;
+  }
+  
+  /* Aplicar cor de texto globalmente nos componentes store */
+  [class*="store-"] h1,
+  [class*="store-"] h2,
+  [class*="store-"] h3,
+  [class*="store-"] h4,
+  [class*="store-"] h5,
+  [class*="store-"] h6,
+  [class*="store-"] p,
+  [class*="store-"] span:not([style*="color"]):not([class*="text-"]) {
+    color: var(--store-text-color, #000000);
   }
 
   .dark {
@@ -108,6 +126,16 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
     margin: 0;
+  }
+}
+
+@layer components {
+  /* Container responsivo - padding zero em telas menores que 768px */
+  .container {
+    @media (max-width: 767.98px) {
+      padding-left: 0.5rem !important;
+      padding-right: 0.5rem !important;
+    }
   }
 }
 

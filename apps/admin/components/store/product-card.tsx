@@ -25,7 +25,7 @@ export function ProductCard({
         />
       ) : (
         <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-          <span className="text-gray-400">Sem imagem</span>
+          <span style={{ color: 'var(--store-text-color, #000000)' }}>Sem imagem</span>
         </div>
       )}
       <div className="p-4">

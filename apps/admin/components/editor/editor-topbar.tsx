@@ -6,8 +6,9 @@ import { useAuthStore } from '@/store/auth-store'
 import { apiClient } from '@/lib/api-client'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Menu, Monitor, Tablet, Smartphone, Undo2, Redo2, Eye, ChevronDown } from 'lucide-react'
+import { Menu, Monitor, Tablet, Smartphone, Undo2, Redo2, Eye, ChevronDown, Settings } from 'lucide-react'
 import { usePreviewMode } from './preview-context'
+import Link from 'next/link'
 
 interface EditorTopbarProps {
   isPreview: boolean
@@ -120,6 +121,15 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
+        {/* Preferências */}
+        <Link
+          href="/editor/preferences"
+          className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+          title="Preferências"
+        >
+          <Settings className="w-4 h-4" />
+        </Link>
+        
         {/* Undo/Redo */}
         <button className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors">
           <Undo2 className="w-4 h-4" />

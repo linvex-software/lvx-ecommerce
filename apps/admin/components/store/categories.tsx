@@ -88,7 +88,7 @@ export function Categories({ title = 'Escolha por categoria' }: CategoriesProps)
         className={`py-8 ${isActive ? 'ring-2 ring-blue-500' : ''}`}
         style={{ cursor: 'move' }}
       >
-        <div className="text-center text-gray-500">Carregando categorias...</div>
+        <div className="text-center" style={{ color: 'var(--store-text-color, #000000)' }}>Carregando categorias...</div>
       </div>
     )
   }
@@ -104,7 +104,7 @@ export function Categories({ title = 'Escolha por categoria' }: CategoriesProps)
         className={`py-8 ${isActive ? 'ring-2 ring-blue-500' : ''}`}
         style={{ cursor: 'move' }}
       >
-        <div className="text-center text-gray-400 text-sm">
+        <div className="text-center text-sm" style={{ color: 'var(--store-text-color, #000000)' }}>
           Nenhuma categoria disponível
         </div>
       </div>
@@ -121,7 +121,7 @@ export function Categories({ title = 'Escolha por categoria' }: CategoriesProps)
       className={`py-8 px-4 md:px-6 w-full overflow-hidden ${isActive ? 'ring-2 ring-blue-500' : ''}`}
       style={{ cursor: 'move' }}
     >
-      <h2 className="text-2xl font-bold text-gray-900 text-center mb-6">{title}</h2>
+      <h2 className="text-2xl font-bold text-center mb-6" style={{ color: 'var(--store-text-color, #000000)' }}>{title}</h2>
       
       <div className="relative max-w-6xl mx-auto w-full">
         {/* Carrossel */}
@@ -133,7 +133,7 @@ export function Categories({ title = 'Escolha por categoria' }: CategoriesProps)
               className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors z-10"
               aria-label="Categoria anterior"
             >
-              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-gray-700 rotate-180" />
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 rotate-180" style={{ color: 'var(--store-icon-color, #000000)' }} />
             </button>
           )}
 
@@ -152,12 +152,12 @@ export function Categories({ title = 'Escolha por categoria' }: CategoriesProps)
                 >
                     <div className="w-20 h-20 md:w-28 md:h-28 lg:w-40 lg:h-40 rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors flex items-center justify-center">
                     {IconComponent ? (
-                        <IconComponent className="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20 text-gray-700" />
+                        <IconComponent className="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20" style={{ color: 'var(--store-icon-color, #000000)' }} />
                     ) : DefaultIcon ? (
-                        <DefaultIcon className="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20 text-gray-700" />
+                        <DefaultIcon className="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20" style={{ color: 'var(--store-icon-color, #000000)' }} />
                     ) : null}
                   </div>
-                    <span className="text-xs md:text-sm font-medium text-gray-900 text-center max-w-[80px] md:max-w-none">
+                    <span className="text-xs md:text-sm font-medium text-center max-w-[80px] md:max-w-none" style={{ color: 'var(--store-text-color, #000000)' }}>
                     {category.name}
                   </span>
                 </Link>
@@ -173,7 +173,7 @@ export function Categories({ title = 'Escolha por categoria' }: CategoriesProps)
               className="flex-shrink-0 w-8 h-8 md:w-10 md:h-10 rounded-full bg-gray-200 hover:bg-gray-300 flex items-center justify-center transition-colors z-10"
               aria-label="Próxima categoria"
             >
-              <ChevronRight className="w-4 h-4 md:w-5 md:h-5 text-gray-700" />
+              <ChevronRight className="w-4 h-4 md:w-5 md:h-5" style={{ color: 'var(--store-icon-color, #000000)' }} />
             </button>
           )}
         </div>
@@ -209,7 +209,7 @@ const CategoriesSettings = () => {
   return (
     <div className="p-4 space-y-4">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--store-text-color, #000000)' }}>
           Título
         </label>
         <input

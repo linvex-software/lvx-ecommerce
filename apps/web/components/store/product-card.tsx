@@ -28,12 +28,12 @@ export function ProductCard({
           />
         ) : (
           <div className="w-full h-48 bg-gray-200 flex items-center justify-center">
-            <span className="text-gray-400">Sem imagem</span>
+            <span style={{ color: 'var(--store-text-color, #000000)' }}>Sem imagem</span>
           </div>
         )}
         <div className="p-4">
-          <h3 className="font-semibold mb-2">{name}</h3>
-          <p className="text-lg font-bold text-blue-600">
+          <h3 className="font-semibold mb-2" style={{ color: 'var(--store-text-color, #000000)' }}>{name}</h3>
+          <p className="text-lg font-bold" style={{ color: 'var(--store-primary-color, #000000)' }}>
             R$ {parseFloat(price).toFixed(2).replace('.', ',')}
           </p>
         </div>

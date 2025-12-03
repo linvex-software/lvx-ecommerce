@@ -48,7 +48,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
                   />
                 ) : (
                   <div className="w-12 h-12 md:w-14 md:h-14 bg-muted rounded flex items-center justify-center">
-                    <span className="text-xs font-semibold">Logo</span>
+                    <span className="text-xs font-semibold" style={{ color: 'var(--store-text-color, #000000)' }}>Logo</span>
                   </div>
                 )}
               </Link>
@@ -61,7 +61,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
                     className="rounded-full pl-4 pr-10 border-foreground/20 focus-visible:ring-2 focus-visible:ring-foreground/20"
                     onChange={(e) => onSearch?.(e.target.value)}
                   />
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--store-icon-color, #000000)' }} />
                 </div>
               </div>
 
@@ -73,13 +73,13 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
                   className="md:hidden p-2 hover:bg-muted rounded-full transition-colors"
                   aria-label="Buscar"
                 >
-                  <Search className="h-5 w-5" />
+                  <Search className="h-5 w-5" style={{ color: 'var(--store-icon-color, #000000)' }} />
                 </button>
 
                 {/* User Icon - Desktop Only */}
                 <div className="hidden md:flex flex-col items-center cursor-pointer hover:text-muted-foreground transition-colors">
-                  <User className="h-5 w-5" />
-                  <span className="text-[10px] mt-1">Minha Conta</span>
+                  <User className="h-5 w-5" style={{ color: 'var(--store-icon-color, #000000)' }} />
+                  <span className="text-[10px] mt-1" style={{ color: 'var(--store-text-color, #000000)' }}>Minha Conta</span>
                 </div>
 
                 {/* Cart Icon */}
@@ -92,7 +92,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
                     animate={cartCount > 0 ? { scale: [1, 1.15, 1] } : {}}
                     transition={{ duration: 0.25, ease: 'easeOut' }}
                   >
-                    <ShoppingBag className="h-5 w-5" />
+                    <ShoppingBag className="h-5 w-5" style={{ color: 'var(--store-icon-color, #000000)' }} />
                     <AnimatePresence>
                       {cartCount > 0 && (
                         <motion.span
@@ -107,7 +107,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
                       )}
                     </AnimatePresence>
                   </motion.div>
-                  <span className="text-[10px] mt-1 hidden md:block">Carrinho</span>
+                  <span className="text-[10px] mt-1 hidden md:block" style={{ color: 'var(--store-text-color, #000000)' }}>Carrinho</span>
                 </div>
 
                 {/* Hamburger Menu - Mobile Only */}
@@ -116,7 +116,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
                   className="md:hidden p-2 hover:bg-muted rounded-full transition-colors"
                   aria-label="Menu"
                 >
-                  <Menu className="h-6 w-6" />
+                  <Menu className="h-6 w-6" style={{ color: 'var(--store-icon-color, #000000)' }} />
                 </button>
               </div>
             </div>
@@ -131,7 +131,7 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
                     onChange={(e) => onSearch?.(e.target.value)}
                     autoFocus
                   />
-                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'var(--store-icon-color, #000000)' }} />
                 </div>
               </div>
             )}
@@ -148,10 +148,11 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
                   href={item.href}
                   className={`hover:text-muted-foreground transition-colors flex items-center gap-1 ${item.highlight ? 'text-red-600 font-bold' : ''
                     }`}
+                  style={{ color: item.highlight ? undefined : 'var(--store-text-color, #000000)' }}
                 >
                   {item.label}
-                  {item.badge && <span className="text-[9px] ml-1">• {item.badge}</span>}
-                  {item.hasSubmenu && <ChevronDown className="h-3 w-3" />}
+                  {item.badge && <span className="text-[9px] ml-1" style={{ color: 'var(--store-text-color, #000000)' }}>• {item.badge}</span>}
+                  {item.hasSubmenu && <ChevronDown className="h-3 w-3" style={{ color: 'var(--store-icon-color, #000000)' }} />}
                 </a>
               ))}
             </div>
@@ -174,13 +175,13 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
       >
         {/* Menu Header */}
         <div className="flex items-center justify-between p-4 border-b border-border">
-          <h2 className="text-lg font-bold">Menu</h2>
+          <h2 className="text-lg font-bold" style={{ color: 'var(--store-text-color, #000000)' }}>Menu</h2>
           <button
             onClick={closeMenu}
             className="p-2 hover:bg-muted rounded-full transition-colors"
             aria-label="Fechar menu"
           >
-            <X className="h-6 w-6" />
+            <X className="h-6 w-6" style={{ color: 'var(--store-icon-color, #000000)' }} />
           </button>
         </div>
 
@@ -196,14 +197,14 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
                   }`}
               >
                 <div className="flex flex-col">
-                  <span className="text-sm font-medium">{item.label}</span>
+                  <span className="text-sm font-medium" style={{ color: item.highlight ? undefined : 'var(--store-text-color, #000000)' }}>{item.label}</span>
                   {item.badge && (
-                    <span className="text-[10px] text-muted-foreground mt-0.5">
+                    <span className="text-[10px] mt-0.5" style={{ color: 'var(--store-text-color, #000000)' }}>
                       {item.badge}
                     </span>
                   )}
                 </div>
-                {item.hasSubmenu && <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                {item.hasSubmenu && <ChevronRight className="h-4 w-4" style={{ color: 'var(--store-icon-color, #000000)' }} />}
               </a>
             ))}
           </div>
@@ -216,8 +217,8 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
             className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
             onClick={closeMenu}
           >
-            <User className="h-5 w-5" />
-            <span className="text-sm font-medium">Minha Conta</span>
+            <User className="h-5 w-5" style={{ color: 'var(--store-icon-color, #000000)' }} />
+            <span className="text-sm font-medium" style={{ color: 'var(--store-text-color, #000000)' }}>Minha Conta</span>
           </a>
         </div>
       </div>

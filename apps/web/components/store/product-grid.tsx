@@ -156,7 +156,7 @@ export function ProductGrid({
   return (
     <div style={containerStyle}>
       {title && (
-        <h2 className="text-2xl font-bold mb-6 text-center">{title}</h2>
+        <h2 className="text-2xl font-bold mb-6 text-center" style={{ color: 'var(--store-text-color, #000000)' }}>{title}</h2>
       )}
 
       {/* Layout com ou sem filtros */}
