@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ProductRepository } from '../../../infra/db/repositories/product-repository'
 import type { Product, UpdateProductInput } from '../../../domain/catalog/product-types'
+import { normalizeSlug } from '../../utils/slug'
 
 const updateProductSchema = z.object({
   name: z.string().min(1).max(255).optional(),
@@ -72,32 +73,31 @@ export async function updateProductUseCase(
     throw new Error('Product not found')
   }
 
-  // Verificar se SKU já existe (se estiver sendo alterado)
-  if (validated.sku && validated.sku !== existingProduct.sku) {
-    const existingBySku = await productRepository.listByStore(storeId, {
-      q: validated.sku,
-      limit: 1
-    })
-    const found = existingBySku.products.find((p) => p.sku === validated.sku)
-    if (found) {
-      throw new Error('Product SKU already exists for this store')
+  // Normalizar slug se estiver sendo alterado
+  let finalSlug = validated.slug
+  if (validated.slug && validated.slug !== existingProduct.slug) {
+    finalSlug = normalizeSlug(validated.slug)
+    
+    // Verificar se slug já existe em outro produto (usando query direta)
+    const existingBySlug = await productRepository.findByStoreAndSlug(storeId, finalSlug)
+    if (existingBySlug && existingBySlug.id !== id) {
+      throw new Error('Product slug already exists for this store')
     }
+  } else if (validated.slug) {
+    finalSlug = normalizeSlug(validated.slug)
   }
 
-  // Verificar se slug já existe (se estiver sendo alterado)
-  if (validated.slug && validated.slug !== existingProduct.slug) {
-    const existingBySlug = await productRepository.listByStore(storeId, {
-      limit: 1
-    })
-    const found = existingBySlug.products.find((p) => p.slug === validated.slug)
-    if (found) {
-      throw new Error('Product slug already exists for this store')
+  // Verificar se SKU já existe em outro produto (se estiver sendo alterado)
+  if (validated.sku && validated.sku !== existingProduct.sku) {
+    const existingBySku = await productRepository.findByStoreAndSku(storeId, validated.sku)
+    if (existingBySku && existingBySku.id !== id) {
+      throw new Error('Product SKU already exists for this store')
     }
   }
 
   const updateInput: UpdateProductInput = {
     name: validated.name,
-    slug: validated.slug,
+    slug: finalSlug,
     description: validated.description,
     base_price: validated.base_price,
     sku: validated.sku,
