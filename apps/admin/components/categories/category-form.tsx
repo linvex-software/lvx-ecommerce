@@ -77,16 +77,55 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
   }, [categoriesData?.categories, category])
 
   // Construir hierarquia visual para o select
-  const buildParentOptions = (categories: Category[], parentId: string | null = null, level = 0): Array<{ id: string; name: string; level: number }> => {
-    const children = categories.filter((cat) => cat.parent_id === parentId)
-    const options: Array<{ id: string; name: string; level: number }> = []
+  // Inclui todas as categorias de availableParents organizadas hierarquicamente
+  const buildParentOptions = (categories: Category[]): Array<{ id: string; name: string; level: number }> => {
+    if (!categories || categories.length === 0) return []
     
-    children.forEach((cat) => {
-      options.push({ id: cat.id, name: cat.name, level })
-      options.push(...buildParentOptions(categories, cat.id, level + 1))
+    // Criar mapa para lookup rápido
+    const categoryMap = new Map(categories.map(cat => [cat.id, cat]))
+    
+    // Função recursiva para construir árvore começando pelas raízes
+    const buildTree = (parentId: string | null, level: number): Array<{ id: string; name: string; level: number }> => {
+      const options: Array<{ id: string; name: string; level: number }> = []
+      
+      // Buscar todas as categorias que têm este parent_id E estão em availableParents
+      const children = categories.filter((cat) => cat.parent_id === parentId)
+      
+      children.forEach((cat) => {
+        options.push({ id: cat.id, name: cat.name, level })
+        // Recursivamente adicionar subcategorias desta categoria
+        options.push(...buildTree(cat.id, level + 1))
+      })
+      
+      return options
+    }
+    
+    // Começar pelas categorias raiz (parent_id === null)
+    const rootCategories = categories.filter((cat) => !cat.parent_id)
+    const result: Array<{ id: string; name: string; level: number }> = []
+    
+    rootCategories.forEach((root) => {
+      result.push({ id: root.id, name: root.name, level: 0 })
+      result.push(...buildTree(root.id, 1))
     })
     
-    return options
+    // Incluir categorias órfãs (têm parent_id, mas o parent não está em availableParents)
+    // Essas devem aparecer como raiz também
+    const orphanCategories = categories.filter((cat) => {
+      if (!cat.parent_id) return false // Já foi incluída acima
+      const parent = categoryMap.get(cat.parent_id)
+      return !parent // Parent não existe em availableParents
+    })
+    
+    orphanCategories.forEach((orphan) => {
+      if (!result.some(opt => opt.id === orphan.id)) {
+        result.push({ id: orphan.id, name: orphan.name, level: 0 })
+        // Também incluir subcategorias da órfã
+        result.push(...buildTree(orphan.id, 1))
+      }
+    })
+    
+    return result
   }
 
   const parentOptions = useMemo(() => {
