@@ -12,7 +12,10 @@ import { RestrictedFrame } from '@/components/editor/restricted-frame'
 import { PreviewProvider, usePreviewMode } from '@/components/editor/preview-context'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import { loadTemplateLayout, loadTemplateConfig, loadTemplateComponents } from '@/lib/templates/template-loader'
+import { validateAndCleanLayout, createSafeDefaultLayout } from '@/lib/templates/layout-validator'
 import { EditorCartProvider } from '@/components/editor/editor-cart-provider'
+import { DeviceFrameset } from 'react-device-frameset'
+import 'react-device-frameset/styles/marvel-devices.min.css'
 
 function EditorContent() {
   const searchParams = useSearchParams()
@@ -53,8 +56,13 @@ function EditorContent() {
         setTemplateConfig(config)
         applyTemplateConfig(config)
 
-        // Carregar layout padrão do template
+        // Carregar layout padrão do template PRIMEIRO
         const defaultLayout = await loadTemplateLayout(selectedTemplate)
+        console.log('[Editor] Layout padrão carregado:', {
+          hasRoot: !!defaultLayout?.ROOT,
+          totalNodes: Object.keys(defaultLayout || {}).length,
+          rootNodes: (defaultLayout?.ROOT as any)?.nodes?.length || 0
+        })
 
         // Carregar layout do template ou layout personalizado salvo
         if (!user?.storeId) {
@@ -69,20 +77,47 @@ function EditorContent() {
             updated_at?: string
           }>('/editor/layout/admin')
 
-          if (response.data?.layout_json) {
-            // Usar layout salvo se existir
-            setSavedLayout(response.data.layout_json)
+          if (response.data?.layout_json && response.data.layout_json.ROOT) {
+            // Usar layout salvo se existir E tiver ROOT válido
+            const savedLayoutData = response.data.layout_json
+            const savedNodeCount = Object.keys(savedLayoutData).length
+            const savedRootNodes = (savedLayoutData.ROOT as any)?.nodes?.length || 0
+            
+            console.log('[Editor] Layout salvo do banco:', {
+              hasRoot: !!savedLayoutData.ROOT,
+              totalNodes: savedNodeCount,
+              rootNodes: savedRootNodes
+            })
+            
+            // Se o layout salvo tiver estrutura válida, usar ele
+            if (savedNodeCount > 1 && savedRootNodes > 0) {
+              setSavedLayout(savedLayoutData)
+            } else {
+              // Layout salvo está vazio ou inválido, usar padrão
+              console.warn('[Editor] Layout salvo está vazio ou inválido, usando layout padrão')
+              setSavedLayout(defaultLayout)
+            }
           } else {
-            // Se não houver layout salvo, usar layout padrão do template
+            // Se não houver layout salvo ou não tiver ROOT, usar layout padrão do template
+            console.log('[Editor] Usando layout padrão do template (sem layout salvo ou inválido)')
             setSavedLayout(defaultLayout)
           }
         } catch (error) {
           // Se não houver layout salvo, usar layout padrão do template
+          console.log('[Editor] Erro ao carregar layout salvo, usando padrão:', error)
           setSavedLayout(defaultLayout)
         }
       } catch (error) {
         console.error('Erro ao carregar template:', error)
-        setSavedLayout(null)
+        // Em caso de erro, tentar carregar pelo menos o layout padrão do template
+        try {
+          const fallbackLayout = await loadTemplateLayout(selectedTemplate)
+          setSavedLayout(fallbackLayout)
+        } catch (fallbackError) {
+          console.error('Erro ao carregar layout padrão:', fallbackError)
+          // Último recurso: layout vazio seguro
+          setSavedLayout(null)
+        }
       } finally {
         setIsLoading(false)
       }
@@ -156,6 +191,11 @@ function EditorContent() {
 
       // Carregar layout padrão do template
       const defaultLayout = await loadTemplateLayout(templateId)
+      console.log('[Editor] Layout padrão carregado ao trocar template:', {
+        hasRoot: !!defaultLayout?.ROOT,
+        totalNodes: Object.keys(defaultLayout || {}).length,
+        rootNodes: (defaultLayout?.ROOT as any)?.nodes?.length || 0
+      })
       setSavedLayout(defaultLayout)
 
       // Salvar template selecionado (opcional - rota pode não existir ainda)
@@ -203,7 +243,7 @@ function EditorContent() {
 }
 
 function EditorContentInner({ 
-  savedLayout, 
+  savedLayout: savedLayoutProp, 
   isPreview,
   onTemplateSelect,
   selectedTemplate,
@@ -215,13 +255,104 @@ function EditorContentInner({
   selectedTemplate: string
   templateResolver: Record<string, any>
 }) {
+  // Se o layout não tem ROOT válido, usar layout padrão seguro
+  let savedLayout = savedLayoutProp
+  if (savedLayout && (!savedLayout.ROOT || typeof savedLayout.ROOT !== 'object')) {
+    console.warn('[Editor] Layout carregado não tem ROOT válido, usando layout padrão seguro')
+    savedLayout = createSafeDefaultLayout()
+  }
+  
+  // Debug: verificar resolver e layout antes da validação
+  console.log('[Editor] Resolver disponível:', Object.keys(templateResolver).length, 'componentes')
+  console.log('[Editor] Componentes no resolver:', Object.keys(templateResolver))
+  console.log('[Editor] Layout antes da validação:', {
+    hasLayout: !!savedLayout,
+    hasRoot: !!savedLayout?.ROOT,
+    totalNodes: Object.keys(savedLayout || {}).length,
+    rootNodes: (savedLayout?.ROOT as any)?.nodes?.length || 0,
+    firstNodeType: (savedLayout?.ROOT as any)?.nodes?.[0] ? (savedLayout as any)?.[(savedLayout?.ROOT as any)?.nodes?.[0]]?.type?.resolvedName : null
+  })
+  
+  // Validar e limpar o layout antes de passar para o Frame
+  // Remove componentes inválidos que não existem no resolver
+  // SEMPRE retorna um layout válido (cria padrão se necessário)
+  let finalLayout: Record<string, unknown>
+  
+  if (savedLayout) {
+    // Tentar validar, mas se remover tudo, usar o original
+    const cleaned = validateAndCleanLayout(savedLayout, templateResolver)
+    
+    // Se a validação removeu muitos nós, pode ser que o resolver não tenha os componentes
+    // Nesse caso, usar o layout original e deixar o Craft.js lidar com erros
+    const originalNodeCount = Object.keys(savedLayout).length
+    const cleanedNodeCount = Object.keys(cleaned).length
+    const removedPercentage = ((originalNodeCount - cleanedNodeCount) / originalNodeCount) * 100
+    
+    if (removedPercentage > 50) {
+      console.warn(`[Editor] Validação removeu ${removedPercentage.toFixed(0)}% dos nós. Usando layout original.`)
+      finalLayout = savedLayout
+    } else {
+      finalLayout = cleaned
+    }
+  } else {
+    finalLayout = createSafeDefaultLayout()
+  }
+  
+  // Debug: verificar se o layout tem conteúdo após validação
+  console.log('[Editor] Layout final:', {
+    hasRoot: !!finalLayout?.ROOT,
+    rootNodes: (finalLayout?.ROOT as any)?.nodes?.length || 0,
+    totalNodes: Object.keys(finalLayout || {}).length,
+    rootNodeIds: (finalLayout?.ROOT as any)?.nodes || []
+  })
+  
   // Converter layout para JSON string para usar na prop data do Frame
-  const layoutJson = savedLayout ? JSON.stringify(savedLayout) : null
+  // O Craft só deve receber data quando existir layout válido
+  const layoutJson = Object.keys(finalLayout).length > 0 
+    ? JSON.stringify(finalLayout) 
+    : null
+  
+  console.log('[Editor] Layout JSON pronto:', {
+    hasJson: !!layoutJson,
+    jsonLength: layoutJson?.length || 0
+  })
   const { previewMode } = usePreviewMode()
   const frameRef = useRef<HTMLDivElement>(null)
   const { enabled } = useEditor((state: any) => ({
     enabled: state.options.enabled
   }))
+
+  // Adicionar estilos para permitir scroll dentro do DeviceFrameset
+  useEffect(() => {
+    const style = document.createElement('style')
+    style.id = 'device-frameset-scroll-fix'
+    style.textContent = `
+      /* Permitir scroll dentro do DeviceFrameset */
+      .marvel-device {
+        overflow: visible !important;
+      }
+      
+      .marvel-device .screen {
+        overflow-y: auto !important;
+        overflow-x: hidden !important;
+        height: 100% !important;
+      }
+      
+      /* Garantir que o conteúdo interno possa fazer scroll */
+      .marvel-device .screen > * {
+        min-height: 100% !important;
+      }
+    `
+    if (!document.getElementById('device-frameset-scroll-fix')) {
+      document.head.appendChild(style)
+    }
+    return () => {
+      const existingStyle = document.getElementById('device-frameset-scroll-fix')
+      if (existingStyle) {
+        existingStyle.remove()
+      }
+    }
+  }, [])
   
   // Aplicar tema no Frame do Craft.js
   useEffect(() => {
@@ -273,26 +404,19 @@ function EditorContentInner({
     }
   }, [enabled, isPreview])
 
-  // Tamanhos de preview para cada dispositivo
-  const previewSizes = {
-    desktop: {
-      maxWidth: '100%',
-      width: '100%',
-      minHeight: '100%'
-    },
-    tablet: {
-      maxWidth: '768px',
-      width: '768px',
-      minHeight: '1024px'
-    },
-    mobile: {
-      maxWidth: '375px',
-      width: '375px',
-      minHeight: '667px'
+  // Mapear preview mode para dispositivos da biblioteca
+  const getDeviceConfig = () => {
+    switch (previewMode) {
+      case 'tablet':
+        return { device: 'iPad Mini' as const, color: 'silver' as const }
+      case 'desktop':
+        return { device: 'MacBook Pro' as const }
+      default:
+        return { device: 'MacBook Pro' as const }
     }
   }
 
-  const currentSize = previewSizes[previewMode]
+  const deviceConfig = getDeviceConfig()
 
   return (
     <>
@@ -304,28 +428,27 @@ function EditorContentInner({
           </div>
         )}
         <div className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 flex items-start justify-center p-4 md:p-10">
-          <div 
-            ref={frameRef}
-            className="bg-white shadow-lg transition-all duration-300"
-            style={{ 
-              width: currentSize.width,
-              maxWidth: currentSize.maxWidth,
-              minHeight: currentSize.minHeight,
-              fontFamily: 'var(--font-body, "Montserrat", system-ui, sans-serif)',
-              backgroundColor: 'hsl(var(--background, 0 0% 100%))',
-              color: 'hsl(var(--foreground, 0 0% 12%))',
-              margin: 0,
-              isolation: 'isolate', // Isolar do CSS do admin
-            }}
-          >
-            {layoutJson ? (
-              <RestrictedFrame data={layoutJson} />
-            ) : (
-              <div className="p-8 text-center text-gray-500">
-                <p>Selecione um template para começar</p>
+          {layoutJson ? (
+            <DeviceFrameset {...deviceConfig}>
+              <div 
+                ref={frameRef}
+                className="w-full"
+                style={{ 
+                  fontFamily: 'var(--font-body, "Montserrat", system-ui, sans-serif)',
+                  backgroundColor: 'hsl(var(--background, 0 0% 100%))',
+                  color: 'hsl(var(--foreground, 0 0% 12%))',
+                  isolation: 'isolate', // Isolar do CSS do admin
+                  minHeight: '100vh', // Garantir altura mínima para scroll
+                }}
+              >
+                <RestrictedFrame data={layoutJson} />
               </div>
-            )}
-          </div>
+            </DeviceFrameset>
+          ) : (
+            <div className="p-8 text-center text-gray-500">
+              <p>Selecione um template para começar</p>
+            </div>
+          )}
         </div>
       </div>
     </>

@@ -31,7 +31,21 @@ export async function loadTemplateLayout(templateId: string): Promise<Record<str
     // Importar diretamente o arquivo JSON
     // O caminho é relativo a partir da raiz do projeto
     const layoutModule = await import(`../../../../templates/${templateId}/layout.json`)
-    return layoutModule.default as Record<string, unknown>
+    const layout = layoutModule.default as Record<string, unknown>
+    
+    // Validar que o layout tem ROOT
+    if (!layout || !layout.ROOT) {
+      console.error(`[loadTemplateLayout] Layout do template ${templateId} não tem ROOT válido`)
+      throw new Error(`Layout do template ${templateId} é inválido: falta ROOT`)
+    }
+    
+    console.log(`[loadTemplateLayout] Layout carregado para ${templateId}:`, {
+      hasRoot: !!layout.ROOT,
+      totalNodes: Object.keys(layout).length,
+      rootNodes: (layout.ROOT as any)?.nodes?.length || 0
+    })
+    
+    return layout
   } catch (error) {
     console.error(`Erro ao carregar layout do template ${templateId}:`, error)
     throw error

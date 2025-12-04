@@ -19,7 +19,7 @@ export function Header() {
   const { itemCount, setIsOpen } = useCart();
 
   return (
-    <header className="sticky top-0 z-50 bg-background/95 backdrop-blur-md border-b border-border">
+    <header className="sticky top-0 bg-background/95 backdrop-blur-md border-b border-border" style={{zIndex: 99999}}>
       {/* Top Bar */}
       <div className="bg-primary text-primary-foreground text-center py-2 text-xs tracking-widest font-body">
         FRETE GRÁTIS PARA COMPRAS ACIMA DE R$ 299
@@ -63,7 +63,7 @@ export function Header() {
             <Link to="/busca" className="p-2 hover:text-primary transition-colors">
               <Search size={20} />
             </Link>
-            <Link to="/conta" className="p-2 hover:text-primary transition-colors hidden sm:block">
+            <Link to="/minha-conta" className="p-2 hover:text-primary transition-colors hidden sm:block">
               <User size={20} />
             </Link>
             <button className="p-2 hover:text-primary transition-colors hidden sm:block">
@@ -91,7 +91,7 @@ export function Header() {
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <nav className="flex flex-col p-6 gap-4">
+        <nav className="flex flex-col p-6 gap-4 bg-white">
           {navLinks.map((link) => (
             <Link
               key={link.name}
@@ -103,7 +103,7 @@ export function Header() {
             </Link>
           ))}
           <div className="flex gap-4 mt-6">
-            <Link to="/conta" className="flex items-center gap-2 text-foreground">
+            <Link to="/minha-conta" className="flex items-center gap-2 text-foreground">
               <User size={20} />
               <span>Minha Conta</span>
             </Link>

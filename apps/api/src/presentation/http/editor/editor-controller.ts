@@ -31,6 +31,18 @@ export class EditorController {
         return
       }
 
+      // Validar que o layout tem ROOT válido
+      const layoutJson = layout.layout_json as Record<string, unknown>
+      if (!layoutJson || !layoutJson.ROOT || typeof layoutJson.ROOT !== 'object') {
+        // Layout inválido no banco, retornar null para usar layout padrão
+        request.log.warn('Layout no banco não tem ROOT válido, retornando null')
+        await reply.send({
+          layout_json: null,
+          updated_at: null
+        })
+        return
+      }
+
       await reply.send({
         layout_json: layout.layout_json,
         updated_at: layout.updated_at
@@ -57,6 +69,15 @@ export class EditorController {
       const layout = await this.storeLayoutRepository.findByStoreId(storeId)
 
       if (!layout) {
+        await reply.code(404).send({ error: 'Layout not found' })
+        return
+      }
+
+      // Validar que o layout tem ROOT válido
+      const layoutJson = layout.layout_json as Record<string, unknown>
+      if (!layoutJson || !layoutJson.ROOT || typeof layoutJson.ROOT !== 'object') {
+        // Layout inválido no banco, retornar 404 para usar layout padrão
+        request.log.warn('Layout no banco não tem ROOT válido, retornando 404')
         await reply.code(404).send({ error: 'Layout not found' })
         return
       }

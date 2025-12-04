@@ -1,14 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useRegister } from '@/lib/hooks/use-register'
 import { useCreateAddress } from '@/lib/hooks/use-addresses'
+import { useIsAuthenticated, useHasHydrated } from '@/lib/store/useAuthStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { motion, AnimatePresence } from 'framer-motion'
+
 
 type Step = 1 | 2 | 3
 
@@ -47,6 +49,8 @@ export default function PrimeiroAcessoPage() {
   const router = useRouter()
   const { register, isLoading: isRegistering, error } = useRegister()
   const createAddress = useCreateAddress()
+  const isAuthenticated = useIsAuthenticated()
+  const hasHydrated = useHasHydrated()
   const [step, setStep] = useState<Step>(1)
   const [direction, setDirection] = useState(1)
   const [isLoadingCep, setIsLoadingCep] = useState(false)
@@ -73,6 +77,23 @@ export default function PrimeiroAcessoPage() {
   })
   
   const [formError, setFormError] = useState<string | null>(null)
+
+  // Redirecionar se já estiver autenticado
+  useEffect(() => {
+    if (hasHydrated && isAuthenticated) {
+      router.push('/minha-conta')
+    }
+  }, [hasHydrated, isAuthenticated, router])
+
+  // Limpar erro automaticamente após 3 segundos
+  useEffect(() => {
+    if (formError) {
+      const timer = setTimeout(() => {
+        setFormError(null)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [formError])
 
   const isEmail = identifier.includes('@')
   const normalizedIdentifier = identifier.replace(/\D/g, '')
@@ -204,7 +225,62 @@ export default function PrimeiroAcessoPage() {
 
       router.push('/minha-conta')
     } catch (err: any) {
-      setFormError(err.message || 'Erro ao finalizar cadastro')
+      // Extrair mensagem de erro de forma mais amigável
+      let message = 'Erro ao finalizar cadastro. Tente novamente.'
+      
+      // Debug: logar o erro completo
+      console.log('[PrimeiroAcesso] Erro capturado:', {
+        message: err.message,
+        payload: err.payload,
+        details: err.payload?.details,
+        errorFromHook: error
+      })
+      
+      // Priorizar erro do hook de registro se disponível (já processado)
+      if (error) {
+        message = error
+        console.log('[PrimeiroAcesso] Usando erro do hook:', message)
+      } else if (err.payload?.details && Array.isArray(err.payload.details) && err.payload.details.length > 0) {
+        // Priorizar detalhes de validação - pegar a primeira mensagem específica
+        const firstError = err.payload.details[0]
+        console.log('[PrimeiroAcesso] Primeiro erro dos detalhes:', firstError)
+        
+        if (firstError.message) {
+          // Usar a mensagem específica do erro (ex: "CPF inválido")
+          message = firstError.message
+          console.log('[PrimeiroAcesso] Usando mensagem específica:', message)
+        } else if (firstError.path && firstError.path.length > 0) {
+          // Construir mensagem baseada no campo se não houver mensagem
+          const field = firstError.path[firstError.path.length - 1]
+          const fieldName = field === 'cpf' ? 'CPF' : 
+                           field === 'email' ? 'E-mail' : 
+                           field === 'password' ? 'Senha' : 
+                           field === 'name' ? 'Nome' : 
+                           field === 'phone' ? 'Telefone' : field
+          message = `${fieldName}: Campo inválido`
+        }
+      } else if (err.payload?.error) {
+        // Se não houver detalhes, usar o erro geral
+        // Mas só se não for "Validation error" genérico
+        if (err.payload.error !== 'Validation error') {
+          message = err.payload.error
+        }
+      } else if (err.message) {
+        // Traduzir mensagens comuns
+        if (err.message.includes('já cadastrado')) {
+          message = err.message
+        } else if (err.message.includes('CPF inválido')) {
+          message = 'CPF inválido. Verifique os dados e tente novamente.'
+        } else if (err.message.includes('Email inválido')) {
+          message = 'E-mail inválido. Verifique os dados e tente novamente.'
+        } else if (err.message.includes('Validation error')) {
+          message = 'Dados inválidos. Verifique os campos e tente novamente.'
+        } else {
+          message = err.message
+        }
+      }
+      
+      setFormError(message)
     }
   }
 
@@ -229,6 +305,11 @@ export default function PrimeiroAcessoPage() {
         duration: 0.2,
       },
     }),
+  }
+
+  // Não renderizar nada enquanto verifica autenticação
+  if (!hasHydrated || isAuthenticated) {
+    return null
   }
 
   return (
@@ -304,7 +385,8 @@ export default function PrimeiroAcessoPage() {
 
                 {formError && (
                   <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded text-sm">
-                    {formError}
+                    <p className="font-medium">Erro</p>
+                    <p className="mt-1">{formError}</p>
                   </div>
                 )}
 
@@ -396,7 +478,8 @@ export default function PrimeiroAcessoPage() {
 
                 {(error || formError) && (
                   <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded text-sm">
-                    {formError || error}
+                    <p className="font-medium">Erro ao cadastrar</p>
+                    <p className="mt-1">{formError || error}</p>
                   </div>
                 )}
 
@@ -538,7 +621,8 @@ export default function PrimeiroAcessoPage() {
 
                 {formError && (
                   <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded text-sm">
-                    {formError}
+                    <p className="font-medium">Erro</p>
+                    <p className="mt-1">{formError}</p>
                   </div>
                 )}
 

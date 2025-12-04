@@ -169,3 +169,4 @@ O BentoGrid tinha `bg-white` hardcoded na classe do elemento `<section>`, o que 
 - Wrapper component: `apps/admin/components/editor/settings/component-wrapper.tsx`
 
 
+

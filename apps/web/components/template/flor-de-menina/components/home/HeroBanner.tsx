@@ -237,7 +237,11 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
     : defaultBackgroundImage;
 
   return (
-    <section ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }} className="relative h-[85vh] min-h-[600px] overflow-hidden">
+    <section 
+      ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }} 
+      className="relative h-[85vh] min-h-[600px] overflow-hidden"
+      style={{ zIndex: 0 }}
+    >
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
@@ -374,7 +378,7 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
       </div>
 
       {/* Scroll Indicator */}
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center gap-2 animate-bounce">
+      <div className="absolute bottom-8 left-0 right-0 flex flex-col items-center justify-center gap-2 animate-bounce">
         {renderEditableText("node_hero_text_5", {
           tag: "span",
           className: "text-secondary/60 text-xs tracking-widest uppercase font-body text-center block",

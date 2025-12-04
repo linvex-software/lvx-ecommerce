@@ -358,3 +358,4 @@ O sistema de padronização está **funcional e pronto para uso**. Os componente
 O editor Craft.js agora tem componentes de configuração profissionais e reutilizáveis, melhorando significativamente a UX de customização.
 
 
+

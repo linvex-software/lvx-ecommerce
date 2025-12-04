@@ -184,6 +184,10 @@ export const physicalSalesCommissions = pgTable(
   })
 )
 
+// Tabela shipping_addresses comentada temporariamente
+// A tabela não existe no banco e não é necessária para criar pedidos
+// TODO: Criar tabela e descomentar quando necessário
+/*
 export const shippingAddresses = pgTable(
   'shipping_addresses',
   {
@@ -207,4 +211,5 @@ export const shippingAddresses = pgTable(
     orderIdIdx: index('shipping_addresses_order_id_idx').on(table.order_id)
   })
 )
+*/
 

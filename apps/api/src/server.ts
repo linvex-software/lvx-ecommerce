@@ -24,6 +24,8 @@ import { registerShippingRoutes } from './presentation/http/shipping/shipping-ro
 import { registerCustomerRoutes } from './presentation/http/customers/customer-routes'
 import { registerEditorRoutes } from './presentation/http/editor/editor-routes'
 import { registerTemplateSettingsRoutes } from './presentation/http/settings/template-routes'
+import { registerPaymentRoutes } from './presentation/http/payments/payment-routes'
+import { registerAdminPaymentMethodRoutes } from './presentation/http/admin/payment-method-routes'
 
 async function buildServer() {
   const app = Fastify({
@@ -146,6 +148,8 @@ async function buildServer() {
   await registerCustomerRoutes(app)
   await registerEditorRoutes(app)
   await registerTemplateSettingsRoutes(app)
+  await registerPaymentRoutes(app)
+  await registerAdminPaymentMethodRoutes(app)
 
   return app
 }

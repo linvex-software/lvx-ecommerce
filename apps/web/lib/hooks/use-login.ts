@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { fetchAPI } from '@/lib/api'
 import { useAuthStore } from '@/lib/store/useAuthStore'
 
@@ -21,11 +21,22 @@ interface LoginResponse {
   }
 }
 
-export function useLogin() {
+export function useLogin(redirectPath?: string) {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { setAuth } = useAuthStore()
+
+  // Limpar erro automaticamente após 3 segundos
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError(null)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [error])
 
   const login = async (input: LoginInput) => {
     setIsLoading(true)
@@ -47,7 +58,10 @@ export function useLogin() {
       }) as LoginResponse
 
       setAuth(data.accessToken, data.customer)
-      router.push('/minha-conta')
+      
+      // Verificar redirect: primeiro o parâmetro passado, depois searchParams, depois padrão
+      const redirect = redirectPath || searchParams?.get('redirect') || '/minha-conta'
+      router.push(redirect)
     } catch (err: any) {
       // Extrair mensagem de erro de forma mais amigável
       let message = 'Erro ao fazer login'
@@ -73,6 +87,19 @@ export function useLogin() {
         if (firstError.message) {
           message = firstError.message
         }
+      }
+      
+      // Traduzir mensagens comuns para português
+      if (message.includes('Invalid credentials')) {
+        message = 'E-mail/CPF ou senha incorretos. Verifique os dados e tente novamente.'
+      } else if (message.includes('CPF inválido')) {
+        message = 'CPF inválido. Verifique os dados e tente novamente.'
+      } else if (message.includes('Email inválido')) {
+        message = 'E-mail inválido. Verifique os dados e tente novamente.'
+      } else if (message.includes('Validation error')) {
+        message = 'Dados inválidos. Verifique os campos e tente novamente.'
+      } else if (message.includes('Required')) {
+        message = 'Por favor, preencha todos os campos obrigatórios.'
       }
       
       setError(message)

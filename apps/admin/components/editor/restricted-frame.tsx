@@ -10,6 +10,7 @@
 import { Frame } from '@craftjs/core'
 import { useEffect, useRef } from 'react'
 import { TemplateStyles } from './template-styles'
+import { usePreviewMode } from './preview-context'
 
 interface RestrictedFrameProps {
   data?: string | null
@@ -17,6 +18,19 @@ interface RestrictedFrameProps {
 
 export function RestrictedFrame({ data }: RestrictedFrameProps) {
   const frameRef = useRef<HTMLDivElement>(null)
+  const { previewMode } = usePreviewMode()
+  
+  // Verificar se data é válido antes de passar para o Frame
+  // O Craft só deve receber data quando existir layout válido
+  let safeData: string | undefined
+  try {
+    if (data && data.trim().length > 0) {
+      const parsed = JSON.parse(data)
+      safeData = parsed && Object.keys(parsed).length > 0 ? data : undefined
+    }
+  } catch {
+    safeData = undefined
+  }
 
   // Aplicar estilos CSS variables no frame do Craft.js
   // O Craft.js cria um iframe, então precisamos aplicar as variáveis dentro do documento do iframe
@@ -96,16 +110,155 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
               }
             })
 
-            // IMPORTANTE: Adicionar meta viewport para garantir que breakpoints funcionem corretamente
+            // IMPORTANTE: Adicionar meta viewport baseado no preview mode
+            // Isso garante que os breakpoints do Tailwind funcionem corretamente
             let viewportMeta = iframeDoc.querySelector('meta[name="viewport"]')
+            const viewportWidth = previewMode === 'tablet' ? '768' : 'device-width'
+            const simulatedWidth = previewMode === 'tablet' ? 768 : 1920
+            const simulatedHeight = previewMode === 'tablet' ? 1024 : 1080
+            
             if (!viewportMeta) {
               viewportMeta = iframeDoc.createElement('meta')
               viewportMeta.setAttribute('name', 'viewport')
-              viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0')
+              viewportMeta.setAttribute('content', `width=${viewportWidth}, initial-scale=1.0, user-scalable=no`)
               iframeDoc.head.insertBefore(viewportMeta, iframeDoc.head.firstChild)
             } else {
-              // Atualizar viewport existente para garantir largura correta
-              viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0')
+              // Atualizar viewport existente baseado no preview mode
+              viewportMeta.setAttribute('content', `width=${viewportWidth}, initial-scale=1.0, user-scalable=no`)
+            }
+
+            // Injetar script para simular dimensões do dispositivo dentro do iframe
+            // Isso faz com que window.innerWidth, window.matchMedia, etc. funcionem corretamente
+            const existingSimulator = iframeDoc.getElementById('device-simulator-script')
+            if (existingSimulator) {
+              existingSimulator.remove()
+            }
+            
+            const simulatorScript = iframeDoc.createElement('script')
+            simulatorScript.id = 'device-simulator-script'
+            simulatorScript.textContent = `
+              (function() {
+                const simulatedWidth = ${simulatedWidth};
+                const simulatedHeight = ${simulatedHeight};
+                
+                // Sobrescrever window.innerWidth e window.innerHeight
+                Object.defineProperty(window, 'innerWidth', {
+                  get: function() { return simulatedWidth; },
+                  configurable: true
+                });
+                
+                Object.defineProperty(window, 'innerHeight', {
+                  get: function() { return simulatedHeight; },
+                  configurable: true
+                });
+                
+                // Sobrescrever window.outerWidth e window.outerHeight
+                Object.defineProperty(window, 'outerWidth', {
+                  get: function() { return simulatedWidth; },
+                  configurable: true
+                });
+                
+                Object.defineProperty(window, 'outerHeight', {
+                  get: function() { return simulatedHeight; },
+                  configurable: true
+                });
+                
+                // Sobrescrever document.documentElement.clientWidth e clientHeight
+                Object.defineProperty(document.documentElement, 'clientWidth', {
+                  get: function() { return simulatedWidth; },
+                  configurable: true
+                });
+                
+                Object.defineProperty(document.documentElement, 'clientHeight', {
+                  get: function() { return simulatedHeight; },
+                  configurable: true
+                });
+                
+                // Sobrescrever window.matchMedia para retornar valores baseados na largura simulada
+                const originalMatchMedia = window.matchMedia;
+                window.matchMedia = function(query) {
+                  const mediaQuery = query.replace(/\\s/g, '');
+                  
+                  // Parsear queries comuns
+                  if (mediaQuery.includes('min-width:')) {
+                    const match = mediaQuery.match(/min-width:(\\d+)px/);
+                    if (match) {
+                      const minWidth = parseInt(match[1]);
+                      return {
+                        matches: simulatedWidth >= minWidth,
+                        media: query,
+                        onchange: null,
+                        addListener: function() {},
+                        removeListener: function() {},
+                        addEventListener: function() {},
+                        removeEventListener: function() {},
+                        dispatchEvent: function() { return true; }
+                      };
+                    }
+                  }
+                  
+                  if (mediaQuery.includes('max-width:')) {
+                    const match = mediaQuery.match(/max-width:(\\d+)px/);
+                    if (match) {
+                      const maxWidth = parseInt(match[1]);
+                      return {
+                        matches: simulatedWidth <= maxWidth,
+                        media: query,
+                        onchange: null,
+                        addListener: function() {},
+                        removeListener: function() {},
+                        addEventListener: function() {},
+                        removeEventListener: function() {},
+                        dispatchEvent: function() { return true; }
+                      };
+                    }
+                  }
+                  
+                  // Fallback para queries não reconhecidas
+                  return originalMatchMedia.call(window, query);
+                };
+                
+                // Forçar atualização do body width
+                const updateDimensions = () => {
+                  document.body.style.width = simulatedWidth + 'px';
+                  document.body.style.maxWidth = simulatedWidth + 'px';
+                  document.documentElement.style.width = simulatedWidth + 'px';
+                  document.documentElement.style.maxWidth = simulatedWidth + 'px';
+                  
+                  // Disparar evento resize para componentes que dependem dele
+                  window.dispatchEvent(new Event('resize'));
+                };
+                
+                // Executar imediatamente
+                updateDimensions();
+                
+                // Executar quando DOM estiver pronto
+                if (document.readyState === 'loading') {
+                  document.addEventListener('DOMContentLoaded', updateDimensions);
+                }
+                
+                // Executar após um delay para garantir que React tenha inicializado
+                setTimeout(updateDimensions, 100);
+                setTimeout(updateDimensions, 500);
+                setTimeout(updateDimensions, 1000);
+              })();
+            `
+            // Inserir o script ANTES de qualquer outro script para garantir execução precoce
+            // Isso faz com que window.innerWidth, matchMedia, etc. sejam sobrescritos antes do React renderizar
+            // Inserir no início do head para máxima prioridade
+            iframeDoc.head.insertBefore(simulatorScript, iframeDoc.head.firstChild)
+            
+            // O script será executado automaticamente quando inserido no DOM
+            // Mas vamos também executar diretamente no contexto do iframe para garantir
+            if (frameElement.contentWindow) {
+              try {
+                // Executar o script diretamente no contexto do iframe
+                // @ts-ignore - eval existe no window, apenas não está tipado
+                frameElement.contentWindow.eval(simulatorScript.textContent)
+              } catch (e) {
+                // Se não conseguir executar (CSP), o script já foi inserido no DOM e será executado automaticamente
+                console.log('[RestrictedFrame] Script de simulação inserido no iframe')
+              }
             }
 
             // IMPORTANTE: Carregar CSS do template PRIMEIRO, depois Tailwind
@@ -147,7 +300,14 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
                       // O Craft.js Frame já deve carregar os scripts, mas vamos garantir
                       setTimeout(() => {
                         applyFrameStyles()
-                      }, 100)
+                        // Executar o script de simulação após tudo carregar
+                        if (simulatorScript.parentNode) {
+                          // Re-executar o script para garantir que as dimensões sejam aplicadas
+                          const newScript = iframeDoc.createElement('script')
+                          newScript.textContent = simulatorScript.textContent
+                          iframeDoc.head.appendChild(newScript)
+                        }
+                      }, 200)
                     }
                   }
                 } else {
@@ -278,12 +438,8 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
                 }
               }
               
-              /* FALLBACK: Se o viewport não estiver sendo detectado corretamente, */
-              /* usar uma abordagem baseada na largura do body/html */
-              /* Isso garante que a navegação apareça mesmo se o viewport não estiver configurado corretamente */
-              body {
-                min-width: 1024px;
-              }
+              /* REMOVIDO: min-width: 1024px que estava forçando desktop no mobile/tablet */
+              /* Agora o viewport é configurado corretamente baseado no preview mode */
               
               /* Forçar navegação desktop quando o body tiver largura >= 1024px */
               @media (min-width: 1024px) {
@@ -389,7 +545,7 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
       clearTimeout(timeout3)
       clearTimeout(timeout4)
     }
-  }, [])
+  }, [previewMode]) // Re-executar quando o preview mode mudar
 
   useEffect(() => {
     // Desabilitar drag & drop via CSS e eventos
@@ -466,7 +622,7 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
         frameElement.removeEventListener('drop', handleDrop, true)
       }
     }
-  }, [])
+  }, [previewMode]) // Re-executar quando o preview mode mudar
 
   return (
     <>
@@ -481,7 +637,7 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
           isolation: 'isolate', // Isolar do contexto de empilhamento do admin
         }}
       >
-        <Frame data={data || undefined} />
+        <Frame data={safeData} />
       </div>
     </>
   )

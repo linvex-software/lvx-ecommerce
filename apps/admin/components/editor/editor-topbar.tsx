@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/auth-store'
 import { apiClient } from '@/lib/api-client'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Menu, Monitor, Tablet, Smartphone, Undo2, Redo2, Eye, ChevronDown, Settings } from 'lucide-react'
+import { Menu, Monitor, Tablet, Undo2, Redo2, Eye, ChevronDown, Settings } from 'lucide-react'
 import { usePreviewMode } from './preview-context'
 import Link from 'next/link'
 
@@ -112,16 +112,6 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
           }`}
         >
           <Tablet className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setPreviewMode('mobile')}
-          className={`p-2 rounded transition-colors ${
-            previewMode === 'mobile' 
-              ? 'bg-[#7c3aed] text-white' 
-              : 'text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <Smartphone className="w-4 h-4" />
         </button>
       </div>
 
