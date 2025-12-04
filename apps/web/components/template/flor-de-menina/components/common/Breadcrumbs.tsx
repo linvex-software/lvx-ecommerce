@@ -1,0 +1,33 @@
+import Link from "next/link";
+import { ChevronRight, Home } from "lucide-react";
+
+interface BreadcrumbItem {
+  label: string;
+  href?: string;
+}
+
+interface BreadcrumbsProps {
+  items: BreadcrumbItem[];
+}
+
+export function Breadcrumbs({ items }: BreadcrumbsProps) {
+  return (
+    <nav className="flex items-center gap-2 text-sm font-body py-4">
+      <Link href="/" className="text-muted-foreground hover:text-primary transition-colors">
+        <Home size={16} />
+      </Link>
+      {items.map((item, index) => (
+        <span key={index} className="flex items-center gap-2">
+          <ChevronRight size={14} className="text-muted-foreground" />
+          {item.href ? (
+            <Link href={item.href} className="text-muted-foreground hover:text-primary transition-colors">
+              {item.label}
+            </Link>
+          ) : (
+            <span className="text-foreground">{item.label}</span>
+          )}
+        </span>
+      ))}
+    </nav>
+  );
+}

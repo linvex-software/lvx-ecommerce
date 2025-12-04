@@ -23,11 +23,11 @@ interface SummaryCardsProps {
 
 export function SummaryCards({ cards, isLoading = false }: SummaryCardsProps) {
   return (
-    <div className="flex flex-wrap gap-6">
+    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
       {cards.map((card) => {
         const Icon = card.icon
         return (
-          <Card key={card.id} className="flex-1 min-w-[200px] rounded-2xl border-gray-100 shadow-sm">
+          <Card key={card.id} className="rounded-2xl border-gray-100 shadow-sm">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400">
                 {card.label}

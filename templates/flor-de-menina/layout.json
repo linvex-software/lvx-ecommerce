@@ -1,0 +1,861 @@
+{
+  "ROOT": {
+    "type": {
+      "resolvedName": "div"
+    },
+    "isCanvas": true,
+    "props": {},
+    "displayName": "div",
+    "custom": {},
+    "parent": null,
+    "nodes": [
+      "node_header",
+      "node_hero",
+      "node_product_showcase_1",
+      "node_category_banner",
+      "node_product_showcase_2",
+      "node_promo_banner",
+      "node_product_showcase_3",
+      "node_instagram_feed",
+      "node_footer"
+    ],
+    "linkedNodes": {}
+  },
+  "node_header": {
+    "type": {
+      "resolvedName": "Header"
+    },
+    "props": {},
+    "displayName": "Header",
+    "custom": {},
+    "parent": "ROOT",
+    "nodes": [
+      "node_header_topbar",
+      "node_header_logo",
+      "node_header_nav_1",
+      "node_header_nav_2",
+      "node_header_nav_3",
+      "node_header_nav_4",
+      "node_header_nav_5",
+      "node_header_nav_6"
+    ],
+    "linkedNodes": {}
+  },
+  "node_header_topbar": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_header_topbar",
+      "tag": "span",
+      "className": "",
+      "content": "FRETE GRÁTIS PARA COMPRAS ACIMA DE R$ 299"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_header",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_header_logo": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_header_logo",
+      "tag": "span",
+      "className": "",
+      "content": "Flor de Menina"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_header",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_header_nav_1": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_header_nav_1",
+      "tag": "span",
+      "className": "",
+      "content": "Novidades"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_header",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_header_nav_2": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_header_nav_2",
+      "tag": "span",
+      "className": "",
+      "content": "Vestidos"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_header",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_header_nav_3": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_header_nav_3",
+      "tag": "span",
+      "className": "",
+      "content": "Conjuntos"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_header",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_header_nav_4": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_header_nav_4",
+      "tag": "span",
+      "className": "",
+      "content": "Blusas"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_header",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_header_nav_5": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_header_nav_5",
+      "tag": "span",
+      "className": "",
+      "content": "Saias & Calças"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_header",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_header_nav_6": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_header_nav_6",
+      "tag": "span",
+      "className": "",
+      "content": "Natal & Festas"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_header",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_hero": {
+    "type": {
+      "resolvedName": "HeroBanner"
+    },
+    "props": {},
+    "displayName": "HeroBanner",
+    "custom": {},
+    "parent": "ROOT",
+    "nodes": [
+      "node_hero_text_1",
+      "node_hero_text_2",
+      "node_hero_text_3",
+      "node_hero_text_4",
+      "node_hero_text_5"
+    ],
+    "linkedNodes": {}
+  },
+  "node_hero_text_1": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_hero_text_1",
+      "tag": "span",
+      "className": "inline-block text-sm tracking-[0.3em] uppercase font-body mb-4",
+      "content": "Coleção Festas 2024"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_hero",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_hero_text_2": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_hero_text_2",
+      "tag": "span",
+      "className": "",
+      "content": "Elegância em"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_hero",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_hero_text_3": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_hero_text_3",
+      "tag": "span",
+      "className": "",
+      "content": "Vermelho & Branco"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_hero",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_hero_text_4": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_hero_text_4",
+      "tag": "p",
+      "className": "text-secondary/80 font-body text-base md:text-lg mb-8 max-w-md leading-relaxed",
+      "content": "Descubra peças exclusivas para brilhar nas festas de fim de ano. Sofisticação e estilo que traduzem a essência feminina."
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_hero",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_hero_text_5": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_hero_text_5",
+      "tag": "span",
+      "className": "text-secondary/60 text-xs tracking-widest uppercase font-body",
+      "content": "Role"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_hero",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_1": {
+    "type": {
+      "resolvedName": "ProductShowcase"
+    },
+    "props": {
+      "title": "Novidades",
+      "subtitle": "Acabaram de Chegar",
+      "viewAllLink": "/produtos?filter=new",
+      "viewAllText": "Ver Todos"
+    },
+    "displayName": "ProductShowcase",
+    "custom": {},
+    "parent": "ROOT",
+    "nodes": [
+      "node_product_showcase_1_subtitle",
+      "node_product_showcase_1_title",
+      "node_product_showcase_1_view_all"
+    ],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_1_subtitle": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_product_showcase_1_subtitle",
+      "tag": "span",
+      "className": "text-primary text-xs tracking-[0.3em] uppercase font-body mb-3 block",
+      "content": "Acabaram de Chegar"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_product_showcase_1",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_1_title": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_product_showcase_1_title",
+      "tag": "span",
+      "className": "",
+      "content": "Novidades"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_product_showcase_1",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_1_view_all": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_product_showcase_1_view_all",
+      "tag": "span",
+      "className": "",
+      "content": "Ver Todos"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_product_showcase_1",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_category_banner": {
+    "type": {
+      "resolvedName": "CategoryBanner"
+    },
+    "props": {},
+    "displayName": "CategoryBanner",
+    "custom": {},
+    "parent": "ROOT",
+    "nodes": [
+      "node_category_banner_subtitle",
+      "node_category_banner_title",
+      "node_category_1_name",
+      "node_category_1_cta",
+      "node_category_2_name",
+      "node_category_2_cta",
+      "node_category_3_name",
+      "node_category_3_cta"
+    ],
+    "linkedNodes": {}
+  },
+  "node_category_banner_subtitle": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_category_banner_subtitle",
+      "tag": "span",
+      "className": "text-primary text-xs tracking-[0.3em] uppercase font-body mb-3 block",
+      "content": "Categorias"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_category_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_category_banner_title": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_category_banner_title",
+      "tag": "span",
+      "className": "",
+      "content": "Explore por Estilo"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_category_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_category_1_name": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_category_1_name",
+      "tag": "span",
+      "className": "",
+      "content": "Vestidos"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_category_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_category_1_cta": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_category_1_cta",
+      "tag": "span",
+      "className": "inline-block text-secondary/80 text-xs tracking-widest uppercase font-body border-b border-gold pb-1 group-hover:border-primary transition-colors",
+      "content": "Ver Coleção"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_category_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_category_2_name": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_category_2_name",
+      "tag": "span",
+      "className": "",
+      "content": "Conjuntos"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_category_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_category_2_cta": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_category_2_cta",
+      "tag": "span",
+      "className": "inline-block text-secondary/80 text-xs tracking-widest uppercase font-body border-b border-gold pb-1 group-hover:border-primary transition-colors",
+      "content": "Ver Coleção"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_category_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_category_3_name": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_category_3_name",
+      "tag": "span",
+      "className": "",
+      "content": "Blazers"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_category_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_category_3_cta": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_category_3_cta",
+      "tag": "span",
+      "className": "inline-block text-secondary/80 text-xs tracking-widest uppercase font-body border-b border-gold pb-1 group-hover:border-primary transition-colors",
+      "content": "Ver Coleção"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_category_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_2": {
+    "type": {
+      "resolvedName": "ProductShowcase"
+    },
+    "props": {
+      "title": "Mais Vendidos",
+      "subtitle": "Favoritos das Clientes",
+      "viewAllLink": "/produtos?filter=bestseller",
+      "viewAllText": "Ver Todos"
+    },
+    "displayName": "ProductShowcase",
+    "custom": {},
+    "parent": "ROOT",
+    "nodes": [
+      "node_product_showcase_2_subtitle",
+      "node_product_showcase_2_title",
+      "node_product_showcase_2_view_all"
+    ],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_2_subtitle": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_product_showcase_2_subtitle",
+      "tag": "span",
+      "className": "text-primary text-xs tracking-[0.3em] uppercase font-body mb-3 block",
+      "content": "Favoritos das Clientes"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_product_showcase_2",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_2_title": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_product_showcase_2_title",
+      "tag": "span",
+      "className": "",
+      "content": "Mais Vendidos"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_product_showcase_2",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_2_view_all": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_product_showcase_2_view_all",
+      "tag": "span",
+      "className": "",
+      "content": "Ver Todos"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_product_showcase_2",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_promo_banner": {
+    "type": {
+      "resolvedName": "PromoBanner"
+    },
+    "props": {},
+    "displayName": "PromoBanner",
+    "custom": {},
+    "parent": "ROOT",
+    "nodes": [
+      "node_promo_banner_subtitle",
+      "node_promo_banner_title",
+      "node_promo_banner_description",
+      "node_promo_banner_cta"
+    ],
+    "linkedNodes": {}
+  },
+  "node_promo_banner_subtitle": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_promo_banner_subtitle",
+      "tag": "span",
+      "className": "inline-block  text-xs tracking-[0.4em] uppercase font-body mb-4",
+      "content": "Especial de Natal"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_promo_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_promo_banner_title": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_promo_banner_title",
+      "tag": "span",
+      "className": "",
+      "content": "Até 40% OFF"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_promo_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_promo_banner_description": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_promo_banner_description",
+      "tag": "p",
+      "className": "text-primary-foreground/80 font-body text-lg mb-8 max-w-lg mx-auto",
+      "content": "Peças selecionadas com descontos exclusivos. Aproveite e renove seu guarda-roupa para as festas."
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_promo_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_promo_banner_cta": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_promo_banner_cta",
+      "tag": "span",
+      "className": "",
+      "content": "Aproveitar Ofertas"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_promo_banner",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_3": {
+    "type": {
+      "resolvedName": "ProductShowcase"
+    },
+    "props": {
+      "title": "Looks de Festa",
+      "subtitle": "Natal & Réveillon",
+      "viewAllLink": "/produtos?filter=featured",
+      "viewAllText": "Ver Todos"
+    },
+    "displayName": "ProductShowcase",
+    "custom": {},
+    "parent": "ROOT",
+    "nodes": [
+      "node_product_showcase_3_subtitle",
+      "node_product_showcase_3_title",
+      "node_product_showcase_3_view_all"
+    ],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_3_subtitle": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_product_showcase_3_subtitle",
+      "tag": "span",
+      "className": "text-primary text-xs tracking-[0.3em] uppercase font-body mb-3 block",
+      "content": "Natal & Réveillon"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_product_showcase_3",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_3_title": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_product_showcase_3_title",
+      "tag": "span",
+      "className": "",
+      "content": "Looks de Festa"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_product_showcase_3",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_product_showcase_3_view_all": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_product_showcase_3_view_all",
+      "tag": "span",
+      "className": "",
+      "content": "Ver Todos"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_product_showcase_3",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_instagram_feed": {
+    "type": {
+      "resolvedName": "InstagramFeed"
+    },
+    "props": {},
+    "displayName": "InstagramFeed",
+    "custom": {},
+    "parent": "ROOT",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_footer": {
+    "type": {
+      "resolvedName": "Footer"
+    },
+    "props": {},
+    "displayName": "Footer",
+    "custom": {},
+    "parent": "ROOT",
+    "nodes": [
+      "node_footer_newsletter_title",
+      "node_footer_newsletter_description",
+      "node_footer_newsletter_button",
+      "node_footer_brand_name",
+      "node_footer_brand_description",
+      "node_footer_nav_title",
+      "node_footer_help_title",
+      "node_footer_contact_title"
+    ],
+    "linkedNodes": {}
+  },
+  "node_footer_newsletter_title": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_footer_newsletter_title",
+      "tag": "span",
+      "className": "",
+      "content": "Receba Novidades em Primeira Mão"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_footer",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_footer_newsletter_description": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_footer_newsletter_description",
+      "tag": "p",
+      "className": "text-primary-foreground/80 mb-6 font-body text-sm",
+      "content": "Cadastre-se e ganhe 10% OFF na primeira compra"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_footer",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_footer_newsletter_button": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_footer_newsletter_button",
+      "tag": "span",
+      "className": "",
+      "content": "Inscrever"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_footer",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_footer_brand_name": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_footer_brand_name",
+      "tag": "span",
+      "className": "",
+      "content": "Flor de Menina"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_footer",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_footer_brand_description": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_footer_brand_description",
+      "tag": "p",
+      "className": "text-secondary/70 text-sm font-body leading-relaxed mb-6",
+      "content": "Moda feminina com elegância e sofisticação. Peças exclusivas para mulheres que valorizam estilo e qualidade."
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_footer",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_footer_nav_title": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_footer_nav_title",
+      "tag": "span",
+      "className": "",
+      "content": "Navegação"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_footer",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_footer_help_title": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_footer_help_title",
+      "tag": "span",
+      "className": "",
+      "content": "Ajuda"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_footer",
+    "nodes": [],
+    "linkedNodes": {}
+  },
+  "node_footer_contact_title": {
+    "type": {
+      "resolvedName": "EditableText"
+    },
+    "props": {
+      "id": "node_footer_contact_title",
+      "tag": "span",
+      "className": "",
+      "content": "Contato"
+    },
+    "displayName": "Texto Editável",
+    "custom": {},
+    "parent": "node_footer",
+    "nodes": [],
+    "linkedNodes": {}
+  }
+}
+

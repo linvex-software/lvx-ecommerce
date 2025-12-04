@@ -10,7 +10,9 @@ const nextConfig = {
     dangerouslyAllowSVG: true,
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;"
-  }
+  },
+  // Configuração vazia do Turbopack para evitar erro
+  turbopack: {}
 }
 
 export default nextConfig

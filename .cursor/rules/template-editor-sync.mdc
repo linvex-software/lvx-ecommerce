@@ -1,0 +1,173 @@
+---
+description: "Sincronização de Template entre Editor e Web"
+globs:
+  - "apps/admin/app/(admin)/editor/**/*.tsx"
+  - "apps/web/app/**/*.tsx"
+  - "apps/web/components/template/**/*.tsx"
+  - "apps/web/lib/templates/**/*.tsx"
+  - "apps/admin/lib/templates/**/*.tsx"
+  - "templates/**/*.tsx"
+  - "templates/**/*.ts"
+  - "templates/**/*.json"
+alwaysApply: true
+---
+
+# 🎨 Regras de Sincronização de Template entre Editor e Web
+
+## 📋 Princípio Fundamental
+
+**O layout renderizado em `/editor` (admin) e `/` (web) deve ser EXATAMENTE IGUAL, usando o mesmo `layout.json` e os mesmos componentes do template.**
+
+## ✅ O Que Deve Ser Idêntico
+
+### 1. Layout e Estrutura
+- **Mesmo `layout.json`** usado por ambos (em `templates/{templateId}/layout.json`)
+- **Mesmos componentes** do template (em `templates/{templateId}/index.ts`)
+- **Mesma ordem** de renderização dos componentes
+- **Mesmas props** passadas para cada componente
+
+### 2. Componentes do Template
+- Componentes em `apps/web/components/template/{templateId}/` são a **fonte única de verdade**
+- O editor carrega esses mesmos componentes através de `templates/{templateId}/index.ts`
+- **NUNCA** criar versões diferentes dos componentes para admin ou web
+
+### 3. Renderização
+- **Editor (`/editor`)**: Usa Craft.js para deserializar e renderizar o `layout.json`
+- **Web (`/`)**: Usa `TemplateLayoutRenderer` para renderizar o mesmo `layout.json` sem Craft.js
+- Ambos devem produzir **exatamente o mesmo resultado visual**
+
+## 🔄 Como Funciona a Sincronização
+
+### Editor (`apps/admin/app/(admin)/editor/page.tsx`)
+```typescript
+// Carrega layout.json e componentes do template
+const layout = await loadTemplateLayout(templateId)
+const resolver = await loadTemplateComponents(templateId)
+
+// Usa Craft.js para deserializar e renderizar
+<Editor resolver={resolver}>
+  <Frame /> {/* Renderiza o layout.json */}
+</Editor>
+```
+
+### Web (`apps/web/components/template/flor-de-menina-template.tsx`)
+```typescript
+// Usa o mesmo layout.json e componentes
+<TemplateLayoutRenderer templateId="flor-de-menina" />
+// Renderiza o layout.json sem Craft.js, mas com os mesmos componentes
+```
+
+## 🚫 O Que NUNCA Deve Divergir
+
+### Proibido:
+- ❌ Criar componentes diferentes para editor e web
+- ❌ Modificar o `layout.json` em apenas um lugar
+- ❌ Adicionar props diferentes entre editor e web
+- ❌ Alterar a ordem dos componentes no layout
+- ❌ Criar lógica de renderização diferente
+- ❌ Usar componentes diferentes para o mesmo propósito
+
+## 📐 Estrutura Esperada
+
+### Layout JSON (Fonte Única)
+```
+templates/flor-de-menina/layout.json
+```
+- Define a estrutura completa do template
+- Usado por **ambos** editor e web
+- **NUNCA** modificar diretamente sem atualizar ambos os renderizadores
+
+### Componentes do Template (Fonte Única)
+```
+apps/web/components/template/flor-de-menina/components/
+templates/flor-de-menina/index.ts (exporta os componentes)
+```
+- Componentes React reais
+- Exportados através de `templates/{templateId}/index.ts`
+- Carregados dinamicamente pelo editor e web
+
+### Renderizadores
+```
+apps/admin/app/(admin)/editor/page.tsx (usa Craft.js)
+apps/web/lib/templates/template-layout-renderer.tsx (renderização direta)
+```
+- Ambos usam o mesmo `layout.json`
+- Ambos usam os mesmos componentes
+- Produzem o mesmo resultado
+
+## 🛠️ Manutenção
+
+### Ao Modificar o Layout:
+1. **Modificar apenas** `templates/{templateId}/layout.json`
+2. **Ambos** editor e web usarão automaticamente o novo layout
+3. **Testar** que ambos renderizam igual
+
+### Ao Modificar um Componente do Template:
+1. **Modificar apenas** o componente em `apps/web/components/template/{templateId}/components/`
+2. O componente é exportado através de `templates/{templateId}/index.ts`
+3. **Ambos** editor e web usarão automaticamente o componente atualizado
+4. **Testar** que ambos renderizam igual
+
+### Ao Adicionar um Novo Componente:
+1. Criar o componente em `apps/web/components/template/{templateId}/components/`
+2. Exportar em `templates/{templateId}/index.ts`
+3. Adicionar ao `componentResolver` em `templates/{templateId}/index.ts`
+4. Adicionar ao `layout.json` se necessário
+5. **Testar** que ambos editor e web renderizam corretamente
+
+## 🔍 Checklist de Sincronização
+
+Ao modificar qualquer parte do template, verificar:
+
+- [ ] O `layout.json` está atualizado?
+- [ ] Os componentes estão exportados corretamente em `templates/{templateId}/index.ts`?
+- [ ] O editor renderiza corretamente em `/editor`?
+- [ ] A web renderiza corretamente em `/`?
+- [ ] Ambos produzem o mesmo resultado visual?
+- [ ] Não há componentes duplicados ou diferentes?
+
+## 📝 Exemplo de Violação
+
+### ❌ ERRADO:
+```typescript
+// apps/web/components/template/flor-de-menina-template.tsx
+export function FlorDeMeninaTemplate() {
+  return (
+    <div>
+      <Header />
+      <CustomHero /> {/* ❌ Componente diferente! */}
+      <Footer />
+    </div>
+  )
+}
+
+// Editor usa layout.json que tem HeroBanner, não CustomHero
+// Resultado: layouts diferentes!
+```
+
+### ✅ CORRETO:
+```typescript
+// apps/web/components/template/flor-de-menina-template.tsx
+export function FlorDeMeninaTemplate() {
+  return (
+    <TemplateLayoutRenderer templateId="flor-de-menina" />
+    // ✅ Usa o mesmo layout.json que o editor
+  )
+}
+
+// Editor também usa o mesmo layout.json
+// Resultado: layouts idênticos!
+```
+
+## 🎯 Objetivo Final
+
+**Garantir que o preview no editor (`/editor`) seja uma representação 100% fiel do que será renderizado no site do cliente (`/`), eliminando surpresas e inconsistências entre desenvolvimento e produção.**
+
+## ⚠️ Regra de Ouro
+
+**SEMPRE que modificar:**
+- Um componente do template → Verificar que ambos editor e web usam o mesmo
+- O `layout.json` → Verificar que ambos renderizam igual
+- A estrutura do template → Verificar que ambos estão sincronizados
+
+**NUNCA criar versões diferentes do mesmo componente ou layout para editor e web.**

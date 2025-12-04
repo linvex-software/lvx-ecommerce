@@ -1,6 +1,8 @@
 import { db, schema } from '@white-label/db'
 import { randomUUID } from 'crypto'
 import { eq } from 'drizzle-orm'
+import { generateDefaultLayout } from '../utils/default-layout'
+import { StoreLayoutRepository } from '../../../infra/db/repositories/store-layout-repository'
 
 export interface CreateStoreInput {
   name: string
@@ -64,6 +66,15 @@ export async function createStoreUseCase(
       role: 'admin'
     })
     .where(eq(schema.users.id, userId))
+
+  // Criar layout padrão da loja
+  const layoutRepository = new StoreLayoutRepository()
+  const defaultLayout = generateDefaultLayout()
+  
+  await layoutRepository.create({
+    store_id: store.id,
+    layout_json: defaultLayout
+  })
 
   return {
     store: {

@@ -136,7 +136,7 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
                       <p className="text-xs text-gray-500">Quantidade: {item.quantity}</p>
                     </div>
                     <p className="text-sm font-medium text-gray-900">
-                      {currencyFormatter.format(parseFloat(item.price) / 100)}
+                      {currencyFormatter.format(parseFloat(item.price))}
                     </p>
                   </div>
                 ))}
@@ -182,20 +182,20 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Subtotal:</span>
                 <span className="text-sm font-medium text-gray-900">
-                  {currencyFormatter.format((parseFloat(order.total) - parseFloat(order.shipping_cost)) / 100)}
+                  {currencyFormatter.format(parseFloat(order.total) - parseFloat(order.shipping_cost))}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Frete:</span>
                 <span className="text-sm font-medium text-gray-900">
-                  {currencyFormatter.format(parseFloat(order.shipping_cost) / 100)}
+                  {currencyFormatter.format(parseFloat(order.shipping_cost))}
                 </span>
               </div>
               <div className="border-t border-gray-200 pt-3">
                 <div className="flex items-center justify-between">
                   <span className="text-base font-semibold text-gray-900">Total:</span>
                   <span className="text-base font-semibold text-gray-900">
-                    {currencyFormatter.format(parseFloat(order.total) / 100)}
+                    {currencyFormatter.format(parseFloat(order.total))}
                   </span>
                 </div>
               </div>

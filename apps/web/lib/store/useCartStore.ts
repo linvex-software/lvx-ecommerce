@@ -10,12 +10,21 @@ export interface CartItem extends Product {
 interface CartState {
     items: CartItem[]
     isOpen: boolean
+    cartId: string | null
+    sessionId: string | null
+    lastSyncedAt: string | null
+    syncError: boolean
     addItem: (product: Product, variantId?: string | null) => void
     removeItem: (id: number | string) => void
     updateQuantity: (id: number | string, quantity: number) => void
     clearCart: () => void
     openCart: () => void
     closeCart: () => void
+    setSessionId: (sessionId: string) => void
+    setCartId: (cartId: string) => void
+    markSynced: (cartId: string, syncedAt: string) => void
+    setSyncError: (error: boolean) => void
+    hydrateFromRemote: (cart: any) => void
 }
 
 export const useCartStore = create<CartState>()(
@@ -23,6 +32,10 @@ export const useCartStore = create<CartState>()(
         (set) => ({
             items: [],
             isOpen: false,
+            cartId: null,
+            sessionId: null,
+            lastSyncedAt: null,
+            syncError: false,
             addItem: (product, variantId) => {
                 set((state) => {
                     const existing = state.items.find(
@@ -57,6 +70,26 @@ export const useCartStore = create<CartState>()(
             clearCart: () => set({ items: [] }),
             openCart: () => set({ isOpen: true }),
             closeCart: () => set({ isOpen: false }),
+            setSessionId: (sessionId: string) => set({ sessionId }),
+            setCartId: (cartId: string) => set({ cartId }),
+            markSynced: (cartId: string, syncedAt: string) => set({ cartId, lastSyncedAt: syncedAt }),
+            setSyncError: (error: boolean) => set({ syncError: error }),
+            hydrateFromRemote: (cart: any) => {
+                set({
+                    cartId: cart.id,
+                    items: cart.items?.map((item: any) => ({
+                        id: item.product_id,
+                        name: item.product?.name || '',
+                        price: item.price,
+                        image: item.product?.main_image || '',
+                        category: item.product?.category_name || '',
+                        quantity: item.quantity,
+                        variant_id: item.variant_id ?? null,
+                        description: item.product?.description || ''
+                    })) || [],
+                    lastSyncedAt: new Date().toISOString()
+                })
+            },
         }),
         {
             name: 'cart-storage',

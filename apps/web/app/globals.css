@@ -1,6 +1,12 @@
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* NOTA: Os estilos compartilhados do template Flor de Menina são carregados via JavaScript
+   em templates/flor-de-menina/styles.css e importados dinamicamente no TemplateProvider
+   e TemplateStyles para garantir que editor e web usem exatamente os mesmos estilos. */
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
 All colors MUST be HSL.
@@ -8,83 +14,84 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
+    /* Variáveis específicas da aplicação web (não do template) */
+    /* Template Design Tokens - Aplicados dinamicamente via TemplateProvider */
+    --template-primary-color: #C2185B;
+    --template-secondary-color: #F8E8EC;
+    --template-background-color: #FFFFFF;
+    --template-button-color: #C2185B;
+    --template-text-color: #333333;
+    
+    /* HSL versions for Tailwind compatibility */
+    --template-primary-hsl: 350 70% 35%;
+    --template-secondary-hsl: 30 30% 95%;
+    --template-button-hsl: 350 70% 35%;
+    --template-text-hsl: 0 0% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 0%;
-
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 0%;
-
-    --primary: 0 0% 0%;
-    --primary-foreground: 0 0% 100%;
-
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 0%;
-
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 40%;
-
-    --accent: 0 0% 10%;
-    --accent-foreground: 0 0% 100%;
-
-    --destructive: 0 0% 0%;
-    --destructive-foreground: 0 0% 100%;
-
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 0 0% 0%;
-
-    --radius: 0rem;
-
-    /* Transitions */
-    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    /* Colorful Bento Grid Theme (mantido para compatibilidade com outros componentes) */
+    --color-hightlight-light: #DADBF8;
+    --color-accent-light: #D9EAE3;
+    --color-primary-light: #FFCFE1;
+    --color-secondary-light: #FFFCE5;
+    --color-primary: #FF0F67;
+    --color-primary-content: #fff;
+    --color-secondary: #FFF07C;
+    --color-secondary-content: #0A0A0A;
+    --color-accent: #439775;
+    --color-accent-content: #0A0A0A;
+    --color-neutral: #222222;
+    --color-neutral-content: #FFFFFF;
+    --color-base-100: #f0f0f0;
+    --color-base-200: #ffffff;
+    --color-base-300: #F2F2F2;
+    --color-base-content: #0A0A0A;
+    --color-info: #3ABFF8;
+    --color-success: #36D399;
+    --color-warning: #FBBD23;
+    --color-error: #F87272;
+    --color-highlight: #454ADE;
+    --color-muted: #777777;
+    
+    /* Store Theme Variables - Will be overridden by theme provider */
+    --store-primary-color: #000000;
+    --store-secondary-color: #6366F1;
+    --store-text-color: #000000;
+    --store-icon-color: #000000;
   }
-
-  .dark {
-    --background: 0 0% 0%;
-    --foreground: 0 0% 100%;
-
-    --card: 0 0% 0%;
-    --card-foreground: 0 0% 100%;
-
-    --popover: 0 0% 0%;
-    --popover-foreground: 0 0% 100%;
-
-    --primary: 0 0% 100%;
-    --primary-foreground: 0 0% 0%;
-
-    --secondary: 0 0% 10%;
-    --secondary-foreground: 0 0% 100%;
-
-    --muted: 0 0% 10%;
-    --muted-foreground: 0 0% 60%;
-
-    --accent: 0 0% 90%;
-    --accent-foreground: 0 0% 0%;
-
-    --destructive: 0 0% 100%;
-    --destructive-foreground: 0 0% 0%;
-
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 0 0% 100%;
+  
+  /* NOTA: TODAS as variáveis CSS do template Flor de Menina (--background, --foreground, 
+     --primary, --secondary, --font-display, --font-body, etc.) estão definidas em 
+     templates/flor-de-menina/styles.css (cópia exata de template1/flor-de-menina-boutique/src/index.css)
+     e são carregadas dinamicamente via JavaScript no TemplateProvider e TemplateStyles.
+     Isso garante que editor e web usem EXATAMENTE os mesmos estilos, sem abstrações. */
+  
+  /* Aplicar cor de texto globalmente nos componentes store */
+  [class*="store-"] h1,
+  [class*="store-"] h2,
+  [class*="store-"] h3,
+  [class*="store-"] h4,
+  [class*="store-"] h5,
+  [class*="store-"] h6,
+  [class*="store-"] p,
+  [class*="store-"] span:not([style*="color"]):not([class*="text-"]) {
+    color: var(--store-text-color, #000000);
   }
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
+  /* NOTA: Estilos base (body, h1-h6, fontes, html) estão definidos em 
+     templates/flor-de-menina/styles.css para garantir consistência total. */
+}
 
-  body {
-    @apply bg-background text-foreground;
-    margin: 0;
-  }
+@layer components {
+  /* NOTA: Container, fontes, cores, gradientes, shadows e animações estão definidos em 
+     templates/flor-de-menina/styles.css para garantir consistência entre editor e web. */
 }
 
 @layer utilities {
+  /* Classes do template com prefixo t- estão definidas em templates/flor-de-menina/styles.css */
+  /* Não precisamos mais dessas classes aqui, elas estão no CSS compartilhado */
+
   /* Animações para o provador virtual */
   @keyframes fade-in {
     from {
@@ -147,5 +154,39 @@ All colors MUST be HSL.
   .zoom-in-95 {
     animation: zoom-in 0.3s ease-out;
   }
+}
+
+/* Hide scrollbar but keep functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;  /* Chrome, Safari and Opera */
+}
+
+/* Forçar rounded-full a sempre ter border-radius correto, mesmo com --radius: 0rem */
+/* Esta regra deve ter maior especificidade que qualquer outra regra do Tailwind */
+button.rounded-full,
+button[class*="rounded-full"],
+.rounded-full,
+[class*="rounded-full"],
+[class*="rounded-full"] button,
+div.rounded-full,
+span.rounded-full {
+  border-radius: 9999px !important;
+}
+
+/* Esconder Navbar do store quando renderizado na página web (dentro do main) */
+/* O Navbar fixo já está sendo renderizado separadamente */
+main nav.store-navbar-editor,
+main [role="navigation"].store-navbar-editor,
+main > div > div > div > nav.store-navbar-editor,
+main > div > div > div > [role="navigation"].store-navbar-editor {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  overflow: hidden !important;
 }
 

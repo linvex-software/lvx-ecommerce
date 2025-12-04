@@ -48,4 +48,18 @@ export async function registerCatalogCategoryRoutes(
             await categoryController.get(request, reply)
         }
     )
+
+    // GET /categories/slug/:slug - Detalhe da categoria pública por slug
+    app.get<{ Params: { slug: string } }>(
+        '/categories/slug/:slug',
+        {
+            onRequest: [tenantMiddleware]
+        },
+        async (
+            request: FastifyRequest<{ Params: { slug: string } }>,
+            reply: FastifyReply
+        ) => {
+            await categoryController.getBySlug(request, reply)
+        }
+    )
 }

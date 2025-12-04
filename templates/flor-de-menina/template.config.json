@@ -1,0 +1,25 @@
+{
+  "theme": {
+    "primaryColor": "#C2185B",
+    "secondaryColor": "#F8E8EC",
+    "backgroundColor": "#FFFFFF",
+    "buttonColor": "#C2185B",
+    "textColor": "#333333"
+  },
+  "branding": {
+    "logoUrl": "/logo.png",
+    "faviconUrl": "/favicon.ico",
+    "storeName": "Flor de Menina Boutique"
+  },
+  "content": {
+    "home": {
+      "heroTitle": "Nova Coleção",
+      "heroSubtitle": "Elegância que transforma"
+    },
+    "footer": {
+      "policyText": "Política de Trocas e Devoluções"
+    }
+  }
+}
+
+

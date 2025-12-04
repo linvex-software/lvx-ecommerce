@@ -1,22 +1,22 @@
 export interface Category {
   id: string
   store_id: string
-  parent_id: string | null
   name: string
   slug: string
+  icon?: string | null
   created_at: Date
 }
 
 export interface CreateCategoryInput {
   name: string
   slug?: string
-  parent_id?: string | null
+  icon?: string
 }
 
 export interface UpdateCategoryInput {
   name?: string
   slug?: string
-  parent_id?: string | null
+  icon?: string
 }
 
 export interface CategoryListFilters {

@@ -298,44 +298,6 @@ export class ProductRepository {
     return this.mapRowToProduct(result[0])
   }
 
-  async findByStoreAndSlug(storeId: string, slug: string): Promise<Product | null> {
-    const result = await db
-      .select()
-      .from(schema.products)
-      .where(
-        and(
-          eq(schema.products.store_id, storeId),
-          eq(schema.products.slug, slug)
-        )
-      )
-      .limit(1)
-
-    if (result.length === 0) {
-      return null
-    }
-
-    return this.mapRowToProduct(result[0])
-  }
-
-  async findByStoreAndSku(storeId: string, sku: string): Promise<Product | null> {
-    const result = await db
-      .select()
-      .from(schema.products)
-      .where(
-        and(
-          eq(schema.products.store_id, storeId),
-          eq(schema.products.sku, sku)
-        )
-      )
-      .limit(1)
-
-    if (result.length === 0) {
-      return null
-    }
-
-    return this.mapRowToProduct(result[0])
-  }
-
   async findByIdWithRelations(
     id: string,
     storeId: string
