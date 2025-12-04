@@ -33,7 +33,7 @@ export class CategoryRepository {
         .select()
         .from(schema.categories)
         .where(and(...conditions))
-        .orderBy(desc(schema.categories.created_at))
+        .orderBy(schema.categories.parent_id, desc(schema.categories.created_at))
         .limit(limit)
         .offset(offset),
       db
@@ -52,6 +52,19 @@ export class CategoryRepository {
       limit,
       totalPages
     }
+  }
+
+  /**
+   * Lista todas as categorias de uma loja organizadas em árvore hierárquica
+   */
+  async listTreeByStore(storeId: string): Promise<Category[]> {
+    const allCategories = await db
+      .select()
+      .from(schema.categories)
+      .where(eq(schema.categories.store_id, storeId))
+      .orderBy(schema.categories.parent_id, schema.categories.name)
+
+    return allCategories.map(this.mapToDomain)
   }
 
   async findById(id: string, storeId: string): Promise<Category | null> {
@@ -85,10 +98,19 @@ export class CategoryRepository {
   ): Promise<Category> {
     const slug = input.slug || this.generateSlug(input.name)
 
+    // Validar se parent_id existe e pertence à mesma loja
+    if (input.parent_id) {
+      const parent = await this.findById(input.parent_id, storeId)
+      if (!parent) {
+        throw new Error('Categoria pai não encontrada')
+      }
+    }
+
     const [category] = await db
       .insert(schema.categories)
       .values({
         store_id: storeId,
+        parent_id: input.parent_id || null,
         name: input.name,
         slug
       })
@@ -102,9 +124,29 @@ export class CategoryRepository {
     storeId: string,
     input: UpdateCategoryInput
   ): Promise<Category | null> {
+    // Validar loops hierárquicos
+    if (input.parent_id === id) {
+      throw new Error('Uma categoria não pode ser filha de si mesma')
+    }
+
+    if (input.parent_id) {
+      // Verificar se a categoria pai existe e pertence à mesma loja
+      const parent = await this.findById(input.parent_id, storeId)
+      if (!parent) {
+        throw new Error('Categoria pai não encontrada')
+      }
+
+      // Verificar se a categoria pai não é descendente da categoria atual (prevenir loops)
+      const isDescendant = await this.isDescendant(input.parent_id, id, storeId)
+      if (isDescendant) {
+        throw new Error('Não é possível definir uma categoria como filha de sua própria descendente')
+      }
+    }
+
     const updateData: {
       name?: string
       slug?: string
+      parent_id?: string | null
     } = {}
 
     if (input.name !== undefined) {
@@ -118,6 +160,10 @@ export class CategoryRepository {
       updateData.slug = this.generateSlug(input.name)
     }
 
+    if (input.parent_id !== undefined) {
+      updateData.parent_id = input.parent_id || null
+    }
+
     const [category] = await db
       .update(schema.categories)
       .set(updateData)
@@ -125,6 +171,29 @@ export class CategoryRepository {
       .returning()
 
     return category ? this.mapToDomain(category) : null
+  }
+
+  /**
+   * Verifica se uma categoria é descendente de outra
+   */
+  private async isDescendant(categoryId: string, ancestorId: string, storeId: string): Promise<boolean> {
+    let currentId: string | null = categoryId
+    const visited = new Set<string>()
+
+    while (currentId && !visited.has(currentId)) {
+      visited.add(currentId)
+      
+      const category = await this.findById(currentId, storeId)
+      if (!category) break
+
+      if (category.parent_id === ancestorId) {
+        return true
+      }
+
+      currentId = category.parent_id
+    }
+
+    return false
   }
 
   async delete(id: string, storeId: string): Promise<boolean> {
@@ -140,6 +209,7 @@ export class CategoryRepository {
     return {
       id: row.id,
       store_id: row.store_id,
+      parent_id: row.parent_id || null,
       name: row.name,
       slug: row.slug,
       created_at: row.created_at

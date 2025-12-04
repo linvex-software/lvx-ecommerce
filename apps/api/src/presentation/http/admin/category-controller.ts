@@ -95,6 +95,7 @@ export class CategoryController {
       Body: {
         name: string
         slug?: string
+        parent_id?: string | null
       }
     }>,
     reply: FastifyReply
@@ -138,6 +139,7 @@ export class CategoryController {
       Body: {
         name?: string
         slug?: string
+        parent_id?: string | null
       }
     }>,
     reply: FastifyReply
