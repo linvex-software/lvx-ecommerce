@@ -104,6 +104,7 @@ export const categories = pgTable(
     store_id: uuid('store_id')
       .notNull()
       .references(() => stores.id, { onDelete: 'cascade' }),
+    parent_id: uuid('parent_id'),
     name: text('name').notNull(),
     slug: text('slug').notNull(),
     created_at: timestamp('created_at', { withTimezone: true })
@@ -114,7 +115,8 @@ export const categories = pgTable(
     storeSlugUnique: uniqueIndex('categories_store_slug_unique').on(
       table.store_id,
       table.slug
-    )
+    ),
+    parentIdIdx: index('categories_parent_id_idx').on(table.parent_id)
   })
 )
 
