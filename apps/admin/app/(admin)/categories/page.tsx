@@ -45,8 +45,7 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="w-full space-y-8">
-      {/* Header */}
+    <div className="space-y-8">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-4xl font-light tracking-tight text-gray-900">Categorias</h1>
@@ -62,7 +61,6 @@ export default function CategoriesPage() {
         </Button>
       </div>
 
-      {/* Filtros */}
       <form onSubmit={handleSearch} className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
@@ -78,16 +76,14 @@ export default function CategoriesPage() {
         </Button>
       </form>
 
-      {/* Tabela */}
       <CategoryTable
         categories={data?.categories ?? []}
         onEdit={handleEdit}
         isLoading={isLoading}
       />
 
-      {/* Paginação */}
       {data && data.totalPages > 1 && (
-        <div className="flex flex-col items-center justify-between gap-4 rounded-xl border border-gray-200 bg-white px-6 py-4 sm:flex-row">
+        <div className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-6 py-4">
           <p className="text-sm text-gray-600">
             Mostrando {data.categories.length} de {data.total} categorias
           </p>

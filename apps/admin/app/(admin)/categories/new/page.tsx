@@ -16,12 +16,11 @@ export default function NewCategoryPage() {
   }
 
   return (
-    <div className="w-full space-y-8">
-      {/* Header */}
+    <div className="space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm text-gray-500">
-            <Link href="/categories" className="inline-flex items-center gap-1 text-blue-600 hover:text-blue-700 hover:underline">
+            <Link href="/categories" className="inline-flex items-center gap-1 text-gray-600 hover:text-gray-900">
               <ArrowLeft className="h-4 w-4" />
               Voltar para categorias
             </Link>
@@ -33,13 +32,8 @@ export default function NewCategoryPage() {
         </div>
       </div>
 
-      {/* Formulário */}
       <div className="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm">
-        <CategoryForm 
-          onSubmit={handleSubmit} 
-          onCancel={() => router.push('/categories')}
-          isLoading={createCategory.isPending} 
-        />
+        <CategoryForm onSubmit={handleSubmit} isLoading={createCategory.isPending} />
       </div>
     </div>
   )

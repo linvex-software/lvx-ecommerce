@@ -1,0 +1,132 @@
+/**
+ * Carregador de Templates
+ * 
+ * Carrega layouts e configurações de templates
+ */
+
+import React from 'react'
+
+export interface TemplateMetadata {
+  id: string
+  name: string
+  description: string
+  configPath: string
+  layoutPath: string
+}
+
+/**
+ * Cria componentes React para elementos HTML nativos
+ * que o Craft.js precisa no resolver
+ */
+function createNativeElement(tagName: string) {
+  return React.forwardRef<HTMLElement, React.HTMLAttributes<HTMLElement>>(
+    (props, ref) => {
+      return React.createElement(tagName, { ...props, ref })
+    }
+  )
+}
+
+export async function loadTemplateLayout(templateId: string): Promise<Record<string, unknown>> {
+  try {
+    // Importar diretamente o arquivo JSON
+    // O caminho é relativo a partir da raiz do projeto
+    const layoutModule = await import(`../../../../templates/${templateId}/layout.json`)
+    return layoutModule.default as Record<string, unknown>
+  } catch (error) {
+    console.error(`Erro ao carregar layout do template ${templateId}:`, error)
+    throw error
+  }
+}
+
+export async function loadTemplateConfig(templateId: string): Promise<Record<string, unknown>> {
+  try {
+    // Importar diretamente o arquivo JSON
+    // O caminho é relativo a partir da raiz do projeto
+    const configModule = await import(`../../../../templates/${templateId}/template.config.json`)
+    return configModule.default as Record<string, unknown>
+  } catch (error) {
+    console.error(`Erro ao carregar config do template ${templateId}:`, error)
+    throw error
+  }
+}
+
+
+export async function loadTemplateComponents(templateId: string) {
+  try {
+    // Importar dinamicamente o módulo do template
+    const templateModule = await import(`../../../../templates/${templateId}/index.ts`)
+    
+    // Criar resolver base com elementos HTML nativos que o Craft.js precisa
+    // O Craft.js precisa de componentes React, não strings
+    const resolver: Record<string, any> = {
+      // Elementos HTML nativos que o Craft.js usa
+      div: createNativeElement('div'),
+      span: createNativeElement('span'),
+      p: createNativeElement('p'),
+      a: createNativeElement('a'),
+      img: createNativeElement('img'),
+      button: createNativeElement('button'),
+      input: createNativeElement('input'),
+      textarea: createNativeElement('textarea'),
+      select: createNativeElement('select'),
+      option: createNativeElement('option'),
+      form: createNativeElement('form'),
+      label: createNativeElement('label'),
+      h1: createNativeElement('h1'),
+      h2: createNativeElement('h2'),
+      h3: createNativeElement('h3'),
+      h4: createNativeElement('h4'),
+      h5: createNativeElement('h5'),
+      h6: createNativeElement('h6'),
+      ul: createNativeElement('ul'),
+      ol: createNativeElement('ol'),
+      li: createNativeElement('li'),
+      section: createNativeElement('section'),
+      article: createNativeElement('article'),
+      header: createNativeElement('header'),
+      footer: createNativeElement('footer'),
+      nav: createNativeElement('nav'),
+      main: createNativeElement('main'),
+      aside: createNativeElement('aside'),
+    }
+    
+    // Se o módulo exporta componentResolver diretamente, mesclar com o resolver base
+    if (templateModule.componentResolver) {
+      const finalResolver = {
+        ...resolver,
+        ...templateModule.componentResolver
+      }
+      console.log(`[template-loader] Resolver carregado para ${templateId}:`, Object.keys(finalResolver))
+      return finalResolver
+    }
+    
+    // Caso contrário, construir o resolver a partir das exportações
+    if (templateModule.Header) resolver.Header = templateModule.Header
+    if (templateModule.Footer) resolver.Footer = templateModule.Footer
+    if (templateModule.HeroBanner) resolver.HeroBanner = templateModule.HeroBanner
+    if (templateModule.ProductShowcase) resolver.ProductShowcase = templateModule.ProductShowcase
+    if (templateModule.CategoryBanner) resolver.CategoryBanner = templateModule.CategoryBanner
+    if (templateModule.PromoBanner) resolver.PromoBanner = templateModule.PromoBanner
+    if (templateModule.InstagramFeed) resolver.InstagramFeed = templateModule.InstagramFeed
+    if (templateModule.EditableText) resolver.EditableText = templateModule.EditableText
+    
+    console.log(`[template-loader] Resolver construído para ${templateId}:`, Object.keys(resolver))
+    return resolver
+  } catch (error) {
+    console.error(`Erro ao carregar componentes do template ${templateId}:`, error)
+    throw error
+  }
+}
+
+export function getAvailableTemplates(): TemplateMetadata[] {
+  return [
+    {
+      id: 'flor-de-menina',
+      name: 'Flor de Menina',
+      description: 'Template elegante para lojas de moda feminina',
+      configPath: '/templates/flor-de-menina/template.config.json',
+      layoutPath: '/templates/flor-de-menina/layout.json'
+    }
+  ]
+}
+

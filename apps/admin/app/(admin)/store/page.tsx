@@ -239,54 +239,6 @@ export default function StorePage() {
         </CardContent>
       </Card>
 
-      {/* Banner Configuration Card */}
-      <Card className="border-0 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white/80 backdrop-blur-sm">
-        <CardHeader>
-          <CardTitle className="text-xl font-light">Banner da Loja</CardTitle>
-          <CardDescription>
-            Configure o banner que aparecerá na página principal da sua loja
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {isLoadingTheme ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-sm font-light text-gray-500">Carregando...</div>
-            </div>
-          ) : (
-            <>
-              <div className="max-w-2xl">
-                <ImageUpload
-                  value={bannerUrl}
-                  onChange={(url) => {
-                    setBannerUrl(url)
-                    if (url) {
-                      updateBanner.mutate(url)
-                    }
-                  }}
-                  disabled={updateBanner.isPending}
-                  aspectRatio="wide"
-                />
-              </div>
-              {bannerUrl && (
-                <div className="flex gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                      setBannerUrl(null)
-                      updateBanner.mutate(null)
-                    }}
-                    disabled={updateBanner.isPending}
-                  >
-                    Remover banner
-                  </Button>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
     </div>
   )
 }

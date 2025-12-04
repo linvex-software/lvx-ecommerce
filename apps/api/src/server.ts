@@ -11,7 +11,6 @@ import { registerAdminCouponRoutes } from './presentation/http/admin/coupon-rout
 import { registerAdminProductRoutes } from './presentation/http/admin/product-routes'
 import { registerAdminCategoryRoutes } from './presentation/http/admin/category-routes'
 import { registerAdminOrderRoutes } from './presentation/http/admin/order-routes'
-import { registerAdminDashboardRoutes } from './presentation/http/admin/dashboard-routes'
 import { registerCatalogRoutes } from './presentation/http/catalog/product-routes'
 import { registerCatalogCategoryRoutes } from './presentation/http/catalog/category-routes'
 import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
@@ -23,6 +22,8 @@ import { registerPDVRoutes } from './presentation/http/pdv/pdv-routes'
 import { registerAdminUserRoutes } from './presentation/http/admin/user-routes'
 import { registerShippingRoutes } from './presentation/http/shipping/shipping-routes'
 import { registerCustomerRoutes } from './presentation/http/customers/customer-routes'
+import { registerEditorRoutes } from './presentation/http/editor/editor-routes'
+import { registerTemplateSettingsRoutes } from './presentation/http/settings/template-routes'
 
 async function buildServer() {
   const app = Fastify({
@@ -132,7 +133,6 @@ async function buildServer() {
   await registerAdminProductRoutes(app)
   await registerAdminCategoryRoutes(app)
   await registerAdminOrderRoutes(app)
-  await registerAdminDashboardRoutes(app)
   await registerCatalogRoutes(app)
   await registerCatalogCategoryRoutes(app)
   await registerCheckoutRoutes(app)
@@ -144,6 +144,8 @@ async function buildServer() {
   await registerAdminUserRoutes(app)
   await registerShippingRoutes(app)
   await registerCustomerRoutes(app)
+  await registerEditorRoutes(app)
+  await registerTemplateSettingsRoutes(app)
 
   return app
 }

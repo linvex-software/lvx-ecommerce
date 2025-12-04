@@ -10,7 +10,6 @@ import {
   YAxis
 } from 'recharts'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cn } from '@white-label/ui'
 
 interface SalesPoint {
   date: string
@@ -20,9 +19,6 @@ interface SalesPoint {
 interface SalesChartProps {
   data: SalesPoint[]
   isLoading?: boolean
-  period?: 7 | 30
-  onPeriodChange?: (period: 7 | 30) => void
-  totalRevenue?: number
 }
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
@@ -31,70 +27,39 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 0
 })
 
-export function SalesChart({ 
-  data, 
-  isLoading = false, 
-  period = 7, 
-  onPeriodChange,
-  totalRevenue = 0 
-}: SalesChartProps) {
+export function SalesChart({ data, isLoading = false }: SalesChartProps) {
+  const latest = data[data.length - 1]?.amount ?? 0
   const average = data.reduce((acc, point) => acc + point.amount, 0) / data.length
-  const periodLabel = period === 7 ? 'Semanal' : 'Mensal'
-  const periodDays = period === 7 ? '7 dias' : '30 dias'
 
   return (
-    <Card className="w-full rounded-2xl border-gray-100 shadow-sm">
-      <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex-1">
-          <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
-              Receita {periodLabel.toLowerCase()}
-            </p>
-            {onPeriodChange && (
-              <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
-                <button
-                  onClick={() => onPeriodChange(7)}
-                  className={cn(
-                    'px-3 py-1 text-xs font-medium rounded-md transition-colors',
-                    period === 7
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  )}
-                >
-                  7 dias
-                </button>
-                <button
-                  onClick={() => onPeriodChange(30)}
-                  className={cn(
-                    'px-3 py-1 text-xs font-medium rounded-md transition-colors',
-                    period === 30
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
-                  )}
-                >
-                  30 dias
-                </button>
-              </div>
-            )}
-          </div>
+    <Card className="h-full rounded-2xl border-gray-100 shadow-sm">
+      <CardHeader className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+            Receita semanal
+          </p>
           <CardTitle className="text-3xl font-light tracking-tight text-gray-900">
             {isLoading ? (
               <span className="inline-flex h-8 w-32 animate-pulse rounded bg-gray-200/80" />
             ) : (
-              currencyFormatter.format(totalRevenue)
+              currencyFormatter.format(latest)
             )}
           </CardTitle>
-          <p className="mt-1 text-sm text-gray-500">
-            Últimos {periodDays} • {isLoading ? '—' : currencyFormatter.format(average)} média
+        </div>
+        <div className="text-right text-xs text-gray-500">
+          Últimos 7 dias
+          <p className="text-sm font-medium text-gray-900">
+            {isLoading ? '—' : currencyFormatter.format(average)}
+            <span className="ml-1 text-xs font-normal text-gray-500">média</span>
           </p>
         </div>
       </CardHeader>
-      <CardContent className="mt-2 pb-1 px-6 h-[240px]">
+      <CardContent className="mt-4 h-72">
         {isLoading ? (
           <div className="h-full w-full animate-pulse rounded-xl bg-gray-100/80" />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: -40 }}>
+            <AreaChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: 0 }}>
               <defs>
                 <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor="rgba(15,23,42,0.4)" stopOpacity={1} />

@@ -47,10 +47,10 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
       </div>
       <div className="p-4 space-y-3">
         <div>
-          <p className="text-xs text-muted-foreground uppercase tracking-wider">
+          <p className="text-xs uppercase tracking-wider" style={{ color: 'var(--store-text-color, #000000)' }}>
             {product.category}
           </p>
-          <h3 className="text-lg font-bold mt-1">{product.name}</h3>
+          <h3 className="text-lg font-bold mt-1" style={{ color: 'var(--store-text-color, #000000)' }}>{product.name}</h3>
         </div>
 
         {/* Available Colors */}
@@ -100,7 +100,11 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
               onAddToCart(product)
             }}
             disabled={isOutOfStock}
-            className="bg-foreground text-background hover:bg-accent disabled:opacity-50 disabled:cursor-not-allowed"
+            className="disabled:opacity-50 disabled:cursor-not-allowed"
+            style={{
+              backgroundColor: 'var(--store-primary-color, #000000)',
+              color: '#ffffff'
+            }}
           >
             {isOutOfStock ? 'Esgotado' : 'Adicionar'}
           </Button>

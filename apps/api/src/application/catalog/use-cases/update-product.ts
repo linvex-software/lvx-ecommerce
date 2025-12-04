@@ -1,20 +1,10 @@
 import { z } from 'zod'
 import { ProductRepository } from '../../../infra/db/repositories/product-repository'
 import type { Product, UpdateProductInput } from '../../../domain/catalog/product-types'
-import { normalizeSlug } from '../../utils/slug'
 
 const updateProductSchema = z.object({
   name: z.string().min(1).max(255).optional(),
-  slug: z
-    .string()
-    .max(255)
-    .optional()
-    .transform((val) => {
-      if (!val || val.trim().length === 0) {
-        return undefined
-      }
-      return normalizeSlug(val.trim())
-    }),
+  slug: z.string().min(1).max(255).regex(/^[a-z0-9-]+$/).optional(),
   description: z.string().max(5000).optional().nullable(),
   base_price: z.number().positive().optional(),
   sku: z.string().min(1).max(100).optional(),
@@ -82,34 +72,32 @@ export async function updateProductUseCase(
     throw new Error('Product not found')
   }
 
-  // Se slug não foi fornecido, manter o slug atual
-  const finalSlug = validated.slug !== undefined 
-    ? validated.slug 
-    : existingProduct.slug
-
-  // Se slug foi fornecido e é diferente do atual, normalizar e validar
-  if (validated.slug !== undefined && validated.slug !== existingProduct.slug) {
-    // Slug já está normalizado pelo schema
-    if (validated.slug) {
-      // Verificar se slug já existe em outro produto (usando query direta)
-      const existingBySlug = await productRepository.findByStoreAndSlug(storeId, validated.slug)
-      if (existingBySlug && existingBySlug.id !== id) {
-        throw new Error('Product slug already exists for this store')
-      }
+  // Verificar se SKU já existe (se estiver sendo alterado)
+  if (validated.sku && validated.sku !== existingProduct.sku) {
+    const existingBySku = await productRepository.listByStore(storeId, {
+      q: validated.sku,
+      limit: 1
+    })
+    const found = existingBySku.products.find((p) => p.sku === validated.sku)
+    if (found) {
+      throw new Error('Product SKU already exists for this store')
     }
   }
 
-  // Verificar se SKU já existe em outro produto (se estiver sendo alterado)
-  if (validated.sku && validated.sku !== existingProduct.sku) {
-    const existingBySku = await productRepository.findByStoreAndSku(storeId, validated.sku)
-    if (existingBySku && existingBySku.id !== id) {
-      throw new Error('Product SKU already exists for this store')
+  // Verificar se slug já existe (se estiver sendo alterado)
+  if (validated.slug && validated.slug !== existingProduct.slug) {
+    const existingBySlug = await productRepository.listByStore(storeId, {
+      limit: 1
+    })
+    const found = existingBySlug.products.find((p) => p.slug === validated.slug)
+    if (found) {
+      throw new Error('Product slug already exists for this store')
     }
   }
 
   const updateInput: UpdateProductInput = {
     name: validated.name,
-    slug: finalSlug,
+    slug: validated.slug,
     description: validated.description,
     base_price: validated.base_price,
     sku: validated.sku,
