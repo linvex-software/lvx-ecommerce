@@ -93,8 +93,14 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
       selectedCategoryIds: node.selectedCategoryIds,
     };
     nodeActions = fullNode.actions;
+    console.log('[CategoryBanner] Props do Craft.js obtidas:', {
+      selectedCategoryIds: craftProps.selectedCategoryIds,
+      categoryImagesCount: craftProps.categoryImages?.length || 0,
+      isInEditor
+    });
   } catch (e) {
-    // Não está no contexto do editor
+    // Não está no contexto do editor - tentar obter props do layout salvo
+    console.log('[CategoryBanner] Não está no contexto do Craft.js, tentando obter props do layout salvo');
   }
   
   const setProp = nodeActions?.setProp || (() => {});
@@ -105,10 +111,32 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
     });
   };
 
+  // Função helper para obter storeId (funciona em web e admin)
+  const getStoreId = (): string | null => {
+    // Tentar obter do usuário autenticado (no editor)
+    if (typeof window !== 'undefined') {
+      try {
+        const authStorage = localStorage.getItem('auth-storage');
+        if (authStorage) {
+          const parsed = JSON.parse(authStorage);
+          const storeId = parsed?.state?.user?.storeId || parsed?.state?.activeStoreId || null;
+          if (storeId) {
+            return storeId;
+          }
+        }
+      } catch (e) {
+        // Ignorar erro
+      }
+    }
+    
+    // Fallback para variável de ambiente
+    return process.env.NEXT_PUBLIC_STORE_ID || null;
+  };
+
   // Função helper para buscar categorias (funciona em web e admin)
   const fetchCategories = async (): Promise<CategoriesResponse> => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'
-    const storeId = process.env.NEXT_PUBLIC_STORE_ID
+    const storeId = getStoreId()
     
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
@@ -118,74 +146,100 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
       headers['x-store-id'] = storeId
     }
     
+    console.log('[CategoryBanner] Buscando categorias da API...', { storeId, API_URL });
+    
     const response = await fetch(`${API_URL}/categories`, { headers })
     
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[CategoryBanner] Erro ao buscar categorias:', response.status, errorText);
       throw new Error(`API Error: ${response.statusText}`)
     }
     
-    return response.json()
+    const data = await response.json();
+    console.log('[CategoryBanner] Categorias recebidas da API:', {
+      count: data?.categories?.length || 0,
+      categories: data?.categories?.map((c: any) => ({ id: c.id, name: c.name })) || []
+    });
+    
+    return data
   }
 
   // Buscar categorias da API
-  const { data: categoriesData } = useQuery<CategoriesResponse>({
-    queryKey: ['categories'],
+  // Incluir storeId na queryKey para forçar refetch quando mudar
+  const storeId = getStoreId();
+  const { data: categoriesData, isLoading: isLoadingCategories } = useQuery<CategoriesResponse>({
+    queryKey: ['categories', storeId],
     queryFn: fetchCategories,
+    enabled: !!storeId, // Só buscar se tiver storeId
+    staleTime: 5 * 60 * 1000, // Cache por 5 minutos
   })
+  
+  console.log('[CategoryBanner] Estado do useQuery:', {
+    hasData: !!categoriesData,
+    isLoading: isLoadingCategories,
+    categoriesCount: categoriesData?.categories?.length || 0,
+    storeId
+  });
 
-  // Usar categorias selecionadas no editor ou todas da API
+  // Usar APENAS categorias selecionadas no editor (não mostrar todas automaticamente)
   const categories = React.useMemo(() => {
-    let categoriesToUse = categoriesData?.categories || [];
+    console.log('[CategoryBanner] Calculando categorias:', {
+      selectedCategoryIds: craftProps.selectedCategoryIds,
+      categoriesDataCount: categoriesData?.categories?.length || 0,
+      hasCategoriesData: !!categoriesData
+    });
+    
+    let categoriesToUse: Category[] = [];
     
     // Se houver categorias selecionadas no editor, usar apenas essas
     if (craftProps.selectedCategoryIds && craftProps.selectedCategoryIds.length > 0) {
+      const allCategories = categoriesData?.categories || [];
+      console.log('[CategoryBanner] Filtrando categorias selecionadas:', {
+        selectedIds: craftProps.selectedCategoryIds,
+        allCategoriesCount: allCategories.length,
+        allCategoryIds: allCategories.map(c => c.id)
+      });
+      
       // Filtrar e manter ordem das selecionadas
       categoriesToUse = craftProps.selectedCategoryIds
-        .map(id => categoriesToUse.find(cat => cat.id === id))
+        .map(id => {
+          const found = allCategories.find(cat => String(cat.id) === String(id));
+          if (!found) {
+            console.warn(`[CategoryBanner] Categoria com ID ${id} não encontrada na lista de categorias`);
+          }
+          return found;
+        })
         .filter(Boolean) as Category[];
+      
+      console.log('[CategoryBanner] Categorias filtradas:', {
+        count: categoriesToUse.length,
+        categories: categoriesToUse.map(c => ({ id: c.id, name: c.name }))
+      });
+    } else {
+      console.log('[CategoryBanner] Nenhuma categoria selecionada');
     }
-    // Se não houver seleção, mostrar todas as categorias disponíveis (sem limite)
-    // Isso permite que o usuário veja todas as categorias e possa selecionar quais quer exibir
+    // Se não houver seleção, não mostrar nenhuma categoria
+    // O usuário deve selecionar manualmente no editor
     
     // Mapear para o formato esperado
     if (categoriesToUse.length > 0) {
-      return categoriesToUse.map((cat, index) => ({
+      const mapped = categoriesToUse.map((cat, index) => ({
         id: cat.id,
         name: cat.name,
         slug: cat.slug,
         image: craftProps.categoryImages?.[index] || DEFAULT_CATEGORY_IMAGES[index % DEFAULT_CATEGORY_IMAGES.length],
         href: `/produtos?category_id=${cat.id}`,
         nodeId: `node_category_${index + 1}`,
-      }))
+      }));
+      console.log('[CategoryBanner] Categorias mapeadas:', mapped.length);
+      return mapped;
     }
     
-    // Fallback para categorias padrão se API não retornar
-    return [
-      {
-        id: 'default-1',
-        name: "Vestidos",
-        slug: "vestidos",
-        image: DEFAULT_CATEGORY_IMAGES[0],
-        href: "/produtos",
-        nodeId: "node_category_1",
-      },
-      {
-        id: 'default-2',
-        name: "Conjuntos",
-        slug: "conjuntos",
-        image: DEFAULT_CATEGORY_IMAGES[1],
-        href: "/produtos",
-        nodeId: "node_category_2",
-      },
-      {
-        id: 'default-3',
-        name: "Blazers",
-        slug: "blazers",
-        image: DEFAULT_CATEGORY_IMAGES[2],
-        href: "/produtos",
-        nodeId: "node_category_3",
-      },
-    ]
+    // Se não houver categorias selecionadas, retornar array vazio
+    // O usuário deve selecionar categorias manualmente no editor
+    console.log('[CategoryBanner] Retornando array vazio - nenhuma categoria selecionada');
+    return []
   }, [categoriesData, craftProps.selectedCategoryIds, craftProps.categoryImages])
 
   // Debug: verificar se children estão chegando (sempre logar, não só fora do editor)

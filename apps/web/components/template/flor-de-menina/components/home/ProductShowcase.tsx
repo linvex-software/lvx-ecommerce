@@ -79,8 +79,14 @@ export function ProductShowcase({
     nodeActions = fullNode.actions;
     isSelected = node.isSelected;
     isInEditor = true;
-  } catch {
-    // Não está no contexto do editor
+    console.log('[ProductShowcase] Props do Craft.js obtidas:', {
+      selectedProductIds: craftProps.selectedProductIds,
+      nodeId,
+      isInEditor
+    });
+  } catch (e) {
+    // Não está no contexto do editor - tentar obter props do layout salvo
+    console.log('[ProductShowcase] Não está no contexto do Craft.js, tentando obter props do layout salvo');
   }
   
   useEffect(() => {
@@ -111,10 +117,11 @@ export function ProductShowcase({
     return process.env.NEXT_PUBLIC_STORE_ID || null;
   };
 
-  // Buscar produtos da API se não foram fornecidos como prop
+  // Buscar produtos APENAS se foram selecionados manualmente no editor
+  // Funciona tanto no editor quanto na página final
   useEffect(() => {
-    // Se estiver no editor e tiver produtos selecionados, usar eles
-    if (isInEditor && craftProps.selectedProductIds && craftProps.selectedProductIds.length > 0) {
+    // Se tiver produtos selecionados, buscar eles (funciona no editor e na página)
+    if (craftProps.selectedProductIds && craftProps.selectedProductIds.length > 0) {
       // Buscar produtos selecionados da API
       const loadSelectedProducts = async () => {
         try {
@@ -127,7 +134,11 @@ export function ProductShowcase({
           
           // Fazer requisição direta com fetch para garantir que o header x-store-id seja enviado
           const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-          console.log('[ProductShowcase] Buscando produtos selecionados da API...', { storeId, selectedIds: craftProps.selectedProductIds });
+          console.log('[ProductShowcase] Buscando produtos selecionados da API...', { 
+            storeId, 
+            selectedIds: craftProps.selectedProductIds,
+            isInEditor 
+          });
           
           const response = await fetch(`${API_URL}/products?limit=100`, {
             method: 'GET',
@@ -167,7 +178,7 @@ export function ProductShowcase({
               .map((id) => selectedProducts.find((p) => p.id === id))
               .filter((p): p is Product => p !== undefined);
             
-            console.log(`[ProductShowcase] ${orderedProducts.length} produtos selecionados carregados`);
+            console.log(`[ProductShowcase] ${orderedProducts.length} produtos selecionados carregados (editor: ${isInEditor})`);
             setProducts(orderedProducts);
             return;
           }
@@ -183,96 +194,17 @@ export function ProductShowcase({
       return;
     }
     
+    // Se produtos foram passados como prop, usar eles
     if (productsProp && productsProp.length > 0) {
       setProducts(productsProp);
       return;
     }
 
-    // Tentar buscar produtos baseado no viewAllLink ou título
-    const loadProducts = async () => {
-      try {
-        // Obter storeId (do usuário ou variável de ambiente)
-        const storeId = getStoreId();
-        if (!storeId) {
-          // Store não configurado - não buscar produtos
-          console.warn('[ProductShowcase] StoreId não disponível, não buscando produtos');
-          setProducts([]);
-          return;
-        }
-
-        const params = new URLSearchParams();
-        params.append('limit', '4');
-        params.append('page', '1');
-
-        // Extrair filtro do viewAllLink se disponível
-        if (viewAllLink) {
-          const filterMatch = viewAllLink.match(/filter=(\w+)/);
-          if (filterMatch) {
-            // Por enquanto, apenas buscar produtos gerais
-            // Em produção, isso poderia filtrar por categoria ou tag
-          }
-        }
-
-        console.log('[ProductShowcase] Buscando produtos da API...', { storeId, url: `/products?${params.toString()}` });
-        
-        // Fazer requisição direta com fetch para garantir que o header x-store-id seja enviado
-        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
-        const response = await fetch(`${API_URL}/products?${params.toString()}`, {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'x-store-id': storeId,
-          },
-        });
-
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('[ProductShowcase] Erro na resposta da API:', response.status, errorText);
-          throw new Error(`API Error: ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('[ProductShowcase] Resposta da API:', data);
-        
-        const responseData = data as { products?: any[] };
-        
-        if (responseData?.products && responseData.products.length > 0) {
-          // Converter produtos da API para o formato esperado
-          const convertedProducts: Product[] = responseData.products.slice(0, 4).map((p: any) => ({
-            id: String(p.id),
-            slug: p.slug, // Incluir slug do produto
-            name: p.name,
-            price: parseFloat(p.base_price || '0'),
-            images: p.main_image ? [p.main_image] : [],
-            category: p.category_name || 'Geral',
-            sizes: [],
-            colors: [],
-            description: p.description || '',
-          }));
-          console.log(`[ProductShowcase] ${convertedProducts.length} produtos carregados`);
-          setProducts(convertedProducts);
-        } else {
-          console.warn('[ProductShowcase] Nenhum produto retornado da API');
-          setProducts([]);
-        }
-      } catch (error: any) {
-        // Tratar erros silenciosamente - é esperado que falhe se não houver storeId configurado
-        // ou se estiver em ambiente de desenvolvimento sem API configurada
-        const isStoreNotFound = error?.message?.includes('Store not found') || 
-                               error?.payload?.error?.includes('Store not found') ||
-                               error?.status === 404
-        
-        if (!isStoreNotFound) {
-          // Apenas logar erros inesperados
-          console.warn('[ProductShowcase] Erro ao buscar produtos:', error?.message || error)
-        }
-        // Manter array vazio se houver erro (comportamento esperado)
-        setProducts([]);
-      }
-    };
-
-    loadProducts();
-  }, [productsProp, viewAllLink, isInEditor, craftProps.selectedProductIds]);
+    // Se não houver produtos selecionados, não buscar automaticamente
+    // Apenas mostrar array vazio (tanto no editor quanto na página)
+    console.log('[ProductShowcase] Nenhum produto selecionado, não buscando produtos automaticamente');
+    setProducts([]);
+  }, [productsProp, isInEditor, craftProps.selectedProductIds]);
 
   // Garantir que products seja sempre um array
   const safeProducts = Array.isArray(products) ? products : [];

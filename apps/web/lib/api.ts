@@ -37,31 +37,67 @@ export async function fetchAPI(path: string, options: RequestInit = {}) {
         headers['Authorization'] = `Bearer ${accessToken}`
     }
 
-    const response = await fetch(`${API_URL}${path}`, {
-        ...options,
-        headers,
-    })
+    // Criar AbortController para timeout
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 30000) // 30 segundos
 
-    if (!response.ok) {
-        // Tentar ler mensagem de erro da resposta
-        let errorMessage = response.statusText
-        let errorDetails: any = null
-        try {
-            const errorData = await response.json()
-            errorMessage = errorData.error || errorData.message || response.statusText
-            errorDetails = errorData.details || null
-        } catch {
-            // Se não conseguir parsear JSON, usa statusText
+    try {
+        const response = await fetch(`${API_URL}${path}`, {
+            ...options,
+            headers,
+            signal: controller.signal,
+        })
+
+        clearTimeout(timeoutId)
+
+        if (!response.ok) {
+            // Tentar ler mensagem de erro da resposta
+            let errorMessage = response.statusText
+            let errorDetails: any = null
+            try {
+                const errorData = await response.json()
+                errorMessage = errorData.error || errorData.message || response.statusText
+                errorDetails = errorData.details || null
+            } catch {
+                // Se não conseguir parsear JSON, usa statusText
+            }
+            
+            const error = new Error(`API Error: ${errorMessage}`) as Error & { 
+                status: number
+                payload?: { error?: string; details?: any }
+            }
+            error.status = response.status
+            error.payload = { error: errorMessage, details: errorDetails }
+            throw error
         }
+
+        return response.json()
+    } catch (error) {
+        clearTimeout(timeoutId)
         
-        const error = new Error(`API Error: ${errorMessage}`) as Error & { 
-            status: number
-            payload?: { error?: string; details?: any }
+        // Tratar erro de abort (timeout)
+        if (error instanceof Error && error.name === 'AbortError') {
+            const timeoutError = new Error('Request timeout: A requisição demorou mais de 30 segundos') as Error & {
+                status: number
+                payload?: { error?: string }
+            }
+            timeoutError.status = 408
+            timeoutError.payload = { error: 'Request timeout' }
+            throw timeoutError
         }
-        error.status = response.status
-        error.payload = { error: errorMessage, details: errorDetails }
+
+        // Tratar erro de rede
+        if (error instanceof TypeError && error.message.includes('fetch')) {
+            const networkError = new Error('Erro de rede: Não foi possível conectar ao servidor') as Error & {
+                status: number
+                payload?: { error?: string }
+            }
+            networkError.status = 0
+            networkError.payload = { error: 'Network error' }
+            throw networkError
+        }
+
+        // Re-lançar outros erros
         throw error
     }
-
-    return response.json()
 }

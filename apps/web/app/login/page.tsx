@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useLogin } from '@/lib/hooks/use-login'
+import { useIsAuthenticated, useHasHydrated } from '@/lib/store/useAuthStore'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -12,9 +13,28 @@ export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { login, isLoading, error } = useLogin()
+  const isAuthenticated = useIsAuthenticated()
+  const hasHydrated = useHasHydrated()
   const [cpf, setCpf] = useState('')
   const [password, setPassword] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
+
+  // Redirecionar se já estiver autenticado
+  useEffect(() => {
+    if (hasHydrated && isAuthenticated) {
+      router.push('/minha-conta')
+    }
+  }, [hasHydrated, isAuthenticated, router])
+
+  // Limpar erro automaticamente após 3 segundos
+  useEffect(() => {
+    if (formError || error) {
+      const timer = setTimeout(() => {
+        setFormError(null)
+      }, 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [formError, error])
 
   const redirect = searchParams.get('redirect') || '/minha-conta'
   const registered = searchParams.get('registered') === 'true'
@@ -33,6 +53,11 @@ export default function LoginPage() {
     } catch (err) {
       setFormError(error || 'Erro ao fazer login')
     }
+  }
+
+  // Não renderizar nada enquanto verifica autenticação
+  if (!hasHydrated || isAuthenticated) {
+    return null
   }
 
   return (
@@ -83,7 +108,8 @@ export default function LoginPage() {
 
             {(error || formError) && (
               <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded text-sm">
-                {formError || error}
+                <p className="font-medium">Erro ao fazer login</p>
+                <p className="mt-1">{formError || error}</p>
               </div>
             )}
 
@@ -112,7 +138,7 @@ export default function LoginPage() {
                   variant="outline"
                   className="w-full"
                 >
-                  PRIMEIRO ACESSO? <span className="underline">CADASTRE-SE</span>
+                  PRIMEIRO ACESSO? <span className="">CADASTRE-SE</span>
                 </Button>
               </Link>
               <Link href="/primeiro-acesso">
@@ -120,7 +146,7 @@ export default function LoginPage() {
                   variant="outline"
                   className="w-full"
                 >
-                  COMPROU E NÃO POSSUI SENHA? <span className="underline">CADASTRE-SE</span>
+                  COMPROU E NÃO POSSUI SENHA? <span className="">CADASTRE-SE</span>
                 </Button>
               </Link>
             </div>

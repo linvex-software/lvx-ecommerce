@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
+import React from "react";
 export function HeroBanner() {
   return (
     <section className="relative h-[85vh] min-h-[600px] overflow-hidden">

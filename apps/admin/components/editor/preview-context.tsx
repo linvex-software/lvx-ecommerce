@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react'
 
-type PreviewMode = 'desktop' | 'tablet' | 'mobile'
+type PreviewMode = 'desktop' | 'tablet'
 
 interface PreviewContextType {
   previewMode: PreviewMode

@@ -21,3 +21,4 @@ export interface Template {
 export type TemplateCategory = 'fashion' | 'ecommerce' | 'landing' | 'product' | 'blog' | 'other'
 
 
+

@@ -1,51 +1,75 @@
-/**
- * Tipos para o sistema de blocos dinâmicos
- */
-type BlockType = 
-  | 'hero'
-  | 'products'
-  | 'categories'
-  | 'banner'
-  | 'testimonials'
-  | 'faq'
-  | 'newsletter'
-  | 'features'
+import * as fs from 'fs'
+import * as path from 'path'
 
-interface Block {
-  type: BlockType
-  enabled: boolean
-  order: number
-  props: Record<string, unknown>
-  elementStyles?: Record<string, unknown>
+/**
+ * Gera o layout padrão da loja usando o template flor-de-menina
+ * 
+ * Carrega o layout completo do template flor-de-menina como padrão
+ * para todas as novas lojas criadas.
+ */
+export function generateDefaultLayout(): Record<string, unknown> {
+  try {
+    // Caminho para o layout do template
+    // Usar process.cwd() que aponta para a raiz do projeto (onde está o package.json raiz)
+    const projectRoot = process.cwd()
+    const templateLayoutPath = path.join(
+      projectRoot,
+      'templates',
+      'flor-de-menina',
+      'layout.json'
+    )
+
+    // Verificar se o arquivo existe
+    if (!fs.existsSync(templateLayoutPath)) {
+      console.warn(
+        `[generateDefaultLayout] Arquivo de layout não encontrado em ${templateLayoutPath}. Usando layout mínimo.`
+      )
+      return createMinimalLayout()
+    }
+
+    // Ler e parsear o arquivo JSON
+    const layoutContent = fs.readFileSync(templateLayoutPath, 'utf-8')
+    const layout = JSON.parse(layoutContent) as Record<string, unknown>
+
+    // Validar que o layout tem ROOT
+    if (!layout || !layout.ROOT) {
+      console.warn(
+        '[generateDefaultLayout] Layout do template não tem ROOT válido. Usando layout mínimo.'
+      )
+      return createMinimalLayout()
+    }
+
+    console.log('[generateDefaultLayout] Layout do template flor-de-menina carregado com sucesso:', {
+      hasRoot: !!layout.ROOT,
+      totalNodes: Object.keys(layout).length,
+      rootNodes: (layout.ROOT as any)?.nodes?.length || 0
+    })
+
+    return layout
+  } catch (error) {
+    console.error('[generateDefaultLayout] Erro ao carregar layout do template:', error)
+    // Em caso de erro, retornar layout mínimo válido
+    return createMinimalLayout()
+  }
 }
 
 /**
- * Gera o layout padrão da loja baseado na estrutura atual de /web
- * 
- * A estrutura padrão inclui:
- * 1. Bloco de produtos com filtros (equivalente à página atual)
- * 
- * O layout padrão replica a estrutura da página inicial atual:
- * - Navbar é renderizado separadamente (não é um bloco)
- * - StoreBanner é renderizado separadamente (não é um bloco)
- * - ProductsBlock com filtros habilitados (equivalente à página atual)
+ * Cria um layout mínimo válido caso o template não possa ser carregado
  */
-export function generateDefaultLayout(): { blocks: Block[] } {
-  const blocks: Block[] = [
-    {
-      type: 'products',
-      enabled: true,
-      order: 1,
-      props: {
-        title: 'Nossos Produtos',
-        show_filters: true,
-        limit: 8,
-        layout: 'grid'
+function createMinimalLayout(): Record<string, unknown> {
+  return {
+    ROOT: {
+      type: {
+        resolvedName: 'div'
       },
-      elementStyles: {}
+      isCanvas: true,
+      props: {},
+      displayName: 'div',
+      custom: {},
+      parent: null,
+      nodes: [],
+      linkedNodes: {}
     }
-  ]
-
-  return { blocks }
+  }
 }
 

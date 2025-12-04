@@ -136,11 +136,6 @@ export function MiniCart() {
                   Finalizar Compra
                 </Link>
               </Button>
-              <Button variant="outline" asChild className="w-full">
-                <Link to="/carrinho" onClick={() => setIsOpen(false)}>
-                  Ver Sacola
-                </Link>
-              </Button>
             </div>
           </div>
         )}

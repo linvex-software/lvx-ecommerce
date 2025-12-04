@@ -91,16 +91,16 @@ async function handleMercadoPagoEvent(
   eventType: string | null,
   payload: Record<string, unknown>
 ): Promise<void> {
-  // Handler simulado para Mercado Pago
-  // TODO: Implementar lógica real de processamento de pagamento
   switch (eventType) {
     case 'payment':
     case 'payment.created':
-      // Verificar se é relacionado a venda física
+    case 'payment.updated':
+      // Processar webhook de pagamento
       if (payload.data && typeof payload.data === 'object') {
         const data = payload.data as Record<string, unknown>
+        
+        // Verificar se é relacionado a venda física
         if (data.metadata?.sale_type === 'physical_sale' || data.external_reference?.includes('physical_sale')) {
-          // Processar webhook de venda física
           const { processPhysicalSaleWebhookUseCase } = await import('../../physical-sales/use-cases/process-physical-sale-webhook')
           const { PhysicalSaleRepository } = await import('../../../infra/db/repositories/physical-sale-repository')
           const storeId = data.metadata?.store_id as string | undefined
@@ -110,6 +110,31 @@ async function handleMercadoPagoEvent(
               storeId,
               {
                 physicalSaleRepository: new PhysicalSaleRepository()
+              }
+            )
+          }
+        } else {
+          // Processar webhook de pagamento de pedido
+          const { processPaymentWebhookUseCase } = await import('../../payments/use-cases/process-payment-webhook')
+          const { TransactionRepository } = await import('../../../infra/db/repositories/transaction-repository')
+          const { OrderRepository } = await import('../../../infra/db/repositories/order-repository')
+          
+          // Extrair store_id do metadata ou external_reference
+          const storeId = data.metadata?.store_id as string | undefined
+          if (storeId && data.id) {
+            await processPaymentWebhookUseCase(
+              {
+                id: String(data.id),
+                status: String(data.status || ''),
+                status_detail: String(data.status_detail || ''),
+                transaction_amount: data.transaction_amount as number | undefined,
+                external_reference: data.external_reference as string | undefined,
+                metadata: data.metadata as { order_id?: string; store_id?: string } | undefined
+              },
+              storeId,
+              {
+                transactionRepository: new TransactionRepository(),
+                orderRepository: new OrderRepository()
               }
             )
           }

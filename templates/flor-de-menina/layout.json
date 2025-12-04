@@ -65,7 +65,7 @@
       "id": "node_header_logo",
       "tag": "span",
       "className": "",
-      "content": "Flor de Menina"
+      "content": "Nome da loja"
     },
     "displayName": "Texto Editável",
     "custom": {},
@@ -193,7 +193,7 @@
     "props": {
       "id": "node_hero_text_1",
       "tag": "span",
-      "className": "inline-block text-sm tracking-[0.3em] uppercase font-body mb-4",
+      "className": "inline-block text-sm text-white tracking-[0.3em] uppercase font-body mb-4",
       "content": "Coleção Festas 2024"
     },
     "displayName": "Texto Editável",
@@ -209,7 +209,7 @@
     "props": {
       "id": "node_hero_text_2",
       "tag": "span",
-      "className": "",
+      "className": "text-gold",
       "content": "Elegância em"
     },
     "displayName": "Texto Editável",
@@ -225,8 +225,8 @@
     "props": {
       "id": "node_hero_text_3",
       "tag": "span",
-      "className": "",
-      "content": "Vermelho & Branco"
+      "content": "Vermelho & Branco",
+      "className": "text-white"
     },
     "displayName": "Texto Editável",
     "custom": {},
@@ -241,7 +241,7 @@
     "props": {
       "id": "node_hero_text_4",
       "tag": "p",
-      "className": "text-secondary/80 font-body text-base md:text-lg mb-8 max-w-md leading-relaxed",
+      "className": "text-secondary/80 font-body text-base text-white md:text-lg mb-8 max-w-md leading-relaxed",
       "content": "Descubra peças exclusivas para brilhar nas festas de fim de ano. Sofisticação e estilo que traduzem a essência feminina."
     },
     "displayName": "Texto Editável",
@@ -573,7 +573,7 @@
     "props": {
       "id": "node_promo_banner_subtitle",
       "tag": "span",
-      "className": "inline-block  text-xs tracking-[0.4em] uppercase font-body mb-4",
+      "className": "inline-block  text-xs text-white tracking-[0.4em] uppercase font-body mb-4",
       "content": "Especial de Natal"
     },
     "displayName": "Texto Editável",
@@ -589,7 +589,7 @@
     "props": {
       "id": "node_promo_banner_title",
       "tag": "span",
-      "className": "",
+      "className": "text-gold",
       "content": "Até 40% OFF"
     },
     "displayName": "Texto Editável",
@@ -605,7 +605,7 @@
     "props": {
       "id": "node_promo_banner_description",
       "tag": "p",
-      "className": "text-primary-foreground/80 font-body text-lg mb-8 max-w-lg mx-auto",
+      "className": "text-primary-foreground/80 font-body text-lg text-white mb-8 max-w-lg mx-auto",
       "content": "Peças selecionadas com descontos exclusivos. Aproveite e renove seu guarda-roupa para as festas."
     },
     "displayName": "Texto Editável",
@@ -736,7 +736,7 @@
     "props": {
       "id": "node_footer_newsletter_title",
       "tag": "span",
-      "className": "",
+      "className": "text-white",
       "content": "Receba Novidades em Primeira Mão"
     },
     "displayName": "Texto Editável",
@@ -752,7 +752,7 @@
     "props": {
       "id": "node_footer_newsletter_description",
       "tag": "p",
-      "className": "text-primary-foreground/80 mb-6 font-body text-sm",
+      "className": "mb-6 font-body text-sm text-white",
       "content": "Cadastre-se e ganhe 10% OFF na primeira compra"
     },
     "displayName": "Texto Editável",
@@ -785,7 +785,7 @@
       "id": "node_footer_brand_name",
       "tag": "span",
       "className": "",
-      "content": "Flor de Menina"
+      "content": "Nome da loja"
     },
     "displayName": "Texto Editável",
     "custom": {},

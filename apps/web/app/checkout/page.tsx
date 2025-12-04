@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Check, CreditCard, Truck, User, ChevronRight } from 'lucide-react'
@@ -11,6 +11,11 @@ import { useCartStore } from '@/lib/store/useCartStore'
 import { useCreateOrder } from '@/lib/hooks/use-create-order'
 import { cn } from '@/lib/utils'
 import { DeliveryOptionsWithCep } from '@/components/checkout/DeliveryOptionsWithCep'
+import { MercadoPagoPayment } from '@/components/checkout/MercadoPagoPayment'
+import { PixQrCode } from '@/components/checkout/PixQrCode'
+import { useIsAuthenticated, useHasHydrated, useAuthStore } from '@/lib/store/useAuthStore'
+import { useCustomerProfile } from '@/lib/hooks/use-customer-profile'
+import { useAddresses } from '@/lib/hooks/use-addresses'
 
 type Step = 'personal' | 'address' | 'shipping' | 'payment' | 'review'
 
@@ -31,6 +36,11 @@ export default function CheckoutPage() {
   const router = useRouter()
   const { items, clearCart } = useCartStore()
   const { createOrder, isLoading: isCreatingOrder } = useCreateOrder()
+  const isAuthenticated = useIsAuthenticated()
+  const hasHydrated = useHasHydrated()
+  const { customer } = useAuthStore()
+  const { data: customerProfile } = useCustomerProfile()
+  const { data: addresses } = useAddresses()
   const [currentStep, setCurrentStep] = useState<Step>('personal')
   const [selectedDeliveryOption, setSelectedDeliveryOption] = useState<SelectedDeliveryOption | null>(null)
   const [shippingCost, setShippingCost] = useState<number>(0)
@@ -53,6 +63,101 @@ export default function CheckoutPage() {
     cardExpiry: '',
     cardCvv: '',
   })
+  const [createdOrder, setCreatedOrder] = useState<any>(null)
+  const [paymentResult, setPaymentResult] = useState<any>(null)
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false)
+  const [hasInitializedForm, setHasInitializedForm] = useState(false)
+
+  // Verificar autenticação e redirecionar se necessário
+  useEffect(() => {
+    if (!hasHydrated) return
+
+    if (!isAuthenticated) {
+      router.push(`/login?redirect=${encodeURIComponent('/checkout')}`)
+    }
+  }, [isAuthenticated, hasHydrated, router])
+
+  // Preencher formulário com dados do usuário logado
+  useEffect(() => {
+    if (!isAuthenticated || hasInitializedForm) return
+
+    // Usar dados do perfil se disponível, senão usar dados do store
+    const customerData = customerProfile || customer
+
+    if (customerData) {
+      setFormData((prev) => ({
+        ...prev,
+        name: customerData.name || prev.name,
+        email: customerData.email || prev.email,
+        phone: customerData.phone || prev.phone,
+        cpf: customerData.cpf || prev.cpf,
+      }))
+    }
+
+    // Buscar endereço padrão se disponível
+    if (addresses && addresses.length > 0) {
+      // Encontrar endereço padrão ou usar o primeiro
+      const defaultAddress = addresses.find((addr) => addr.is_default) || addresses[0]
+
+      if (defaultAddress) {
+        // Extrair informações do endereço
+        // O formato do street pode ser: "Rua, Número, Bairro: X, Complemento"
+        const streetParts = defaultAddress.street?.split(',').map(s => s.trim()) || []
+        
+        let street = ''
+        let number = ''
+        let complement = ''
+        let neighborhood = ''
+        
+        if (streetParts.length > 0) {
+          street = streetParts[0] || ''
+        }
+        
+        if (streetParts.length > 1) {
+          // Segundo item pode ser número ou bairro
+          const secondPart = streetParts[1]
+          if (secondPart.includes('Bairro:')) {
+            neighborhood = secondPart.replace('Bairro:', '').trim()
+          } else {
+            number = secondPart
+          }
+        }
+        
+        if (streetParts.length > 2) {
+          // Terceiro item pode ser bairro ou complemento
+          const thirdPart = streetParts[2]
+          if (thirdPart.includes('Bairro:')) {
+            neighborhood = thirdPart.replace('Bairro:', '').trim()
+          } else if (!neighborhood) {
+            // Se ainda não tem bairro, pode ser complemento
+            complement = thirdPart
+          }
+        }
+        
+        if (streetParts.length > 3) {
+          // Quarto item geralmente é complemento
+          complement = streetParts[3]
+        }
+
+        // Formatar CEP (pode vir como zip ou zip_code)
+        const zipCode = defaultAddress.zip || (defaultAddress as any).zip_code || ''
+        const formattedCep = zipCode ? zipCode.replace(/\D/g, '').replace(/(\d{5})(\d{3})/, '$1-$2') : ''
+
+        setFormData((prev) => ({
+          ...prev,
+          cep: formattedCep || prev.cep,
+          street: street || prev.street,
+          number: number || prev.number,
+          complement: complement || prev.complement,
+          neighborhood: neighborhood || prev.neighborhood,
+          city: defaultAddress.city || prev.city,
+          state: defaultAddress.state || prev.state,
+        }))
+      }
+    }
+
+    setHasInitializedForm(true)
+  }, [isAuthenticated, customer, customerProfile, addresses, hasInitializedForm])
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
@@ -106,11 +211,10 @@ export default function CheckoutPage() {
     }
   }
 
-  const handleSubmit = async () => {
+  const handleCreateOrder = async () => {
     try {
       if (!selectedDeliveryOption) {
-        alert('Por favor, selecione uma opção de entrega.')
-        return
+        throw new Error('Por favor, selecione uma opção de entrega.')
       }
 
       // Converter itens do carrinho para formato da API
@@ -146,11 +250,61 @@ export default function CheckoutPage() {
         shipping_address: shippingAddress,
       })
 
-      clearCart()
-      router.push(`/minha-conta/pedidos/${order.id}`)
+      setCreatedOrder(order)
+      return order
     } catch (error) {
-      alert(error instanceof Error ? error.message : 'Ocorreu um erro ao processar seu pedido.')
+      throw error
     }
+  }
+
+  const handlePaymentSuccess = (result: any) => {
+    setPaymentResult(result)
+    setIsProcessingPayment(false)
+    
+    // Se for PIX, mostrar QR Code
+    if (result.paymentResult.qrCode) {
+      // Já está no estado paymentResult, será exibido abaixo
+    } else if (result.status === 'approved') {
+      // Pagamento aprovado, redirecionar
+      clearCart()
+      if (createdOrder?.id) {
+        router.push(`/minha-conta/pedidos/${createdOrder.id}`)
+      }
+    }
+  }
+
+  const handlePaymentError = (error: string) => {
+    alert(error)
+    setIsProcessingPayment(false)
+  }
+
+
+  // Mostrar loading enquanto verifica autenticação
+  if (!hasHydrated) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="min-h-[70vh] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg">Carregando...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // Se não está autenticado, mostrar mensagem de redirecionamento
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="min-h-[70vh] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg">Redirecionando para login...</p>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (items.length === 0) {
@@ -390,52 +544,57 @@ export default function CheckoutPage() {
               {currentStep === 'payment' && (
                 <div className="space-y-6 animate-fade-in">
                   <h2 className="font-display text-2xl mb-6">Pagamento</h2>
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm font-body mb-2">Número do Cartão</label>
-                      <input
-                        type="text"
-                        name="cardNumber"
-                        value={formData.cardNumber}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="0000 0000 0000 0000"
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="block text-sm font-body mb-2">Nome no Cartão</label>
-                      <input
-                        type="text"
-                        name="cardName"
-                        value={formData.cardName}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="Como está no cartão"
-                      />
-                    </div>
+                  
+                  {paymentResult?.paymentResult?.qrCode ? (
                     <div>
-                      <label className="block text-sm font-body mb-2">Validade</label>
-                      <input
-                        type="text"
-                        name="cardExpiry"
-                        value={formData.cardExpiry}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="MM/AA"
+                      <PixQrCode
+                        qrCode={paymentResult.paymentResult.qrCode}
+                        qrCodeBase64={paymentResult.paymentResult.qrCodeBase64}
+                        ticketUrl={paymentResult.paymentResult.ticketUrl}
                       />
+                      <div className="mt-6 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                        <p className="text-sm text-green-800 dark:text-green-200">
+                          <strong>Pagamento PIX gerado com sucesso!</strong> Escaneie o QR Code ou copie o código para pagar.
+                          Após o pagamento, você receberá a confirmação por e-mail.
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-sm font-body mb-2">CVV</label>
-                      <input
-                        type="text"
-                        name="cardCvv"
-                        value={formData.cardCvv}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="000"
-                      />
+                  ) : paymentResult?.status === 'approved' ? (
+                    <div className="p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-center">
+                      <h3 className="font-display text-xl mb-2 text-green-800 dark:text-green-200">
+                        Pagamento Aprovado!
+                      </h3>
+                      <p className="text-sm text-green-700 dark:text-green-300 mb-4">
+                        Seu pagamento foi processado com sucesso.
+                      </p>
+                      <Button onClick={() => {
+                        clearCart()
+                        router.push(`/minha-conta/pedidos/${createdOrder?.id}`)
+                      }}>
+                        Ver Pedido
+                      </Button>
                     </div>
-                  </div>
+                  ) : (
+                    <MercadoPagoPayment
+                      orderId={createdOrder?.id || ''}
+                      amount={Math.round(finalTotal * 100)} // converter para centavos
+                      payer={{
+                        email: formData.email,
+                        firstName: formData.name.split(' ')[0] || '',
+                        lastName: formData.name.split(' ').slice(1).join(' ') || '',
+                        identification: formData.cpf
+                          ? {
+                              type: 'CPF',
+                              number: formData.cpf.replace(/\D/g, '')
+                            }
+                          : undefined
+                      }}
+                      onPaymentSuccess={handlePaymentSuccess}
+                      onPaymentError={handlePaymentError}
+                      onCreateOrder={handleCreateOrder}
+                      isCreatingOrder={isCreatingOrder}
+                    />
+                  )}
                 </div>
               )}
 
@@ -485,8 +644,15 @@ export default function CheckoutPage() {
                   <div />
                 )}
                 {currentStep === 'review' ? (
-                  <Button onClick={handleSubmit} size="lg" disabled={isCreatingOrder}>
-                    {isCreatingOrder ? 'Processando...' : 'Finalizar Pedido'}
+                  <Button onClick={nextStep} size="lg">
+                    Continuar para Pagamento
+                  </Button>
+                ) : currentStep === 'payment' && paymentResult?.paymentResult?.qrCode ? (
+                  <Button onClick={() => {
+                    clearCart()
+                    router.push(`/minha-conta/pedidos/${createdOrder?.id}`)
+                  }}>
+                    Ver Pedido
                   </Button>
                 ) : (
                   <Button onClick={nextStep}>Continuar</Button>
