@@ -1,6 +1,7 @@
 export interface Category {
   id: string
   store_id: string
+  parent_id: string | null
   name: string
   slug: string
   created_at: Date
@@ -9,11 +10,13 @@ export interface Category {
 export interface CreateCategoryInput {
   name: string
   slug?: string
+  parent_id?: string | null
 }
 
 export interface UpdateCategoryInput {
   name?: string
   slug?: string
+  parent_id?: string | null
 }
 
 export interface CategoryListFilters {
