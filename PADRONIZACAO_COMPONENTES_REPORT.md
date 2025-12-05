@@ -170,3 +170,4 @@ O BentoGrid tinha `bg-white` hardcoded na classe do elemento `<section>`, o que 
 
 
 
+
