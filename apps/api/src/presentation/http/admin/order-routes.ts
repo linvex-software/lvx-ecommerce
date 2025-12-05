@@ -15,6 +15,8 @@ export async function registerAdminOrderRoutes(app: FastifyInstance): Promise<vo
       status?: string
       payment_status?: string
       customer_id?: string
+      start_date?: string
+      end_date?: string
     }
   }>(
     '/admin/orders',

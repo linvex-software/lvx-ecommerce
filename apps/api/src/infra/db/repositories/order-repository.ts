@@ -1,6 +1,6 @@
  
 import { db, schema, sql } from '@white-label/db'
-import { eq, and, desc } from 'drizzle-orm'
+import { eq, and, desc, gte, lte, inArray } from 'drizzle-orm'
 
 import type {
   Order,
@@ -102,6 +102,155 @@ export class OrderRepository {
     }
   }
 
+  /**
+   * Cria pedido com itens E movimentações de estoque em uma única transação atômica
+   * Também atualiza carrinho (se fornecido) e incrementa cupom (se fornecido) na mesma transação
+   */
+  async createWithStockMovements(
+    orderData: {
+      store_id: string
+      customer_id: string | null
+      total: number // em centavos
+      status: string
+      payment_status: string
+      shipping_cost: number // em centavos
+      delivery_type?: 'shipping' | 'pickup_point' | null
+      delivery_option_id?: string | null
+      shipping_address: {
+        zip_code: string
+        street?: string
+        number?: string
+        complement?: string
+        neighborhood?: string
+        city?: string
+        state?: string
+        country?: string
+      } | null
+    },
+    items: Array<{
+      product_id: string
+      variant_id: string | null
+      quantity: number
+      price: number // em centavos
+    }>,
+    stockMovements: Array<{
+      product_id: string
+      variant_id: string | null
+      quantity: number
+      reason: string
+    }>,
+    options?: {
+      cart_id?: string | null // ID do carrinho a ser marcado como 'converted'
+      coupon_id?: string | null // ID do cupom a ter contador incrementado
+    }
+  ): Promise<Order> {
+    // Criar pedido, itens e movimentações de estoque em uma única transação
+    const result = await db.transaction(async (tx) => {
+      // Inserir pedido
+      const [order] = await tx
+        .insert(schema.orders)
+        .values({
+          store_id: orderData.store_id,
+          customer_id: orderData.customer_id,
+          total: (orderData.total / 100).toFixed(2), // Converter centavos para reais
+          status: orderData.status,
+          payment_status: orderData.payment_status,
+          shipping_cost: (orderData.shipping_cost / 100).toFixed(2), // Converter centavos para reais
+          delivery_type: orderData.delivery_type ?? null,
+          delivery_option_id: orderData.delivery_option_id ?? null,
+          shipping_label_url: null,
+          tracking_code: null
+        })
+        .returning()
+
+      // Inserir itens do pedido
+      if (items.length > 0) {
+        await tx.insert(schema.orderItems).values(
+          items.map((item) => ({
+            order_id: order.id,
+            product_id: item.product_id,
+            variant_id: item.variant_id,
+            quantity: item.quantity,
+            price: (item.price / 100).toFixed(2) // Converter centavos para reais
+          }))
+        )
+      }
+
+      // Inserir movimentações de estoque (saída) para cada item
+      // O order.id está disponível aqui porque o pedido foi criado acima
+      if (stockMovements.length > 0) {
+        await tx.insert(schema.stockMovements).values(
+          stockMovements.map((movement) => {
+            // Substituir placeholder ${orderId} pelo ID real do pedido
+            const reason = movement.reason.includes('${orderId}')
+              ? movement.reason.replace('${orderId}', order.id)
+              : `${movement.reason} - Pedido ${order.id}`
+            
+            return {
+              store_id: orderData.store_id,
+              product_id: movement.product_id,
+              variant_id: movement.variant_id,
+              type: 'OUT',
+              origin: 'order',
+              quantity: movement.quantity,
+              reason,
+              final_quantity: null,
+              created_by: null // vendas online não têm userId
+            }
+          })
+        )
+      }
+
+      // Atualizar status do carrinho para 'converted' (se fornecido)
+      if (options?.cart_id) {
+        await tx
+          .update(schema.carts)
+          .set({
+            status: 'converted',
+            updated_at: new Date()
+          })
+          .where(
+            and(
+              eq(schema.carts.id, options.cart_id),
+              eq(schema.carts.store_id, orderData.store_id)
+            )
+          )
+      }
+
+      // Incrementar contador de uso do cupom (se fornecido)
+      if (options?.coupon_id) {
+        await tx
+          .update(schema.coupons)
+          .set({
+            used_count: sql`${schema.coupons.used_count} + 1`
+          })
+          .where(
+            and(
+              eq(schema.coupons.id, options.coupon_id),
+              eq(schema.coupons.store_id, orderData.store_id)
+            )
+          )
+      }
+
+      return order
+    })
+
+    return {
+      id: result.id,
+      store_id: result.store_id,
+      customer_id: result.customer_id,
+      total: result.total,
+      status: result.status as Order['status'],
+      payment_status: result.payment_status as Order['payment_status'],
+      shipping_cost: result.shipping_cost,
+      shipping_label_url: result.shipping_label_url,
+      tracking_code: result.tracking_code,
+      delivery_type: result.delivery_type as Order['delivery_type'],
+      delivery_option_id: result.delivery_option_id,
+      created_at: result.created_at
+    }
+  }
+
   async listByStore(storeId: string, filters?: ListOrdersFilters): Promise<Order[]> {
     const conditions = [eq(schema.orders.store_id, storeId)]
 
@@ -115,6 +264,18 @@ export class OrderRepository {
 
     if (filters?.customer_id) {
       conditions.push(eq(schema.orders.customer_id, filters.customer_id))
+    }
+
+    if (filters?.start_date) {
+      const startDate = new Date(filters.start_date)
+      conditions.push(gte(schema.orders.created_at, startDate))
+    }
+
+    if (filters?.end_date) {
+      const endDate = new Date(filters.end_date)
+      // Adiciona 23:59:59.999 para incluir o dia inteiro
+      endDate.setHours(23, 59, 59, 999)
+      conditions.push(lte(schema.orders.created_at, endDate))
     }
 
     const result = await db

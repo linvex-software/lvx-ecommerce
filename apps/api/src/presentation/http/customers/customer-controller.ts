@@ -13,6 +13,10 @@ import { updateCustomerPasswordUseCase } from '../../../application/customers/us
 import { CustomerRepository } from '../../../infra/db/repositories/customer-repository'
 import { CustomerAddressRepository } from '../../../infra/db/repositories/customer-address-repository'
 import { AuthSessionRepository } from '../../../infra/db/repositories/auth-session-repository'
+import { OrderRepository } from '../../../infra/db/repositories/order-repository'
+import { listOrdersUseCase } from '../../../application/orders/use-cases/list-orders'
+import { getOrderUseCase } from '../../../application/orders/use-cases/get-order'
+import type { ListOrdersFilters } from '../../../domain/orders/order-types'
 import type {
   RegisterCustomerInput,
   LoginCustomerInput,
@@ -41,6 +45,8 @@ interface UpdateCustomerProfileBody {
 }
 
 export class CustomerController {
+  private readonly orderRepository: OrderRepository
+
   constructor(
     private readonly customerRepository: CustomerRepository,
     private readonly customerAddressRepository: CustomerAddressRepository,
@@ -50,7 +56,9 @@ export class CustomerController {
       storeId: string
       type: 'customer'
     }) => Promise<string>
-  ) {}
+  ) {
+    this.orderRepository = new OrderRepository()
+  }
 
   async register(
     request: FastifyRequest<{ Body: RegisterCustomerBody }>,
@@ -475,6 +483,98 @@ export class CustomerController {
             ? 400
             : 500
         await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async listOrders(
+    request: FastifyRequest<{
+      Querystring: {
+        status?: string
+        payment_status?: string
+      }
+    }>,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      const customer = request.customer
+      if (!customer) {
+        await reply.code(401).send({ error: 'Not authenticated' })
+        return
+      }
+
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const filters: ListOrdersFilters = {
+        customer_id: customer.id
+      }
+
+      if (request.query.status) {
+        filters.status = request.query.status as ListOrdersFilters['status']
+      }
+
+      if (request.query.payment_status) {
+        filters.payment_status = request.query.payment_status as ListOrdersFilters['payment_status']
+      }
+
+      const orders = await listOrdersUseCase(storeId, filters, {
+        orderRepository: this.orderRepository
+      })
+
+      await reply.send({ orders })
+    } catch (error) {
+      if (error instanceof Error) {
+        await reply.code(500).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async getOrder(
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      const customer = request.customer
+      if (!customer) {
+        await reply.code(401).send({ error: 'Not authenticated' })
+        return
+      }
+
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const { id } = request.params
+
+      const order = await getOrderUseCase(id, storeId, {
+        orderRepository: this.orderRepository
+      })
+
+      if (!order) {
+        await reply.code(404).send({ error: 'Order not found' })
+        return
+      }
+
+      // Verificar se o pedido pertence ao cliente autenticado
+      if (order.customer_id !== customer.id) {
+        await reply.code(403).send({ error: 'Access denied. This order does not belong to you.' })
+        return
+      }
+
+      await reply.send({ order })
+    } catch (error) {
+      if (error instanceof Error) {
+        await reply.code(500).send({ error: error.message })
         return
       }
       await reply.code(500).send({ error: 'Internal server error' })

@@ -12,6 +12,7 @@ import { registerAdminProductRoutes } from './presentation/http/admin/product-ro
 import { registerAdminCategoryRoutes } from './presentation/http/admin/category-routes'
 import { registerAdminOrderRoutes } from './presentation/http/admin/order-routes'
 import { registerAdminDashboardRoutes } from './presentation/http/admin/dashboard-routes'
+import { registerAdminCustomerRoutes } from './presentation/http/admin/customer-routes'
 import { registerCatalogRoutes } from './presentation/http/catalog/product-routes'
 import { registerCatalogCategoryRoutes } from './presentation/http/catalog/category-routes'
 import { registerCheckoutRoutes } from './presentation/http/checkout/checkout-routes'
@@ -146,6 +147,7 @@ async function buildServer() {
   await registerPhysicalSalesRoutes(app)
   await registerPDVRoutes(app)
   await registerAdminUserRoutes(app)
+  await registerAdminCustomerRoutes(app)
   await registerShippingRoutes(app)
   await registerCustomerRoutes(app)
   await registerEditorRoutes(app)

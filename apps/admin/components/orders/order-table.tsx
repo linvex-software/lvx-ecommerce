@@ -1,7 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { Package, ExternalLink, Download } from 'lucide-react'
+import { Package, ExternalLink } from 'lucide-react'
+import { useMemo } from 'react'
 import {
   Table,
   TableBody,
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@white-label/ui'
+import { useCustomers } from '@/lib/hooks/use-customers'
 import type { Order } from '@/lib/hooks/use-orders'
 
 interface OrderTableProps {
@@ -82,6 +84,15 @@ const getPaymentStatusLabel = (status: Order['payment_status']) => {
 }
 
 export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
+  const { data: customers } = useCustomers()
+  const customersMap = useMemo(() => {
+    if (!customers) return {}
+    return customers.reduce((acc, customer) => {
+      acc[customer.id] = customer
+      return acc
+    }, {} as Record<string, typeof customers[0]>)
+  }, [customers])
+
   if (isLoading) {
     return (
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
@@ -90,10 +101,10 @@ export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
             <TableRow>
               <TableHead>ID</TableHead>
               <TableHead>Data</TableHead>
+              <TableHead>Cliente</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Pagamento</TableHead>
               <TableHead>Total</TableHead>
-              <TableHead>Rastreio</TableHead>
               <TableHead className="text-right">Ações</TableHead>
             </TableRow>
           </TableHeader>
@@ -107,6 +118,9 @@ export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
                   <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
                 </TableCell>
                 <TableCell>
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                </TableCell>
+                <TableCell>
                   <div className="h-6 w-20 animate-pulse rounded-full bg-gray-200" />
                 </TableCell>
                 <TableCell>
@@ -114,9 +128,6 @@ export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
                 </TableCell>
                 <TableCell>
                   <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
-                </TableCell>
-                <TableCell>
-                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="ml-auto h-8 w-8 animate-pulse rounded bg-gray-200" />
@@ -148,59 +159,67 @@ export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
           <TableRow>
             <TableHead>ID</TableHead>
             <TableHead>Data</TableHead>
+            <TableHead>Cliente</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Pagamento</TableHead>
             <TableHead>Total</TableHead>
-            <TableHead>Rastreio</TableHead>
             <TableHead className="text-right">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {orders.map((order) => (
-            <TableRow key={order.id}>
-              <TableCell>
-                <div>
-                  <p className="font-medium text-gray-900">
-                    #{order.id.slice(0, 8).toUpperCase()}
-                  </p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className="text-sm text-gray-600">
-                  {dateFormatter.format(new Date(order.created_at))}
-                </span>
-              </TableCell>
-              <TableCell>
-                <Badge variant={getStatusBadgeVariant(order.status)}>
-                  {getStatusLabel(order.status)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={order.payment_status === 'paid' ? 'success' : 'secondary'}>
-                  {getPaymentStatusLabel(order.payment_status)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <span className="font-medium text-gray-900">
-                  {currencyFormatter.format(parseFloat(order.total) / 100)}
-                </span>
-              </TableCell>
-              <TableCell>
-                {order.tracking_code ? (
-                  <span className="text-sm text-gray-600">{order.tracking_code}</span>
-                ) : (
-                  <span className="text-sm text-gray-400">-</span>
-                )}
-              </TableCell>
-              <TableCell className="text-right">
-                <Link href={`/orders/${order.id}`}>
-                  <Button variant="outline" className="h-8 w-8 p-0">
-                    <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </Link>
-              </TableCell>
-            </TableRow>
-          ))}
+          {orders.map((order) => {
+            const customer = order.customer_id ? customersMap[order.customer_id] : null
+            return (
+              <TableRow key={order.id}>
+                <TableCell>
+                  <div>
+                    <p className="font-medium text-gray-900">
+                      #{order.id.slice(0, 8).toUpperCase()}
+                    </p>
+                  </div>
+                </TableCell>
+                <TableCell>
+                  <span className="text-sm text-gray-600">
+                    {dateFormatter.format(new Date(order.created_at))}
+                  </span>
+                </TableCell>
+                <TableCell>
+                  {customer ? (
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{customer.name}</p>
+                      {customer.email && (
+                        <p className="text-xs text-gray-500">{customer.email}</p>
+                      )}
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400">-</span>
+                  )}
+                </TableCell>
+                <TableCell>
+                  <Badge variant={getStatusBadgeVariant(order.status)}>
+                    {getStatusLabel(order.status)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={order.payment_status === 'paid' ? 'success' : 'secondary'}>
+                    {getPaymentStatusLabel(order.payment_status)}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <span className="font-medium text-gray-900">
+                    {currencyFormatter.format(parseFloat(order.total) / 100)}
+                  </span>
+                </TableCell>
+                <TableCell className="text-right">
+                  <Link href={`/orders/${order.id}`}>
+                    <Button variant="outline" className="h-8 w-8 p-0">
+                      <ExternalLink className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </TableCell>
+              </TableRow>
+            )
+          })}
         </TableBody>
       </Table>
     </div>

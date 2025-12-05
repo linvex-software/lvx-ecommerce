@@ -35,6 +35,8 @@ export interface Order {
   shipping_cost: string
   shipping_label_url: string | null
   tracking_code: string | null
+  delivery_type: 'shipping' | 'pickup_point' | null
+  delivery_option_id: string | null
   created_at: string
   items?: OrderItem[]
   shipping_address?: ShippingAddress | null
@@ -52,6 +54,8 @@ export interface OrderFilters {
   status?: OrderStatus
   payment_status?: PaymentStatus
   customer_id?: string
+  start_date?: string // ISO date string (YYYY-MM-DD)
+  end_date?: string // ISO date string (YYYY-MM-DD)
 }
 
 export interface UpdateOrderInput {
@@ -69,6 +73,8 @@ export function useOrders(filters?: OrderFilters) {
       if (filters?.status) params.append('status', filters.status)
       if (filters?.payment_status) params.append('payment_status', filters.payment_status)
       if (filters?.customer_id) params.append('customer_id', filters.customer_id)
+      if (filters?.start_date) params.append('start_date', filters.start_date)
+      if (filters?.end_date) params.append('end_date', filters.end_date)
 
       const { data } = await apiClient.get<OrdersResponse>(
         `/admin/orders${params.toString() ? `?${params.toString()}` : ''}`

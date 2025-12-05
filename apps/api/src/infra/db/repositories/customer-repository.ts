@@ -195,5 +195,33 @@ export class CustomerRepository {
       throw new Error('Customer not found')
     }
   }
+
+  async listByStore(storeId: string): Promise<Customer[]> {
+    const result = await db
+      .select({
+        id: schema.customers.id,
+        store_id: schema.customers.store_id,
+        name: schema.customers.name,
+        email: schema.customers.email,
+        cpf: schema.customers.cpf,
+        phone: schema.customers.phone,
+        password_hash: schema.customers.password_hash,
+        created_at: schema.customers.created_at
+      })
+      .from(schema.customers)
+      .where(eq(schema.customers.store_id, storeId))
+      .orderBy(schema.customers.name)
+
+    return result.map((row) => ({
+      id: row.id,
+      store_id: row.store_id,
+      name: row.name,
+      email: row.email,
+      cpf: row.cpf,
+      phone: row.phone,
+      password_hash: row.password_hash,
+      created_at: row.created_at
+    }))
+  }
 }
 

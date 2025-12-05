@@ -1,10 +1,12 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Package, Download, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Package, Download, ExternalLink, User, MapPin } from 'lucide-react'
+import { useMemo } from 'react'
 import { Button } from '@white-label/ui'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { useCustomers } from '@/lib/hooks/use-customers'
 import type { Order } from '@/lib/hooks/use-orders'
 
 interface OrderDetailsProps {
@@ -76,8 +78,25 @@ const getPaymentStatusLabel = (status: Order['payment_status']) => {
 }
 
 export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: OrderDetailsProps) {
+  const { data: customers } = useCustomers()
+  const customer = useMemo(() => {
+    if (!order.customer_id || !customers) return null
+    return customers.find((c) => c.id === order.customer_id) || null
+  }, [order.customer_id, customers])
+
   const hasShippingLabel = !!order.shipping_label_url
   const isExternalUrl = order.shipping_label_url?.startsWith('http://') || order.shipping_label_url?.startsWith('https://')
+
+  const getDeliveryTypeLabel = (type: Order['delivery_type']) => {
+    switch (type) {
+      case 'shipping':
+        return 'Entrega'
+      case 'pickup_point':
+        return 'Retirada no Ponto'
+      default:
+        return 'Não informado'
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -103,6 +122,26 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Informações principais */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Informações do cliente */}
+          {customer && (
+            <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <User className="h-5 w-5 text-gray-400" />
+                <h2 className="text-lg font-semibold text-gray-900">Cliente</h2>
+              </div>
+              <div className="space-y-2 text-sm">
+                <p className="font-medium text-gray-900">{customer.name}</p>
+                {customer.email && <p className="text-gray-600">{customer.email}</p>}
+                {customer.phone && <p className="text-gray-600">{customer.phone}</p>}
+                {customer.cpf && (
+                  <p className="text-gray-500">
+                    CPF: {customer.cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')}
+                  </p>
+                )}
+              </div>
+            </Card>
+          )}
+
           {/* Status e pagamento */}
           <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Status do Pedido</h2>
@@ -118,6 +157,12 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
                 <Badge variant={order.payment_status === 'paid' ? 'success' : 'secondary'}>
                   {getPaymentStatusLabel(order.payment_status)}
                 </Badge>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-gray-600">Tipo de Entrega:</span>
+                <span className="text-sm font-medium text-gray-900">
+                  {getDeliveryTypeLabel(order.delivery_type)}
+                </span>
               </div>
             </div>
           </Card>
@@ -147,7 +192,10 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
           {/* Endereço de entrega */}
           {order.shipping_address && (
             <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-gray-900">Endereço de Entrega</h2>
+              <div className="mb-4 flex items-center gap-2">
+                <MapPin className="h-5 w-5 text-gray-400" />
+                <h2 className="text-lg font-semibold text-gray-900">Endereço de Entrega</h2>
+              </div>
               <div className="space-y-2 text-sm text-gray-600">
                 {order.shipping_address.street && (
                   <p>
@@ -204,7 +252,7 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
 
           {/* Informações de frete */}
           <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Frete</h2>
+            <h2 className="mb-4 text-lg font-semibold text-gray-900">Entrega</h2>
             <div className="space-y-4">
               {order.tracking_code ? (
                 <div>

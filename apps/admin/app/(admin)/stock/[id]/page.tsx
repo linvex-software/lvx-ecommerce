@@ -1,8 +1,6 @@
 'use client'
 
 import { use } from 'react'
-import Link from 'next/link'
-import { ArrowLeft } from 'lucide-react'
 import { useProduct } from '@/lib/hooks/use-products'
 import { StockManager } from '@/components/products/stock-manager'
 
@@ -33,24 +31,13 @@ export default function ProductStockPage({ params }: ProductStockPageProps) {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3">
-            <Link
-              href="/stock"
-              className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Voltar para estoque
-            </Link>
-          </div>
-          <h1 className="mt-4 text-4xl font-light tracking-tight text-gray-900">
-            Estoque do produto
-          </h1>
-          <p className="mt-2 text-sm font-light text-gray-500">
-            Gerencie o estoque de <span className="font-medium">{product.name}</span>
-          </p>
-        </div>
+      <div>
+        <h1 className="text-4xl font-light tracking-tight text-gray-900">
+          Estoque do produto
+        </h1>
+        <p className="mt-2 text-sm font-light text-gray-500">
+          Gerencie o estoque de <span className="font-medium">{product.name}</span>
+        </p>
       </div>
 
       <StockManager

@@ -309,7 +309,7 @@ export interface StockMovement {
 
 export interface CreateStockMovementInput {
   variant_id?: string | null
-  type: 'IN' | 'OUT' | 'ADJUST'
+  type: 'IN' | 'OUT' | 'ADJUST' // OUT ainda existe no backend para saídas automáticas
   origin?: 'manual' | 'order' | 'physical_sale' | 'adjustment' | 'return'
   quantity: number
   reason?: string | null
