@@ -6,7 +6,6 @@ import { CouponRepository } from '../../../infra/db/repositories/coupon-reposito
 import { CartRepository } from '../../../infra/db/repositories/cart-repository'
 import { PickupPointRepository } from '../../../infra/db/repositories/pickup-point-repository'
 import { validateCouponForCheckoutUseCase } from '../../coupons/use-cases/validate-coupon-for-checkout'
-import { createStockMovementUseCase } from '../../catalog/use-cases/create-stock-movement'
 import { getDeliveryOptionsUseCase } from '../../checkout/use-cases/get-delivery-options'
 import type { OrderWithItems } from '../../../domain/orders/order-types'
 import type { ShippingGateway } from '../../../domain/shipping/gateways'
@@ -117,9 +116,19 @@ export async function createOrderUseCase(
     }
     shippingCost = 0 // retirada sempre grátis
   } else if (validated.delivery_type === 'shipping') {
-    // Validar se shipping option existe e recalcular preço
-    if (!validated.shipping_address?.zip_code) {
-      throw new Error('Shipping address with zip_code is required for shipping delivery')
+    // Validar endereço de entrega quando delivery_type é shipping
+    if (!validated.shipping_address) {
+      throw new Error('Shipping address is required when delivery_type is shipping')
+    }
+    
+    if (!validated.shipping_address.zip_code) {
+      throw new Error('Zip code is required in shipping address')
+    }
+    
+    // Validar formato básico de CEP (8 dígitos)
+    const zipCodeClean = validated.shipping_address.zip_code.replace(/\D/g, '')
+    if (zipCodeClean.length !== 8) {
+      throw new Error('Invalid zip code format. Expected 8 digits.')
     }
 
     // Buscar opções de entrega para validar e recalcular preço
@@ -179,7 +188,7 @@ export async function createOrderUseCase(
     finalTotal = (couponValidation.finalPrice ?? subtotal) + shippingCost
   }
 
-  // 4. Verificar e atualizar carrinho se fornecido
+  // 4. Validar carrinho se fornecido (mas não atualizar ainda - será feito na transação)
   if (validated.cart_id) {
     const cart = await cartRepository.findById(validated.cart_id, storeId)
     if (!cart) {
@@ -188,13 +197,11 @@ export async function createOrderUseCase(
     if (cart.status !== 'active') {
       throw new Error('Cart is not active')
     }
-
-    // Marcar carrinho como convertido
-    await cartRepository.updateStatus(validated.cart_id, storeId, 'converted')
   }
 
-  // 5. Criar pedido
-  const order = await orderRepository.create(
+  // 5. Criar pedido com itens, movimentações de estoque, atualização de carrinho
+  // e incremento de cupom em uma única transação atômica
+  const order = await orderRepository.createWithStockMovements(
     {
       store_id: storeId,
       customer_id: validated.customer_id ?? null,
@@ -211,32 +218,18 @@ export async function createOrderUseCase(
       variant_id: item.variant_id ?? null,
       quantity: item.quantity,
       price: item.price
-    }))
+    })),
+    validated.items.map(item => ({
+      product_id: item.product_id,
+      variant_id: item.variant_id ?? null,
+      quantity: item.quantity,
+      reason: 'Venda online - Pedido ${orderId}' // ${orderId} será substituído pelo ID real do pedido na transação
+    })),
+    {
+      cart_id: validated.cart_id ?? null,
+      coupon_id: couponId ?? null
+    }
   )
-
-  // 6. Criar movimentações de estoque (saída) para cada item
-  for (const item of validated.items) {
-    await createStockMovementUseCase(
-      {
-        product_id: item.product_id,
-        variant_id: item.variant_id ?? null,
-        type: 'OUT',
-        origin: 'order',
-        quantity: item.quantity,
-        reason: `Venda online - Pedido ${order.id}`
-      },
-      storeId,
-      null, // userId = null para vendas online (cliente não é usuário do sistema)
-      {
-        stockMovementRepository
-      }
-    )
-  }
-
-  // 7. Incrementar contador de uso do cupom se aplicado
-  if (couponId) {
-    await couponRepository.incrementUsedCount(couponId, storeId)
-  }
 
   // 8. Retornar pedido com itens
   const orderWithItems = await orderRepository.findByIdWithItems(order.id, storeId)

@@ -266,7 +266,7 @@ export default function CheckoutPage() {
       // Já está no estado paymentResult, será exibido abaixo
     } else if (result.status === 'approved') {
       // Pagamento aprovado, redirecionar
-      clearCart()
+            clearCart()
       if (createdOrder?.id) {
         router.push(`/minha-conta/pedidos/${createdOrder.id}`)
       }
@@ -295,21 +295,21 @@ export default function CheckoutPage() {
 
   // Se não está autenticado, mostrar mensagem de redirecionamento
   if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-background">
+        return (
+            <div className="min-h-screen bg-background">
         <Header />
         <div className="min-h-[70vh] flex items-center justify-center">
           <div className="text-center">
             <p className="text-lg">Redirecionando para login...</p>
           </div>
         </div>
-      </div>
-    )
-  }
+            </div>
+        )
+    }
 
   if (items.length === 0) {
-    return (
-      <div className="min-h-screen bg-background">
+        return (
+            <div className="min-h-screen bg-background">
         <Header />
         <div className="min-h-[70vh] flex items-center justify-center">
           <div className="text-center">
@@ -319,12 +319,12 @@ export default function CheckoutPage() {
             </Button>
           </div>
         </div>
-      </div>
-    )
-  }
+            </div>
+        )
+    }
 
-  return (
-    <div className="min-h-screen bg-background">
+    return (
+        <div className="min-h-screen bg-background">
       <Header />
       
       <div className="container mx-auto px-4 py-4">
@@ -685,7 +685,7 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                 ))}
-              </div>
+                    </div>
 
               <div className="space-y-3 pt-4 border-t border-border">
                 <div className="flex justify-between text-sm">
@@ -703,8 +703,8 @@ export default function CheckoutPage() {
               </div>
             </div>
           </div>
+                    </div>
+                </div>
         </div>
-      </div>
-    </div>
-  )
+    )
 }

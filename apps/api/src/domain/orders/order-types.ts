@@ -46,6 +46,8 @@ export interface ListOrdersFilters {
   status?: OrderStatus
   payment_status?: PaymentStatus
   customer_id?: string
+  start_date?: string // ISO date string
+  end_date?: string // ISO date string
 }
 
 export interface UpdateOrderInput {

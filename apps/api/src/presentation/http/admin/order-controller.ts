@@ -14,6 +14,8 @@ export class OrderController {
         status?: string
         payment_status?: string
         customer_id?: string
+        start_date?: string
+        end_date?: string
       }
     }>,
     reply: FastifyReply
@@ -34,6 +36,12 @@ export class OrderController {
       }
       if (request.query.customer_id) {
         filters.customer_id = request.query.customer_id
+      }
+      if (request.query.start_date) {
+        filters.start_date = request.query.start_date
+      }
+      if (request.query.end_date) {
+        filters.end_date = request.query.end_date
       }
 
       const orders = await listOrdersUseCase(storeId, filters, {

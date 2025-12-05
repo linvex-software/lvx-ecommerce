@@ -148,5 +148,32 @@ export async function registerCustomerRoutes(
       await customerController.updatePassword(request, reply)
     }
   )
+
+  // GET /customers/me/orders - Listar pedidos do cliente (protegido)
+  app.get<{
+    Querystring: {
+      status?: string
+      payment_status?: string
+    }
+  }>(
+    '/customers/me/orders',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await customerController.listOrders(request, reply)
+    }
+  )
+
+  // GET /customers/me/orders/:id - Detalhes do pedido do cliente (protegido)
+  app.get<{ Params: { id: string } }>(
+    '/customers/me/orders/:id',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await customerController.getOrder(request, reply)
+    }
+  )
 }
 
