@@ -1,3 +1,5 @@
+-- Ensure public schema exists
+CREATE SCHEMA IF NOT EXISTS "public";--> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "analytics_events" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"store_id" uuid NOT NULL,
