@@ -2,7 +2,9 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+ 
 import { LayoutDashboard, Package, Ticket, Settings, Tags, ShoppingCart, Warehouse, Store, Building2, Users, ChevronLeft, ChevronRight, Palette } from 'lucide-react'
+ 
 import { cn } from '@white-label/ui'
 import { useSidebar } from './sidebar-context'
 
@@ -59,6 +61,7 @@ const navItems: NavItem[] = [
     icon: Palette
   },
   {
+ 
     title: 'Cupons',
     href: '/coupons',
     icon: Ticket

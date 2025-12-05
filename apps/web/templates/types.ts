@@ -22,3 +22,4 @@ export type TemplateCategory = 'fashion' | 'ecommerce' | 'landing' | 'product' |
 
 
 
+

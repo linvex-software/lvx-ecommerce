@@ -6,6 +6,7 @@ import type { Category, CreateCategoryInput } from '../../../domain/catalog/cate
 const createCategorySchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').min(3, 'Nome deve ter pelo menos 3 caracteres'),
   slug: z.string().regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens').optional(),
+  parent_id: z.string().uuid().nullable().optional(),
   icon: z.string().optional()
 })
 
@@ -44,9 +45,11 @@ export async function createCategoryUseCase(
   return await categoryRepository.create(storeId, {
     name: validated.name,
     slug: validated.slug,
+    parent_id: validated.parent_id || null,
     icon: validated.icon
   })
 }
 
 export { createCategorySchema }
 
+ 
