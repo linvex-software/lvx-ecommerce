@@ -223,7 +223,7 @@ export async function createOrderUseCase(
       product_id: item.product_id,
       variant_id: item.variant_id ?? null,
       quantity: item.quantity,
-      reason: 'Venda online - Pedido ${orderId}' // ${orderId} será substituído pelo ID real do pedido na transação
+      reason: 'Venda online - Pedido {ORDER_ID}' // {ORDER_ID} será substituído pelo ID real do pedido na transação
     })),
     {
       cart_id: validated.cart_id ?? null,
