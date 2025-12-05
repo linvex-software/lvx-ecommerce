@@ -1,3 +1,4 @@
+
 import { z } from 'zod'
 import { CategoryRepository } from '../../../infra/db/repositories/category-repository'
 import type { Category, UpdateCategoryInput } from '../../../domain/catalog/category-types'
@@ -5,6 +6,7 @@ import type { Category, UpdateCategoryInput } from '../../../domain/catalog/cate
 const updateCategorySchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').min(3, 'Nome deve ter pelo menos 3 caracteres').optional(),
   slug: z.string().regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens').optional(),
+  parent_id: z.string().uuid().nullable().optional(),
   icon: z.string().optional()
 })
 
@@ -43,6 +45,7 @@ export async function updateCategoryUseCase(
   const updated = await categoryRepository.update(id, storeId, {
     name: validated.name,
     slug: validated.slug,
+    parent_id: validated.parent_id !== undefined ? (validated.parent_id || null) : undefined,
     icon: validated.icon
   })
 
