@@ -1,13 +1,15 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { apiClient } from '@/lib/api-client'
 
 export interface Category {
   id: string
   store_id: string
+  parent_id: string | null
   name: string
   slug: string
+  created_at: string,
   icon?: string | null
-  created_at: string
 }
 
 export interface CategoryListFilters {
@@ -27,12 +29,14 @@ export interface CategoryListResult {
 export interface CreateCategoryInput {
   name: string
   slug?: string
+  parent_id?: string | null,
   icon?: string
 }
 
 export interface UpdateCategoryInput {
   name?: string
   slug?: string
+  parent_id?: string | null,
   icon?: string
 }
 
@@ -73,8 +77,17 @@ export function useCreateCategory() {
       const response = await apiClient.post<{ category: Category }>('/admin/categories', data)
       return response.data.category
     },
-    onSuccess: () => {
+    onSuccess: (category) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('Categoria criada com sucesso!', {
+        description: `${category.name} foi adicionada ao catálogo.`
+      })
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.error || 'Erro ao criar categoria'
+      toast.error('Erro ao criar categoria', {
+        description: message
+      })
     }
   })
 }
@@ -90,9 +103,18 @@ export function useUpdateCategory() {
       )
       return response.data.category
     },
-    onSuccess: (_, variables) => {
+    onSuccess: (category) => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
-      queryClient.invalidateQueries({ queryKey: ['category', variables.id] })
+      queryClient.invalidateQueries({ queryKey: ['category', category.id] })
+      toast.success('Categoria atualizada com sucesso!', {
+        description: `As alterações em ${category.name} foram salvas.`
+      })
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.error || 'Erro ao atualizar categoria'
+      toast.error('Erro ao atualizar categoria', {
+        description: message
+      })
     }
   })
 }
@@ -107,7 +129,16 @@ export function useDeleteCategory() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] })
+      toast.success('Categoria excluída com sucesso!', {
+        description: 'A categoria foi removida do catálogo.'
+      })
+    },
+    onError: (error: any) => {
+      const message = error?.response?.data?.error || 'Erro ao excluir categoria'
+      toast.error('Erro ao excluir categoria', {
+        description: message
+      })
     }
   })
 }
-
+ 

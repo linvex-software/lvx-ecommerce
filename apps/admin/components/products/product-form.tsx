@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -19,16 +20,64 @@ import type { Product } from '@/lib/hooks/use-products'
 import { isClothingProduct, generateDefaultSizeChart } from '@/lib/utils/product-detection'
 import { useCategories } from '@/lib/hooks/use-categories'
 
+// Função para formatar dígitos para moeda BR (123456 -> "R$ 1.234,56")
+function formatCurrencyFromDigits(digits: string): string {
+  if (!digits || digits === '') {
+    return 'R$ 0,00'
+  }
+  const int = parseInt(digits, 10) || 0
+  const cents = int / 100
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  }).format(cents)
+}
+
+// Função para converter dígitos para número (123456 -> 1234.56)
+function digitsToNumber(digits: string): number {
+  if (!digits || digits === '') {
+    return 0
+  }
+  const int = parseInt(digits, 10) || 0
+  return int / 100
+}
+
+// Função para converter número para dígitos (1234.56 -> "123456")
+function numberToDigits(price: number): string {
+  if (!price || price === 0) {
+    return ''
+  }
+  return Math.round(price * 100).toString()
+}
+
 const productSchema = z.object({
   name: z.string().min(1, 'Nome é obrigatório').min(3, 'Nome deve ter pelo menos 3 caracteres'),
   slug: z
     .string()
-    .min(1, 'Slug é obrigatório')
-    .regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
+    .optional()
+    .transform((value) => {
+      const v = value?.trim()
+      return v === '' || !v ? undefined : v
+    }),
   description: z.string().optional(),
   category_ids: z.array(z.string().uuid()).optional(),
-  base_price: z.number().min(0.01, 'Preço deve ser maior que zero'),
-  sku: z.string().min(1, 'SKU é obrigatório'),
+  priceDigits: z
+    .string()
+    .min(1, 'Preço é obrigatório')
+    .refine(
+      (digits) => {
+        const int = parseInt(digits || '0', 10)
+        return int > 0
+      },
+      { message: 'Preço deve ser maior que zero' }
+    ),
+  sku: z
+    .string()
+    .optional()
+    .transform((value) => {
+      const v = value?.trim() ?? ''
+      return v === '' ? undefined : v
+    }),
   status: z.enum(['draft', 'active', 'inactive']).default('draft'),
   variants: z
     .array(
@@ -121,6 +170,9 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   const [seo, setSeo] = useState<ProductSEO>(initialSEO)
   const [sizeChart, setSizeChart] = useState<SizeChartData | null>(initialSizeChart)
   const [autoSizeChartCreated, setAutoSizeChartCreated] = useState(false)
+  const [priceDigits, setPriceDigits] = useState<string>(
+    product ? numberToDigits(parseFloat(product.base_price.toString())) : ''
+  )
 
   const {
     register,
@@ -136,7 +188,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
           slug: product.slug,
           description: product.description || '',
           category_ids: (product as any).categories?.map((c: any) => c.id) || [],
-          base_price: parseFloat(product.base_price.toString()) || 0,
+          priceDigits: numberToDigits(parseFloat(product.base_price.toString()) || 0),
           sku: product.sku || '',
           status: product.status || 'draft',
           variants: initialVariants,
@@ -149,7 +201,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
           slug: '',
           description: '',
           category_ids: [],
-          base_price: 0,
+          priceDigits: '',
           sku: '',
           status: 'draft',
           variants: [],
@@ -163,6 +215,14 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
           size_chart: null
         }
   })
+
+  // Sincronizar priceDigits quando produto é carregado
+  React.useEffect(() => {
+    if (product) {
+      const price = parseFloat(product.base_price.toString())
+      setPriceDigits(numberToDigits(price))
+    }
+  }, [product])
 
 
   const generateSlug = (name: string) => {
@@ -194,6 +254,14 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   }
 
   const handleFormSubmit = async (data: ProductFormData) => {
+    // Converter dígitos para número antes de enviar
+    const finalPrice = digitsToNumber((data as any).priceDigits || priceDigits)
+
+    // Validar preço
+    if (isNaN(finalPrice) || finalPrice <= 0) {
+      throw new Error('Preço inválido. Informe um preço maior que zero.')
+    }
+
     // Filtrar variantes vazias (sem tamanho e sem cor)
     const validVariants = variants.filter((v) => v.size || v.color)
 
@@ -232,8 +300,12 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     // Filtrar size chart vazio
     const hasSizeChart = finalSizeChart && finalSizeChart.name.trim() !== '' && Object.keys(finalSizeChart.chart_json).length > 0
 
+    const { priceDigits, ...restData } = data as any
     const submitData = {
-      ...data,
+      ...restData,
+      slug: data.slug || undefined, // Enviar undefined se vazio para o backend gerar
+      sku: data.sku || undefined, // Enviar undefined se vazio para o backend gerar
+      base_price: finalPrice,
       variants: validVariants.length > 0 ? validVariants : undefined,
       images: validImages.length > 0 ? validImages : undefined,
       seo: hasSEO ? seo : undefined,
@@ -269,7 +341,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug *</Label>
+                <Label htmlFor="slug">Slug</Label>
                 <Input
                   id="slug"
                   {...register('slug')}
@@ -280,7 +352,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
                   <p className="text-xs text-rose-600">{errors.slug.message}</p>
                 )}
                 <p className="text-xs text-gray-500">
-                  URL amigável (gerado automaticamente se deixar vazio)
+                  Deixe vazio para gerar automaticamente a partir do nome.
                 </p>
               </div>
 
@@ -309,22 +381,38 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="base_price">Preço base (R$) *</Label>
-                  <Input
-                    id="base_price"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    {...register('base_price', { valueAsNumber: true })}
-                    placeholder="0.00"
-                    className={errors.base_price ? 'border-rose-300' : ''}
-                  />
-                  {errors.base_price && (
-                    <p className="text-xs text-rose-600">{errors.base_price.message}</p>
+                  <div className="relative">
+                    <Input
+                      id="base_price"
+                      type="text"
+                      value={formatCurrencyFromDigits(priceDigits)}
+                      onChange={(e) => {
+                        // Remove tudo que não for dígito
+                        const digits = e.target.value.replace(/\D/g, '')
+                        setPriceDigits(digits)
+                        // Atualizar o valor do form para validação
+                        setValue('priceDigits' as any, digits, { shouldValidate: true })
+                      }}
+                      onBlur={() => {
+                        // Manter formatação ao perder foco
+                        if (priceDigits) {
+                          setValue('priceDigits' as any, priceDigits, { shouldValidate: true })
+                        }
+                      }}
+                      placeholder="R$ 0,00"
+                      className={errors.priceDigits ? 'border-rose-300' : ''}
+                    />
+                  </div>
+                  {errors.priceDigits && (
+                    <p className="text-xs text-rose-600">{errors.priceDigits.message}</p>
                   )}
+                  <p className="text-xs text-gray-500">
+                    Digite apenas números. O valor será formatado automaticamente.
+                  </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="sku">SKU *</Label>
+                  <Label htmlFor="sku">SKU</Label>
                   <Input
                     id="sku"
                     {...register('sku')}
@@ -334,6 +422,9 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
                   {errors.sku && (
                     <p className="text-xs text-rose-600">{errors.sku.message}</p>
                   )}
+                  <p className="text-xs text-gray-500">
+                    Deixe vazio para gerar automaticamente.
+                  </p>
                 </div>
               </div>
 
