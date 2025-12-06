@@ -14,8 +14,6 @@ import { ThemeProvider } from '@/components/theme/theme-provider'
 import { loadTemplateLayout, loadTemplateConfig, loadTemplateComponents } from '@/lib/templates/template-loader'
 import { validateAndCleanLayout, createSafeDefaultLayout } from '@/lib/templates/layout-validator'
 import { EditorCartProvider } from '@/components/editor/editor-cart-provider'
-import { DeviceFrameset } from 'react-device-frameset'
-import 'react-device-frameset/styles/marvel-devices.min.css'
 
 function EditorContent() {
   const searchParams = useSearchParams()
@@ -322,37 +320,6 @@ function EditorContentInner({
     enabled: state.options.enabled
   }))
 
-  // Adicionar estilos para permitir scroll dentro do DeviceFrameset
-  useEffect(() => {
-    const style = document.createElement('style')
-    style.id = 'device-frameset-scroll-fix'
-    style.textContent = `
-      /* Permitir scroll dentro do DeviceFrameset */
-      .marvel-device {
-        overflow: visible !important;
-      }
-      
-      .marvel-device .screen {
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        height: 100% !important;
-      }
-      
-      /* Garantir que o conteúdo interno possa fazer scroll */
-      .marvel-device .screen > * {
-        min-height: 100% !important;
-      }
-    `
-    if (!document.getElementById('device-frameset-scroll-fix')) {
-      document.head.appendChild(style)
-    }
-    return () => {
-      const existingStyle = document.getElementById('device-frameset-scroll-fix')
-      if (existingStyle) {
-        existingStyle.remove()
-      }
-    }
-  }, [])
   
   // Aplicar tema no Frame do Craft.js
   useEffect(() => {
@@ -404,19 +371,18 @@ function EditorContentInner({
     }
   }, [enabled, isPreview])
 
-  // Mapear preview mode para dispositivos da biblioteca
-  const getDeviceConfig = () => {
+  // Aplicar largura baseada no preview mode (sem mockup visual)
+  const getPreviewWidth = () => {
     switch (previewMode) {
       case 'tablet':
-        return { device: 'iPad Mini' as const, color: 'silver' as const }
+        return '768px'
+      case 'mobile':
+        return '375px'
       case 'desktop':
-        return { device: 'MacBook Pro' as const }
       default:
-        return { device: 'MacBook Pro' as const }
+        return '100%'
     }
   }
-
-  const deviceConfig = getDeviceConfig()
 
   return (
     <>
@@ -429,21 +395,21 @@ function EditorContentInner({
         )}
         <div className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 flex items-start justify-center p-4 md:p-10">
           {layoutJson ? (
-            <DeviceFrameset {...deviceConfig}>
-              <div 
-                ref={frameRef}
-                className="w-full"
-                style={{ 
-                  fontFamily: 'var(--font-body, "Montserrat", system-ui, sans-serif)',
-                  backgroundColor: 'hsl(var(--background, 0 0% 100%))',
-                  color: 'hsl(var(--foreground, 0 0% 12%))',
-                  isolation: 'isolate', // Isolar do CSS do admin
-                  minHeight: '100vh', // Garantir altura mínima para scroll
-                }}
-              >
-                <RestrictedFrame data={layoutJson} templateId={selectedTemplate} />
-              </div>
-            </DeviceFrameset>
+            <div 
+              ref={frameRef}
+              className="w-full"
+              style={{ 
+                fontFamily: 'var(--font-body, "Montserrat", system-ui, sans-serif)',
+                backgroundColor: 'hsl(var(--background, 0 0% 100%))',
+                color: 'hsl(var(--foreground, 0 0% 12%))',
+                isolation: 'isolate', // Isolar do CSS do admin
+                minHeight: '100vh', // Garantir altura mínima para scroll
+                maxWidth: getPreviewWidth(), // Aplicar largura baseada no preview mode
+                margin: '0 auto', // Centralizar
+              }}
+            >
+              <RestrictedFrame data={layoutJson} templateId={selectedTemplate} />
+            </div>
           ) : (
             <div className="p-8 text-center text-gray-500">
               <p>Selecione um template para começar</p>

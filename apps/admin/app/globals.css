@@ -84,6 +84,15 @@ body {
   isolation: isolate !important;
   contain: style layout paint !important;
   /* O CSS do template será aplicado via TemplateStyles com prioridade máxima */
+  
+  /* SOBRESCREVER variáveis CSS do admin dentro do frame do editor */
+  /* As variáveis do admin (--font-display: 'Outfit', etc) NÃO devem afetar o editor */
+  --font-display: 'Cormorant Garamond', Georgia, serif !important;
+  --font-body: 'Montserrat', system-ui, sans-serif !important;
+  --font-sans: 'Montserrat', system-ui, sans-serif !important;
+  
+  /* Bloquear herança de fontes do body do admin */
+  font-family: 'Montserrat', system-ui, sans-serif !important;
 }
 
 /* Scrollbar premium */
@@ -116,6 +125,19 @@ body {
   isolation: isolate !important;
   contain: style layout paint !important;
   /* O CSS do template será aplicado via TemplateStyles com prioridade máxima */
+  
+  /* SOBRESCREVER variáveis CSS do admin no preview wrapper */
+  --font-display: 'Cormorant Garamond', Georgia, serif !important;
+  --font-body: 'Montserrat', system-ui, sans-serif !important;
+  --font-sans: 'Montserrat', system-ui, sans-serif !important;
+}
+
+/* Garantir que variáveis do admin não vazem para o editor */
+.preview-wrapper [data-craftjs-frame] {
+  /* Resetar todas as variáveis de fonte do admin */
+  --font-display: 'Cormorant Garamond', Georgia, serif !important;
+  --font-body: 'Montserrat', system-ui, sans-serif !important;
+  --font-sans: 'Montserrat', system-ui, sans-serif !important;
 }
 
 

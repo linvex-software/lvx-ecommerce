@@ -13,6 +13,21 @@ import { getTemplateStylesPath } from '@/lib/templates/template-loader'
 
 export function TemplateStyles() {
   useEffect(() => {
+    // GARANTIR QUE GOOGLE FONTS ESTÁ CARREGADO ANTES DE TUDO
+    // As fontes da loja (Cormorant Garamond e Montserrat) vêm do Google Fonts
+    const googleFontsUrl = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap'
+    
+    let googleFontsLink = document.getElementById('template-google-fonts') as HTMLLinkElement | null
+    if (!googleFontsLink) {
+      googleFontsLink = document.createElement('link')
+      googleFontsLink.id = 'template-google-fonts'
+      googleFontsLink.href = googleFontsUrl
+      googleFontsLink.rel = 'stylesheet'
+      googleFontsLink.setAttribute('media', 'all')
+      // Inserir no início do head para garantir carregamento antecipado
+      document.head.insertBefore(googleFontsLink, document.head.firstChild)
+    }
+
     // Carregar estilos compartilhados do template dinamicamente
     // Este arquivo é a FONTE ÚNICA de verdade para estilos do template
     // Por padrão usa woman-shop-template, mas pode ser configurado
@@ -78,28 +93,35 @@ export function TemplateStyles() {
          RESET COMPLETO DENTRO DO IFRAME
          ============================================ */
       /* FORÇAR estilos do template com prioridade MÁXIMA sobre Tailwind e editor */
+      /* IMPORTANTE: Seguir EXATAMENTE o padrão do template (templates/flor-de-menina/styles.css) */
       
-      /* Resetar TODAS as fontes dentro do iframe e forçar fontes do template */
-      [data-craftjs-frame] body,
-      [data-craftjs-frame] body * {
+      /* Primeiro: definir font-body no body (igual ao template linha 125-135) */
+      [data-craftjs-frame] body {
+        background-color: hsl(var(--background, 0 0% 100%)) !important;
+        color: hsl(var(--foreground, 0 0% 12%)) !important;
         font-family: var(--font-body, "Montserrat", system-ui, sans-serif) !important;
+        margin: 0 !important;
+        padding: 0 !important;
         line-height: 1.5 !important;
         letter-spacing: normal !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
       }
 
-      /* FORÇAR fontes de display em TODOS os headings - PRIORIDADE MÁXIMA */
+      /* Segundo: resetar fontes herdadas (igual ao template linha 138-140) */
+      /* IMPORTANTE: body * não headings, porque headings terão regra específica depois */
+      [data-craftjs-frame] body * {
+        font-family: inherit !important;
+      }
+
+      /* Terceiro: FORÇAR fontes de display em TODOS os headings (igual ao template linha 142-149) */
+      /* Esta regra vem DEPOIS de body * e tem prioridade porque é mais específica */
       [data-craftjs-frame] h1,
       [data-craftjs-frame] h2,
       [data-craftjs-frame] h3,
       [data-craftjs-frame] h4,
       [data-craftjs-frame] h5,
-      [data-craftjs-frame] h6,
-      [data-craftjs-frame] h1 *,
-      [data-craftjs-frame] h2 *,
-      [data-craftjs-frame] h3 *,
-      [data-craftjs-frame] h4 *,
-      [data-craftjs-frame] h5 *,
-      [data-craftjs-frame] h6 * {
+      [data-craftjs-frame] h6 {
         font-family: var(--font-display, "Cormorant Garamond", Georgia, serif) !important;
         font-weight: 500 !important;
         color: hsl(var(--foreground, 0 0% 12%)) !important;
@@ -108,25 +130,14 @@ export function TemplateStyles() {
         letter-spacing: normal !important;
       }
 
-      /* Resetar qualquer herança de fontes do editor */
-      [data-craftjs-frame] * {
-        font-family: inherit !important;
-      }
-
-      /* Garantir que elementos de texto usem font-body EXATAMENTE como no template1 */
-      [data-craftjs-frame] p,
-      [data-craftjs-frame] span:not(h1 span):not(h2 span):not(h3 span):not(h4 span):not(h5 span):not(h6 span),
-      [data-craftjs-frame] div:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6),
-      [data-craftjs-frame] a,
-      [data-craftjs-frame] button,
-      [data-craftjs-frame] input,
-      [data-craftjs-frame] textarea,
-      [data-craftjs-frame] select,
-      [data-craftjs-frame] label,
-      [data-craftjs-frame] li {
-        font-family: var(--font-body, "Montserrat", system-ui, sans-serif) !important;
-        line-height: 1.5 !important;
-        letter-spacing: normal !important;
+      /* Quarto: garantir que spans dentro de headings também usem font-display (igual ao template linha 151-154) */
+      [data-craftjs-frame] h1 *,
+      [data-craftjs-frame] h2 *,
+      [data-craftjs-frame] h3 *,
+      [data-craftjs-frame] h4 *,
+      [data-craftjs-frame] h5 *,
+      [data-craftjs-frame] h6 * {
+        font-family: var(--font-display, "Cormorant Garamond", Georgia, serif) !important;
       }
 
       /* FORÇAR classes do template com prioridade MÁXIMA sobre Tailwind */

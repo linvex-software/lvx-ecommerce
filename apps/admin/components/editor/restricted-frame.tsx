@@ -34,520 +34,333 @@ export function RestrictedFrame({ data, templateId = 'woman-shop-template' }: Re
     safeData = undefined
   }
 
-  // Aplicar estilos CSS variables no frame do Craft.js
-  // O Craft.js cria um iframe, então precisamos aplicar as variáveis dentro do documento do iframe
+  // Aplicar estilos CSS diretamente no frame do Craft.js
+  // O Craft.js renderiza diretamente no DOM (não usa iframe), então precisamos aplicar os estilos nos elementos do preview
   useEffect(() => {
     const applyFrameStyles = () => {
-      const frameElement = frameRef.current?.querySelector('[data-craftjs-frame]') as HTMLIFrameElement | null
+      // O Craft.js renderiza diretamente no DOM dentro de [data-craftjs-frame]
+      const frameElement = frameRef.current?.querySelector('[data-craftjs-frame]') as HTMLElement | null
       
-      if (frameElement) {
-        try {
-          // O Craft.js cria um iframe, então precisamos acessar o documento dentro do iframe
-          const iframeDoc = frameElement.contentDocument || frameElement.contentWindow?.document
+      if (!frameElement) return undefined
+      
+      try {
+          // O Craft.js renderiza DIRETAMENTE no DOM (não usa iframe)
+          // Aplicar estilos diretamente no elemento [data-craftjs-frame] e seus filhos
           
-          if (iframeDoc) {
-            // Copiar todas as variáveis CSS do root para o :root do iframe
-            const root = document.documentElement
-            const computedStyle = getComputedStyle(root)
-            const iframeRoot = iframeDoc.documentElement
+          // 1. Aplicar variáveis CSS no elemento frame
+          const templateVariables: Record<string, string> = {
+            '--background': '0 0% 100%',
+            '--foreground': '0 0% 12%',
+            '--card': '30 25% 98%',
+            '--card-foreground': '0 0% 12%',
+            '--popover': '0 0% 100%',
+            '--popover-foreground': '0 0% 12%',
+            '--primary': '350 70% 35%',
+            '--primary-foreground': '0 0% 100%',
+            '--secondary': '30 30% 95%',
+            '--secondary-foreground': '0 0% 20%',
+            '--muted': '30 15% 92%',
+            '--muted-foreground': '0 0% 45%',
+            '--accent': '42 65% 55%',
+            '--accent-foreground': '0 0% 100%',
+            '--destructive': '0 84.2% 60.2%',
+            '--destructive-foreground': '210 40% 98%',
+            '--border': '30 20% 88%',
+            '--input': '30 20% 88%',
+            '--ring': '350 70% 35%',
+            '--radius': '0.25rem',
+            '--gold': '42 65% 55%',
+            '--gold-light': '42 50% 75%',
+            '--wine': '350 70% 35%',
+            '--wine-dark': '350 75% 25%',
+            '--wine-light': '350 60% 45%',
+            '--cream': '30 30% 97%',
+            '--beige': '30 25% 92%',
+            '--charcoal': '0 0% 20%',
+            '--font-display': "'Cormorant Garamond', Georgia, serif",
+            '--font-body': "'Montserrat', system-ui, sans-serif",
+            '--font-sans': "'Montserrat', system-ui, sans-serif"
+          }
+
+          // Aplicar variáveis CSS diretamente no frameElement
+          Object.entries(templateVariables).forEach(([variable, value]) => {
+            frameElement.style.setProperty(variable, value)
+          })
+
+          // 2. GARANTIR QUE GOOGLE FONTS ESTÁ CARREGADO NO DOCUMENTO PRINCIPAL
+          // As fontes da loja vêm do Google Fonts - precisamos carregar no editor também
+          const googleFontsUrl = 'https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600;700&display=swap'
+          
+          let googleFontsLink = document.getElementById('template-google-fonts') as HTMLLinkElement | null
+          if (!googleFontsLink) {
+            googleFontsLink = document.createElement('link')
+            googleFontsLink.id = 'template-google-fonts'
+            googleFontsLink.href = googleFontsUrl
+            googleFontsLink.rel = 'stylesheet'
+            googleFontsLink.setAttribute('media', 'all')
+            // Inserir no início do head para garantir carregamento antecipado
+            document.head.insertBefore(googleFontsLink, document.head.firstChild)
+          }
+
+          // 3. Criar e inserir CSS de fontes ULTRA PRIORITÁRIO no head do documento principal
+          // Isso garante que tenha prioridade sobre o CSS do admin
+          let ultraPriorityStyle = document.getElementById('ultra-priority-template-fonts-frame')
+          if (!ultraPriorityStyle) {
+            ultraPriorityStyle = document.createElement('style')
+            ultraPriorityStyle.id = 'ultra-priority-template-fonts-frame'
+            document.head.appendChild(ultraPriorityStyle)
+          }
+          
+          ultraPriorityStyle.textContent = `
+            /* FORÇAR FONTES DO TEMPLATE NO FRAME DO CRAFT.JS */
+            /* Prioridade ABSOLUTA sobre qualquer CSS do admin */
+            /* Fontes: Cormorant Garamond (display) e Montserrat (body) do Google Fonts */
             
-            const cssVariables = [
-              '--background', '--foreground', '--card', '--card-foreground',
-              '--popover', '--popover-foreground', '--primary', '--primary-foreground',
-              '--secondary', '--secondary-foreground', '--muted', '--muted-foreground',
-              '--accent', '--accent-foreground', '--destructive', '--destructive-foreground',
-              '--border', '--input', '--ring', '--radius',
-              '--gold', '--gold-light', '--wine', '--wine-dark', '--wine-light',
-              '--cream', '--beige', '--charcoal',
-              '--shadow-soft', '--shadow-elevated', '--shadow-gold',
-              '--font-display', '--font-body', '--font-sans'
-            ]
-            
-            // Aplicar variáveis CSS no :root do iframe com valores explícitos do template
-            // Valores do template Woman Shop Template (templates/flor-de-menina/styles.css)
-            const templateVariables: Record<string, string> = {
-              '--background': '0 0% 100%',
-              '--foreground': '0 0% 12%',
-              '--card': '30 25% 98%',
-              '--card-foreground': '0 0% 12%',
-              '--popover': '0 0% 100%',
-              '--popover-foreground': '0 0% 12%',
-              '--primary': '350 70% 35%',
-              '--primary-foreground': '0 0% 100%',
-              '--secondary': '30 30% 95%',
-              '--secondary-foreground': '0 0% 20%',
-              '--muted': '30 15% 92%',
-              '--muted-foreground': '0 0% 45%',
-              '--accent': '42 65% 55%',
-              '--accent-foreground': '0 0% 100%',
-              '--destructive': '0 84.2% 60.2%',
-              '--destructive-foreground': '210 40% 98%',
-              '--border': '30 20% 88%',
-              '--input': '30 20% 88%',
-              '--ring': '350 70% 35%',
-              '--radius': '0.25rem',
-              '--gold': '42 65% 55%',
-              '--gold-light': '42 50% 75%',
-              '--wine': '350 70% 35%',
-              '--wine-dark': '350 75% 25%',
-              '--wine-light': '350 60% 45%',
-              '--cream': '30 30% 97%',
-              '--beige': '30 25% 92%',
-              '--charcoal': '0 0% 20%',
-              '--font-display': "'Cormorant Garamond', Georgia, serif",
-              '--font-body': "'Montserrat', system-ui, sans-serif",
-              '--font-sans': "'Montserrat', system-ui, sans-serif"
-            }
-
-            // Aplicar variáveis do template primeiro (valores explícitos)
-            Object.entries(templateVariables).forEach(([variable, value]) => {
-              iframeRoot.style.setProperty(variable, value)
-            })
-
-            // Depois tentar copiar do root do documento (caso tenha sido sobrescrito)
-            cssVariables.forEach(variable => {
-              const value = computedStyle.getPropertyValue(variable).trim()
-              if (value) {
-                iframeRoot.style.setProperty(variable, value)
-              }
-            })
-
-            // IMPORTANTE: Adicionar meta viewport baseado no preview mode
-            // Isso garante que os breakpoints do Tailwind funcionem corretamente
-            let viewportMeta = iframeDoc.querySelector('meta[name="viewport"]')
-            const viewportWidth = previewMode === 'tablet' ? '768' : 'device-width'
-            const simulatedWidth = previewMode === 'tablet' ? 768 : 1920
-            const simulatedHeight = previewMode === 'tablet' ? 1024 : 1080
-            
-            if (!viewportMeta) {
-              viewportMeta = iframeDoc.createElement('meta')
-              viewportMeta.setAttribute('name', 'viewport')
-              viewportMeta.setAttribute('content', `width=${viewportWidth}, initial-scale=1.0, user-scalable=no`)
-              iframeDoc.head.insertBefore(viewportMeta, iframeDoc.head.firstChild)
-            } else {
-              // Atualizar viewport existente baseado no preview mode
-              viewportMeta.setAttribute('content', `width=${viewportWidth}, initial-scale=1.0, user-scalable=no`)
-            }
-
-            // Injetar script para simular dimensões do dispositivo dentro do iframe
-            // Isso faz com que window.innerWidth, window.matchMedia, etc. funcionem corretamente
-            const existingSimulator = iframeDoc.getElementById('device-simulator-script')
-            if (existingSimulator) {
-              existingSimulator.remove()
+            /* Aplicar variáveis CSS no frame com EXATAMENTE as mesmas fontes da loja */
+            [data-craftjs-frame] {
+              --font-display: 'Cormorant Garamond', Georgia, serif !important;
+              --font-body: 'Montserrat', system-ui, sans-serif !important;
+              /* Garantir que font-display está configurado */
+              font-display: swap !important;
             }
             
-            const simulatorScript = iframeDoc.createElement('script')
-            simulatorScript.id = 'device-simulator-script'
-            simulatorScript.textContent = `
-              (function() {
-                const simulatedWidth = ${simulatedWidth};
-                const simulatedHeight = ${simulatedHeight};
-                
-                // Sobrescrever window.innerWidth e window.innerHeight
-                Object.defineProperty(window, 'innerWidth', {
-                  get: function() { return simulatedWidth; },
-                  configurable: true
-                });
-                
-                Object.defineProperty(window, 'innerHeight', {
-                  get: function() { return simulatedHeight; },
-                  configurable: true
-                });
-                
-                // Sobrescrever window.outerWidth e window.outerHeight
-                Object.defineProperty(window, 'outerWidth', {
-                  get: function() { return simulatedWidth; },
-                  configurable: true
-                });
-                
-                Object.defineProperty(window, 'outerHeight', {
-                  get: function() { return simulatedHeight; },
-                  configurable: true
-                });
-                
-                // Sobrescrever document.documentElement.clientWidth e clientHeight
-                Object.defineProperty(document.documentElement, 'clientWidth', {
-                  get: function() { return simulatedWidth; },
-                  configurable: true
-                });
-                
-                Object.defineProperty(document.documentElement, 'clientHeight', {
-                  get: function() { return simulatedHeight; },
-                  configurable: true
-                });
-                
-                // Sobrescrever window.matchMedia para retornar valores baseados na largura simulada
-                const originalMatchMedia = window.matchMedia;
-                window.matchMedia = function(query) {
-                  const mediaQuery = query.replace(/\\s/g, '');
-                  
-                  // Parsear queries comuns
-                  if (mediaQuery.includes('min-width:')) {
-                    const match = mediaQuery.match(/min-width:(\\d+)px/);
-                    if (match) {
-                      const minWidth = parseInt(match[1]);
-                      return {
-                        matches: simulatedWidth >= minWidth,
-                        media: query,
-                        onchange: null,
-                        addListener: function() {},
-                        removeListener: function() {},
-                        addEventListener: function() {},
-                        removeEventListener: function() {},
-                        dispatchEvent: function() { return true; }
-                      };
-                    }
-                  }
-                  
-                  if (mediaQuery.includes('max-width:')) {
-                    const match = mediaQuery.match(/max-width:(\\d+)px/);
-                    if (match) {
-                      const maxWidth = parseInt(match[1]);
-                      return {
-                        matches: simulatedWidth <= maxWidth,
-                        media: query,
-                        onchange: null,
-                        addListener: function() {},
-                        removeListener: function() {},
-                        addEventListener: function() {},
-                        removeEventListener: function() {},
-                        dispatchEvent: function() { return true; }
-                      };
-                    }
-                  }
-                  
-                  // Fallback para queries não reconhecidas
-                  return originalMatchMedia.call(window, query);
-                };
-                
-                // Forçar atualização do body width
-                const updateDimensions = () => {
-                  document.body.style.width = simulatedWidth + 'px';
-                  document.body.style.maxWidth = simulatedWidth + 'px';
-                  document.documentElement.style.width = simulatedWidth + 'px';
-                  document.documentElement.style.maxWidth = simulatedWidth + 'px';
-                  
-                  // Disparar evento resize para componentes que dependem dele
-                  window.dispatchEvent(new Event('resize'));
-                };
-                
-                // Executar imediatamente
-                updateDimensions();
-                
-                // Executar quando DOM estiver pronto
-                if (document.readyState === 'loading') {
-                  document.addEventListener('DOMContentLoaded', updateDimensions);
-                }
-                
-                // Executar após um delay para garantir que React tenha inicializado
-                setTimeout(updateDimensions, 100);
-                setTimeout(updateDimensions, 500);
-                setTimeout(updateDimensions, 1000);
-              })();
-            `
-            // Inserir o script ANTES de qualquer outro script para garantir execução precoce
-            // Isso faz com que window.innerWidth, matchMedia, etc. sejam sobrescritos antes do React renderizar
-            // Inserir no início do head para máxima prioridade
-            iframeDoc.head.insertBefore(simulatorScript, iframeDoc.head.firstChild)
-            
-            // O script será executado automaticamente quando inserido no DOM
-            // Mas vamos também executar diretamente no contexto do iframe para garantir
-            if (frameElement.contentWindow) {
-              try {
-                // Executar o script diretamente no contexto do iframe
-                // @ts-ignore - eval existe no window, apenas não está tipado
-                frameElement.contentWindow.eval(simulatorScript.textContent)
-              } catch (e) {
-                // Se não conseguir executar (CSP), o script já foi inserido no DOM e será executado automaticamente
-                console.log('[RestrictedFrame] Script de simulação inserido no iframe')
-              }
+            /* FORÇAR fontes em TODOS os elementos dentro do frame */
+            /* Body e elementos de texto usam Montserrat */
+            [data-craftjs-frame],
+            [data-craftjs-frame] body,
+            [data-craftjs-frame] body *:not(h1):not(h2):not(h3):not(h4):not(h5):not(h6):not(.font-display):not(.font-display *) {
+              font-family: var(--font-body, 'Montserrat', system-ui, sans-serif) !important;
+              font-display: swap !important;
+              font-weight: inherit !important;
+              font-style: inherit !important;
             }
-
-            // IMPORTANTE: Carregar CSS do template PRIMEIRO, depois Tailwind
-            // O CSS do template deve ter prioridade máxima sobre o Tailwind
             
-            // 1. Carregar CSS compartilhado do template (CÓPIA EXATA do template1) PRIMEIRO
-            const existingLink = iframeDoc.getElementById('template-shared-styles')
-            if (!existingLink) {
-              const stylesPath = getTemplateStylesPath(templateId)
-              const link = iframeDoc.createElement('link')
-              link.id = 'template-shared-styles'
-              link.href = window.location.origin + stylesPath
-              link.rel = 'stylesheet'
-              // Carregar PRIMEIRO para garantir que tenha base
-              iframeDoc.head.insertBefore(link, iframeDoc.head.firstChild)
-              
-              link.onload = () => {
-                // Após carregar o CSS do template, carregar Tailwind DEPOIS
-                const existingTailwind = iframeDoc.getElementById('tailwind-admin')
-                if (!existingTailwind) {
-                  const tailwindLink = iframeDoc.createElement('link')
-                  tailwindLink.id = 'tailwind-admin'
-                  tailwindLink.href = window.location.origin + '/_next/static/css/app.css'
-                  tailwindLink.rel = 'stylesheet'
-                  // Inserir DEPOIS do CSS do template
-                  iframeDoc.head.appendChild(tailwindLink)
-                  
-                  tailwindLink.onload = () => {
-                    // Após Tailwind carregar, recarregar CSS do template por cima para ter prioridade
-                    const stylesPath = getTemplateStylesPath(templateId)
-                    const overrideLink = iframeDoc.createElement('link')
-                    overrideLink.id = 'template-styles-override'
-                    overrideLink.href = window.location.origin + stylesPath
-                    overrideLink.rel = 'stylesheet'
-                    // Inserir no FINAL para ter prioridade máxima
-                    iframeDoc.head.appendChild(overrideLink)
-                    
-                    overrideLink.onload = () => {
-                      // IMPORTANTE: Garantir que os scripts do Next.js sejam carregados no iframe
-                      // Isso é necessário para que os componentes React (incluindo ícones) sejam renderizados
-                      // O Craft.js Frame já deve carregar os scripts, mas vamos garantir
-                      setTimeout(() => {
-                        applyFrameStyles()
-                        // Executar o script de simulação após tudo carregar
-                        if (simulatorScript.parentNode) {
-                          // Re-executar o script para garantir que as dimensões sejam aplicadas
-                          const newScript = iframeDoc.createElement('script')
-                          newScript.textContent = simulatorScript.textContent
-                          iframeDoc.head.appendChild(newScript)
-                        }
-                      }, 200)
-                    }
-                  }
+            /* TODOS os headings dentro do frame usam Cormorant Garamond */
+            [data-craftjs-frame] h1,
+            [data-craftjs-frame] h2,
+            [data-craftjs-frame] h3,
+            [data-craftjs-frame] h4,
+            [data-craftjs-frame] h5,
+            [data-craftjs-frame] h6,
+            [data-craftjs-frame] h1 *,
+            [data-craftjs-frame] h2 *,
+            [data-craftjs-frame] h3 *,
+            [data-craftjs-frame] h4 *,
+            [data-craftjs-frame] h5 *,
+            [data-craftjs-frame] h6 * {
+              font-family: var(--font-display, 'Cormorant Garamond', Georgia, serif) !important;
+              font-weight: 500 !important;
+              font-style: normal !important;
+              font-display: swap !important;
+            }
+            
+            /* Classes do template - Cormorant Garamond */
+            [data-craftjs-frame] .font-display,
+            [data-craftjs-frame] .font-display * {
+              font-family: var(--font-display, 'Cormorant Garamond', Georgia, serif) !important;
+              font-display: swap !important;
+            }
+            
+            /* Classes do template - Montserrat */
+            [data-craftjs-frame] .font-body,
+            [data-craftjs-frame] .font-body * {
+              font-family: var(--font-body, 'Montserrat', system-ui, sans-serif) !important;
+              font-display: swap !important;
+            }
+          `
+
+          // 4. INTERCEPTAR TODAS as tentativas de definir font-family e forçar as fontes corretas
+          // Usar EXATAMENTE as mesmas fontes que a loja (Google Fonts)
+          const fontBody = 'Montserrat, system-ui, sans-serif'
+          const fontDisplay = 'Cormorant Garamond, Georgia, serif'
+          
+          // Interceptar CSSStyleDeclaration.setProperty
+          const originalSetProperty = CSSStyleDeclaration.prototype.setProperty
+          const interceptedSetProperty = function(this: CSSStyleDeclaration, property: string, value: string, priority?: string) {
+            if (property === 'font-family' || property === 'fontFamily') {
+              const element = (this as any).ownerElement || (this as any).parentElement
+              if (element && frameElement.contains(element)) {
+                // Determinar qual fonte usar
+                const tagName = element.tagName?.toUpperCase()
+                const isHeading = tagName && /^H[1-6]$/.test(tagName)
+                const isInHeading = element.closest && element.closest('h1, h2, h3, h4, h5, h6')
+                const hasFontDisplay = element.classList?.contains('font-display')
+                const hasFontBody = element.classList?.contains('font-body')
+                
+                if (isHeading || isInHeading || hasFontDisplay) {
+                  return originalSetProperty.call(this, 'font-family', fontDisplay, 'important')
+                } else if (hasFontBody) {
+                  return originalSetProperty.call(this, 'font-family', fontBody, 'important')
                 } else {
-                  // Se Tailwind já existe, apenas aplicar estilos
-                  setTimeout(() => {
-                    applyFrameStyles()
-                  }, 100)
+                  return originalSetProperty.call(this, 'font-family', fontBody, 'important')
                 }
-              }
-            } else {
-              // Se já existe, garantir que as variáveis estejam aplicadas
-              setTimeout(applyFrameStyles, 100)
-            }
-
-            // RESET COMPLETO: Aplicar estilos base no body do iframe (exatamente como no template1)
-            // FORÇAR fontes corretas para evitar herança do editor
-            iframeDoc.body.style.margin = '0'
-            iframeDoc.body.style.padding = '0'
-            iframeDoc.body.style.fontFamily = 'var(--font-body, "Montserrat", system-ui, sans-serif) !important'
-            iframeDoc.body.style.backgroundColor = 'hsl(var(--background, 0 0% 100%))'
-            iframeDoc.body.style.color = 'hsl(var(--foreground, 0 0% 12%))'
-            iframeDoc.body.style.webkitFontSmoothing = 'antialiased'
-            iframeDoc.body.style.mozOsxFontSmoothing = 'grayscale'
-            iframeDoc.body.style.lineHeight = '1.5'
-            iframeDoc.body.style.letterSpacing = 'normal'
-
-            // Garantir que o html do iframe também tenha os estilos corretos
-            iframeRoot.style.scrollBehavior = 'smooth'
-            iframeRoot.style.margin = '0'
-            iframeRoot.style.padding = '0'
-            iframeRoot.style.fontFamily = 'var(--font-body, "Montserrat", system-ui, sans-serif)'
-            
-            // IMPORTANTE: Garantir que o iframe tenha largura suficiente para breakpoints funcionarem
-            // O breakpoint lg do Tailwind é 1024px, então precisamos garantir que o iframe tenha pelo menos essa largura
-            if (frameElement) {
-              // Se o iframe tiver largura menor que 1024px, forçar largura mínima
-              const iframeWidth = frameElement.offsetWidth || frameElement.clientWidth
-              if (iframeWidth < 1024) {
-                // Não forçar largura aqui, mas garantir que o viewport seja detectado corretamente
-                // O problema pode ser que o viewport não está sendo detectado corretamente
               }
             }
-
-            // CRIAR ESTILO DE RESET COMPLETO dentro do iframe para isolar do editor
-            const resetStyle = iframeDoc.createElement('style')
-            resetStyle.id = 'template-iframe-reset'
-            resetStyle.textContent = `
-              /* ============================================
-                 RESET COMPLETO DO IFRAME - ISOLAR DO EDITOR
-                 ============================================ */
-              /* Este reset garante que NENHUM estilo do editor interfira */
-              
-              /* Resetar TODAS as fontes e forçar fontes do template */
-              body, body * {
-                font-family: var(--font-body, "Montserrat", system-ui, sans-serif) !important;
-                line-height: 1.5 !important;
-                letter-spacing: normal !important;
-              }
-
-              /* FORÇAR fontes de display em TODOS os headings */
-              h1, h2, h3, h4, h5, h6,
-              h1 *, h2 *, h3 *, h4 *, h5 *, h6 * {
-                font-family: var(--font-display, "Cormorant Garamond", Georgia, serif) !important;
-                font-weight: 500 !important;
-                line-height: 1.2 !important;
-                letter-spacing: normal !important;
-              }
-
-              /* Resetar qualquer herança de fontes do editor */
-              * {
-                font-family: inherit !important;
-              }
-
-              /* Garantir que classes do template funcionem */
-              .font-display,
-              .font-display * {
-                font-family: var(--font-display, "Cormorant Garamond", Georgia, serif) !important;
-              }
-
-              .font-body,
-              .font-body * {
-                font-family: var(--font-body, "Montserrat", system-ui, sans-serif) !important;
-              }
-
-              /* Resetar line-height e letter-spacing para valores padrão do template */
-              body {
-                line-height: 1.5 !important;
-                letter-spacing: normal !important;
-              }
-
-              h1, h2, h3, h4, h5, h6 {
-                line-height: 1.2 !important;
-                letter-spacing: normal !important;
-              }
-
-              /* Garantir que cores do template funcionem */
-              .text-secondary {
-                color: hsl(var(--secondary-foreground, 0 0% 20%)) !important;
-              }
-
-              .text-gold {
-                color: hsl(var(--gold, 42 65% 55%)) !important;
-              }
-
-              h2 .text-gold,
-              h2 span.text-gold,
-              h2 > span.text-gold {
-                color: hsl(var(--gold, 42 65% 55%)) !important;
-              }
-
-              h2.text-secondary,
-              h2.text-secondary *:not(.text-gold) {
-                color: hsl(var(--secondary-foreground, 0 0% 20%)) !important;
-              }
-
-              /* GARANTIR que navegação desktop apareça quando o iframe tiver largura suficiente */
-              /* O breakpoint lg do Tailwind é 1024px */
-              /* Forçar navegação desktop a aparecer quando o viewport tiver largura >= 1024px */
-              @media (min-width: 1024px) {
-                /* Forçar navegação desktop a aparecer */
-                nav.hidden.lg\\:flex {
-                  display: flex !important;
-                }
+            return originalSetProperty.call(this, property, value, priority)
+          }
+          CSSStyleDeclaration.prototype.setProperty = interceptedSetProperty as any
+          
+          // Interceptar fontFamily setter
+          const fontFamilyDescriptor = Object.getOwnPropertyDescriptor(CSSStyleDeclaration.prototype, 'fontFamily')
+          Object.defineProperty(CSSStyleDeclaration.prototype, 'fontFamily', {
+            set: function(value: string) {
+              const element = (this as any).ownerElement || (this as any).parentElement
+              if (element && frameElement.contains(element)) {
+                const tagName = element.tagName?.toUpperCase()
+                const isHeading = tagName && /^H[1-6]$/.test(tagName)
+                const isInHeading = element.closest && element.closest('h1, h2, h3, h4, h5, h6')
+                const hasFontDisplay = element.classList?.contains('font-display')
+                const hasFontBody = element.classList?.contains('font-body')
                 
-                /* Garantir que botão mobile menu fique oculto no desktop */
-                button.lg\\:hidden {
-                  display: none !important;
+                if (isHeading || isInHeading || hasFontDisplay) {
+                  return this.setProperty('font-family', fontDisplay, 'important')
+                } else if (hasFontBody) {
+                  return this.setProperty('font-family', fontBody, 'important')
+                } else {
+                  return this.setProperty('font-family', fontBody, 'important')
                 }
               }
-              
-              /* REMOVIDO: min-width: 1024px que estava forçando desktop no mobile/tablet */
-              /* Agora o viewport é configurado corretamente baseado no preview mode */
-              
-              /* Forçar navegação desktop quando o body tiver largura >= 1024px */
-              @media (min-width: 1024px) {
-                header nav.hidden {
-                  display: flex !important;
-                }
-                
-                header button.lg\\:hidden {
-                  display: none !important;
-                }
+              if (fontFamilyDescriptor && fontFamilyDescriptor.set) {
+                fontFamilyDescriptor.set.call(this, value)
               }
+            },
+            get: function() {
+              return this.getPropertyValue('font-family')
+            },
+            configurable: true
+          })
 
-              /* GARANTIR que ícones SVG do lucide-react sejam renderizados corretamente */
-              /* Os ícones são componentes SVG que precisam ter display e tamanho corretos */
-              svg {
-                display: inline-block !important;
-                vertical-align: middle !important;
-                width: 1em !important;
-                height: 1em !important;
-                fill: currentColor !important;
-                stroke: currentColor !important;
-                stroke-width: 2 !important;
-                stroke-linecap: round !important;
-                stroke-linejoin: round !important;
-              }
-
-              /* Garantir que ícones dentro de links e botões sejam visíveis */
-              a svg,
-              button svg {
-                display: inline-block !important;
-                width: 20px !important;
-                height: 20px !important;
-                flex-shrink: 0 !important;
-              }
-
-              /* Garantir que textos sejam visíveis e tenham cor correta */
-              span, p, h1, h2, h3, h4, h5, h6, a, button {
-                color: inherit !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-              }
-
-              /* Garantir que links de navegação sejam visíveis */
-              nav a {
-                display: inline-block !important;
-                visibility: visible !important;
-                opacity: 1 !important;
-              }
-            `
-            // Inserir no INÍCIO do head para ter máxima prioridade
-            iframeDoc.head.insertBefore(resetStyle, iframeDoc.head.firstChild)
-          } else {
-            // Fallback: aplicar no elemento do frame se não for iframe
-            frameElement.style.fontFamily = 'var(--font-body, "Montserrat", system-ui, sans-serif)'
-            frameElement.style.backgroundColor = 'hsl(var(--background, 0 0% 100%))'
-            frameElement.style.color = 'hsl(var(--foreground, 0 0% 12%))'
-            frameElement.style.margin = '0'
-            frameElement.style.width = '100%'
-            frameElement.style.minHeight = '100%'
+          // Função ULTRA AGRESSIVA para forçar fontes em TODOS os elementos
+          const forceFonts = () => {
+            // Forçar font-body no frame element
+            frameElement.style.setProperty('font-family', fontBody, 'important')
             
-            // Copiar variáveis CSS
-            const root = document.documentElement
-            const computedStyle = getComputedStyle(root)
-            const cssVariables = [
-              '--background', '--foreground', '--card', '--card-foreground',
-              '--popover', '--popover-foreground', '--primary', '--primary-foreground',
-              '--secondary', '--secondary-foreground', '--muted', '--muted-foreground',
-              '--accent', '--accent-foreground', '--destructive', '--destructive-foreground',
-              '--border', '--input', '--ring', '--radius',
-              '--gold', '--gold-light', '--wine', '--wine-dark', '--wine-light',
-              '--cream', '--beige', '--charcoal',
-              '--shadow-soft', '--shadow-elevated', '--shadow-gold',
-              '--font-display', '--font-body', '--font-sans'
-            ]
+            // Pegar TODOS os elementos dentro do frame (incluindo SVG, etc)
+            const allElements = frameElement.querySelectorAll('*')
             
-            cssVariables.forEach(variable => {
-              const value = computedStyle.getPropertyValue(variable).trim()
-              if (value) {
-                frameElement.style.setProperty(variable, value)
+            allElements.forEach((el) => {
+              if (!(el instanceof HTMLElement)) return
+              
+              const tagName = el.tagName?.toUpperCase()
+              const isHeading = tagName && /^H[1-6]$/.test(tagName)
+              const isInHeading = el.closest('h1, h2, h3, h4, h5, h6')
+              const hasFontDisplay = el.classList.contains('font-display')
+              const hasFontBody = el.classList.contains('font-body')
+              
+              // Forçar font-display em headings
+              if (isHeading || isInHeading || hasFontDisplay) {
+                el.style.setProperty('font-family', fontDisplay, 'important')
+                // Forçar também via computedStyle
+                const computed = window.getComputedStyle(el)
+                if (computed.fontFamily !== fontDisplay) {
+                  el.style.setProperty('font-family', fontDisplay, 'important')
+                }
+              } 
+              // Forçar font-body em tudo mais
+              else if (!hasFontDisplay) {
+                el.style.setProperty('font-family', fontBody, 'important')
+                const computed = window.getComputedStyle(el)
+                if (computed.fontFamily !== fontBody && !computed.fontFamily.includes('Cormorant')) {
+                  el.style.setProperty('font-family', fontBody, 'important')
+                }
+              }
+            })
+            
+            // Garantir que classes específicas funcionem
+            frameElement.querySelectorAll('.font-display, [class*="font-display"]').forEach((el) => {
+              if (el instanceof HTMLElement) {
+                el.style.setProperty('font-family', fontDisplay, 'important')
+              }
+            })
+            
+            frameElement.querySelectorAll('.font-body, [class*="font-body"]').forEach((el) => {
+              if (el instanceof HTMLElement) {
+                el.style.setProperty('font-family', fontBody, 'important')
               }
             })
           }
+          
+          // Executar múltiplas vezes para garantir
+          forceFonts()
+          requestAnimationFrame(forceFonts)
+          requestAnimationFrame(() => requestAnimationFrame(forceFonts))
+          
+          // 4. Observar mudanças no DOM do frame e reaplicar fontes IMEDIATAMENTE
+          const observer = new MutationObserver(() => {
+            // Executar múltiplas vezes para pegar elementos renderizados pelo React
+            forceFonts()
+            requestAnimationFrame(forceFonts)
+            setTimeout(forceFonts, 0)
+            setTimeout(forceFonts, 10)
+          })
+          
+          observer.observe(frameElement, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['style', 'class', 'id']
+          })
+          
+          // Reaplicar AGressivamente e frequentemente
+          const intervalId = setInterval(() => {
+            forceFonts()
+          }, 100) // A cada 100ms!
+          
+          // Também usar requestAnimationFrame para garantir
+          let rafId: number | null = null
+          const rafLoop = () => {
+            forceFonts()
+            rafId = requestAnimationFrame(rafLoop)
+          }
+          rafId = requestAnimationFrame(rafLoop)
+          
+          // Retornar função de cleanup
+          return () => {
+            observer.disconnect()
+            clearInterval(intervalId)
+            if (rafId !== null) {
+              cancelAnimationFrame(rafId)
+            }
+            // Restaurar métodos originais
+            CSSStyleDeclaration.prototype.setProperty = originalSetProperty
+            if (fontFamilyDescriptor) {
+              Object.defineProperty(CSSStyleDeclaration.prototype, 'fontFamily', fontFamilyDescriptor)
+            }
+          }
         } catch (error) {
-          // Se houver erro de CORS ou similar, usar fallback
-          console.warn('Could not access iframe document:', error)
+          // Se houver erro, logar mas continuar
+          console.warn('[RestrictedFrame] Erro ao aplicar estilos:', error)
+          return undefined
         }
-      }
     }
 
-    // Aplicar imediatamente
-    applyFrameStyles()
+    // Armazenar e aplicar cleanup function
+    let cleanupFn: (() => void) | undefined = applyFrameStyles()
 
     // Aplicar novamente após delays para garantir que o frame foi renderizado
-    // E que o CSS foi carregado
-    const timeout1 = setTimeout(applyFrameStyles, 100)
-    const timeout2 = setTimeout(applyFrameStyles, 500)
-    const timeout3 = setTimeout(applyFrameStyles, 1000)
-    const timeout4 = setTimeout(applyFrameStyles, 2000) // Aguardar CSS carregar
+    const timeout1 = setTimeout(() => {
+      if (cleanupFn) cleanupFn()
+      cleanupFn = applyFrameStyles()
+    }, 100)
+    const timeout2 = setTimeout(() => {
+      if (cleanupFn) cleanupFn()
+      cleanupFn = applyFrameStyles()
+    }, 500)
+    const timeout3 = setTimeout(() => {
+      if (cleanupFn) cleanupFn()
+      cleanupFn = applyFrameStyles()
+    }, 1000)
+    const timeout4 = setTimeout(() => {
+      if (cleanupFn) cleanupFn()
+      cleanupFn = applyFrameStyles()
+    }, 2000)
     
     return () => {
       clearTimeout(timeout1)
       clearTimeout(timeout2)
       clearTimeout(timeout3)
       clearTimeout(timeout4)
+      if (cleanupFn) cleanupFn()
     }
   }, [previewMode]) // Re-executar quando o preview mode mudar
 
