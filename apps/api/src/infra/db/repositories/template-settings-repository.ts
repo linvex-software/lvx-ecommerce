@@ -44,7 +44,7 @@ export class TemplateSettingsRepository {
       return {
         id: row.id,
         store_id: row.store_id,
-        template_id: (layoutJson.template_id as string) || 'flor-de-menina',
+        template_id: (layoutJson.template_id as string) || 'woman-shop-template',
         config_json: layoutJson.template_config as Record<string, unknown>,
         created_at: row.created_at,
         updated_at: row.updated_at
@@ -108,6 +108,7 @@ export class TemplateSettingsRepository {
     }
   }
 }
+
 
 
 

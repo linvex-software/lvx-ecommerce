@@ -2,9 +2,9 @@ import * as fs from 'fs'
 import * as path from 'path'
 
 /**
- * Gera o layout padrão da loja usando o template flor-de-menina
+ * Gera o layout padrão da loja usando o template woman-shop-template
  * 
- * Carrega o layout completo do template flor-de-menina como padrão
+ * Carrega o layout completo do template woman-shop-template como padrão
  * para todas as novas lojas criadas.
  */
 export function generateDefaultLayout(): Record<string, unknown> {
@@ -39,10 +39,20 @@ export function generateDefaultLayout(): Record<string, unknown> {
       return createMinimalLayout()
     }
 
-    console.log('[generateDefaultLayout] Layout do template flor-de-menina carregado com sucesso:', {
+    // Validar que o layout não está vazio (tem filhos no ROOT)
+    const root = layout.ROOT as any
+    const rootNodes = root?.nodes
+    if (!Array.isArray(rootNodes) || rootNodes.length === 0) {
+      console.warn(
+        '[generateDefaultLayout] Layout do template está vazio (sem filhos). Usando layout mínimo.'
+      )
+      return createMinimalLayout()
+    }
+
+    console.log('[generateDefaultLayout] Layout do template woman-shop-template carregado com sucesso:', {
       hasRoot: !!layout.ROOT,
       totalNodes: Object.keys(layout).length,
-      rootNodes: (layout.ROOT as any)?.nodes?.length || 0
+      rootNodes: rootNodes.length
     })
 
     return layout

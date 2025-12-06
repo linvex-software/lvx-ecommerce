@@ -60,7 +60,7 @@ export default {
         accent: 'var(--color-accent)',
         neutral: 'var(--color-neutral)',
         // NOTA: primary e secondary já estão definidos acima usando hsl(var(--primary)) e hsl(var(--secondary))
-        // Template Flor de Menina colors
+        // Template Woman Shop Template colors
         gold: 'hsl(var(--gold))',
         'gold-light': 'hsl(var(--gold-light))',
         wine: 'hsl(var(--wine))',

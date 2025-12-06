@@ -254,7 +254,7 @@ export default function TemplateSettingsPage() {
                   id="storeName"
                   value={config.branding.storeName}
                   onChange={(e) => updateBranding('storeName', e.target.value)}
-                  placeholder="Flor de Menina Boutique"
+                  placeholder="Woman Shop"
                   className="mt-1"
                 />
               </div>

@@ -1,5 +1,5 @@
 /**
- * Template: Flor de Menina
+ * Template: Woman Shop Template
  * 
  * Registro dos componentes do template para o Craft.js
  * 
@@ -17,9 +17,9 @@ import { PromoBanner } from '../../apps/web/components/template/flor-de-menina/c
 import { InstagramFeed } from '../../apps/web/components/template/flor-de-menina/components/home/InstagramFeed'
 import { EditableText } from '../../apps/web/components/template/flor-de-menina/components/common/editable-text'
 
-export const templateId = 'flor-de-menina'
-export const templateName = 'Flor de Menina'
-export const templateDescription = 'Template elegante para lojas de moda feminina'
+export const templateId = 'woman-shop-template'
+export const templateName = 'Woman Shop Template'
+export const templateDescription = 'Elegant template for women fashion stores'
 
 /**
  * Resolver de componentes para o Craft.js

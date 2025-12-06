@@ -11,12 +11,14 @@ import { Frame } from '@craftjs/core'
 import { useEffect, useRef } from 'react'
 import { TemplateStyles } from './template-styles'
 import { usePreviewMode } from './preview-context'
+import { getTemplateStylesPath } from '@/lib/templates/template-loader'
 
 interface RestrictedFrameProps {
   data?: string | null
+  templateId?: string
 }
 
-export function RestrictedFrame({ data }: RestrictedFrameProps) {
+export function RestrictedFrame({ data, templateId = 'woman-shop-template' }: RestrictedFrameProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const { previewMode } = usePreviewMode()
   
@@ -62,7 +64,7 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
             ]
             
             // Aplicar variáveis CSS no :root do iframe com valores explícitos do template
-            // Valores do template Flor de Menina (templates/flor-de-menina/styles.css)
+            // Valores do template Woman Shop Template (templates/flor-de-menina/styles.css)
             const templateVariables: Record<string, string> = {
               '--background': '0 0% 100%',
               '--foreground': '0 0% 12%',
@@ -267,9 +269,10 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
             // 1. Carregar CSS compartilhado do template (CÓPIA EXATA do template1) PRIMEIRO
             const existingLink = iframeDoc.getElementById('template-shared-styles')
             if (!existingLink) {
+              const stylesPath = getTemplateStylesPath(templateId)
               const link = iframeDoc.createElement('link')
               link.id = 'template-shared-styles'
-              link.href = window.location.origin + '/templates/flor-de-menina/styles.css'
+              link.href = window.location.origin + stylesPath
               link.rel = 'stylesheet'
               // Carregar PRIMEIRO para garantir que tenha base
               iframeDoc.head.insertBefore(link, iframeDoc.head.firstChild)
@@ -287,9 +290,10 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
                   
                   tailwindLink.onload = () => {
                     // Após Tailwind carregar, recarregar CSS do template por cima para ter prioridade
+                    const stylesPath = getTemplateStylesPath(templateId)
                     const overrideLink = iframeDoc.createElement('link')
                     overrideLink.id = 'template-styles-override'
-                    overrideLink.href = window.location.origin + '/templates/flor-de-menina/styles.css'
+                    overrideLink.href = window.location.origin + stylesPath
                     overrideLink.rel = 'stylesheet'
                     // Inserir no FINAL para ter prioridade máxima
                     iframeDoc.head.appendChild(overrideLink)

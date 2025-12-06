@@ -21,7 +21,7 @@ export function TemplateRenderer({ children, templateId }: TemplateRendererProps
   useEffect(() => {
     // Em produção, isso carregaria o template dinamicamente
     // Por enquanto, vamos usar um componente wrapper que renderiza o template
-    // O template real está em /templates/flor-de-menina/src
+    // O template real está em /templates/woman-shop-template/src (fisicamente em /templates/flor-de-menina/)
     
     // Por enquanto, apenas renderiza os children
     // O template será integrado posteriormente
@@ -42,6 +42,7 @@ export function TemplateRenderer({ children, templateId }: TemplateRendererProps
 
   return <TemplateComponent />
 }
+
 
 
 

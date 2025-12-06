@@ -15,13 +15,34 @@ export interface TemplateMetadata {
 }
 
 /**
+ * Mapeia o templateId lógico para o diretório físico do template
+ * Isso permite renomear o template logicamente sem precisar renomear o diretório
+ */
+export function getTemplatePhysicalPath(templateId: string): string {
+  const templatePathMap: Record<string, string> = {
+    'woman-shop-template': 'flor-de-menina',
+    'flor-de-menina': 'flor-de-menina', // Mantém compatibilidade
+  }
+  return templatePathMap[templateId] || templateId
+}
+
+/**
+ * Obtém o caminho do CSS do template baseado no templateId
+ */
+export function getTemplateStylesPath(templateId: string): string {
+  const physicalPath = getTemplatePhysicalPath(templateId)
+  return `/templates/${physicalPath}/styles.css`
+}
+
+/**
  * Carrega a configuração de um template
  */
 export async function loadTemplateConfig(templateId: string): Promise<TemplateConfig> {
   try {
     // Importar diretamente o arquivo JSON
     // O caminho é relativo a partir da raiz do projeto
-    const configModule = await import(`../../../../templates/${templateId}/template.config.json`)
+    const physicalPath = getTemplatePhysicalPath(templateId)
+    const configModule = await import(`../../../../templates/${physicalPath}/template.config.json`)
     return configModule.default as TemplateConfig
   } catch (error) {
     console.error(`Erro ao carregar config do template ${templateId}:`, error)
@@ -34,8 +55,7 @@ export async function loadTemplateConfig(templateId: string): Promise<TemplateCo
  * Aplica as configurações do template como CSS variables
  * 
  * NOTA: As variáveis CSS principais do template (--background, --foreground, --primary, etc.)
- * estão definidas no arquivo CSS compartilhado templates/flor-de-menina/styles.css
- * (cópia exata de template1/flor-de-menina-boutique/src/index.css).
+ * estão definidas no arquivo CSS compartilhado do template (obtido via getTemplateStylesPath).
  * 
  * Aqui aplicamos apenas variáveis específicas da configuração do template (--template-*).
  */
@@ -63,8 +83,7 @@ export function applyTemplateConfig(config: TemplateConfig, templateId?: string)
   root.style.setProperty('--template-text-hsl', textHsl)
   
   /* NOTA: Não aplicamos mais as variáveis CSS principais do template aqui (--background, --foreground, etc.)
-     porque elas estão todas definidas no arquivo CSS compartilhado templates/flor-de-menina/styles.css,
-     que é uma cópia exata do template original template1/flor-de-menina-boutique/src/index.css.
+     porque elas estão todas definidas no arquivo CSS compartilhado do template (obtido via getTemplateStylesPath).
      Isso garante que web e editor usem EXATAMENTE os mesmos estilos, sem abstrações. */
 }
 
@@ -121,7 +140,7 @@ function getDefaultConfig(): TemplateConfig {
     branding: {
       logoUrl: '/logo.png',
       faviconUrl: '/favicon.ico',
-      storeName: 'Flor de Menina Boutique'
+      storeName: 'Woman Shop'
     },
     content: {
       home: {
@@ -140,7 +159,8 @@ function getDefaultConfig(): TemplateConfig {
  */
 export async function loadTemplateLayout(templateId: string): Promise<Record<string, unknown>> {
   try {
-    const layoutModule = await import(`../../../../templates/${templateId}/layout.json`)
+    const physicalPath = getTemplatePhysicalPath(templateId)
+    const layoutModule = await import(`../../../../templates/${physicalPath}/layout.json`)
     const layout = layoutModule.default as Record<string, unknown>
     
     // Validar que o layout tem ROOT
@@ -179,7 +199,8 @@ function createNativeElement(tagName: string) {
  */
 export async function loadTemplateComponents(templateId: string) {
   try {
-    const templateModule = await import(`../../../../templates/${templateId}/index.ts`)
+    const physicalPath = getTemplatePhysicalPath(templateId)
+    const templateModule = await import(`../../../../templates/${physicalPath}/index.ts`)
     
     // Criar resolver base com elementos HTML nativos que o Craft.js precisa
     const resolver: Record<string, any> = {
@@ -245,9 +266,9 @@ export async function loadTemplateComponents(templateId: string) {
 export function getAvailableTemplates(): TemplateMetadata[] {
   return [
     {
-      id: 'flor-de-menina',
-      name: 'Flor de Menina',
-      description: 'Template elegante para lojas de moda feminina',
+      id: 'woman-shop-template',
+      name: 'Woman Shop Template',
+      description: 'Elegant template for women fashion stores',
       configPath: '/templates/flor-de-menina/template.config.json'
     }
   ]

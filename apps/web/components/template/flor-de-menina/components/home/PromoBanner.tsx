@@ -33,8 +33,8 @@ export function PromoBanner() {
           id={`${nodeId}_subtitle`}
           is={EditableText}
           tag="span"
-          className="inline-block text-xs tracking-[0.4em] uppercase font-body mb-4"
-          content="Especial de Natal"
+          className="inline-block text-xs text-white tracking-[0.4em] uppercase font-body mb-4"
+          content="Ofertas Especiais"
         />
         <h2 className="font-display text-4xl md:text-5xl lg:text-6xl text-primary-foreground mb-6">
           <Element
@@ -50,7 +50,7 @@ export function PromoBanner() {
           is={EditableText}
           tag="p"
           className="text-primary-foreground/80 font-body text-lg mb-8 max-w-lg mx-auto"
-          content="Peças selecionadas com descontos exclusivos. Aproveite e renove seu guarda-roupa para as festas."
+          content="Peças selecionadas com descontos exclusivos. Aproveite e renove seu guarda-roupa com estilo."
         />
         <Button asChild size="xl" variant="gold">
           <Link href="/produtos?filter=sale">

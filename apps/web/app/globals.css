@@ -4,8 +4,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* NOTA: Os estilos compartilhados do template Flor de Menina são carregados via JavaScript
-   em templates/flor-de-menina/styles.css e importados dinamicamente no TemplateProvider
+/* NOTA: Os estilos compartilhados do template Woman Shop Template são carregados via JavaScript
+   dinamicamente no TemplateProvider usando getTemplateStylesPath()
    e TemplateStyles para garantir que editor e web usem exatamente os mesmos estilos. */
 
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here.
@@ -59,11 +59,10 @@ All colors MUST be HSL.
     --store-icon-color: #000000;
   }
   
-  /* NOTA: TODAS as variáveis CSS do template Flor de Menina (--background, --foreground, 
-     --primary, --secondary, --font-display, --font-body, etc.) estão definidas em 
-     templates/flor-de-menina/styles.css (cópia exata de template1/flor-de-menina-boutique/src/index.css)
-     e são carregadas dinamicamente via JavaScript no TemplateProvider e TemplateStyles.
-     Isso garante que editor e web usem EXATAMENTE os mesmos estilos, sem abstrações. */
+  /* NOTA: TODAS as variáveis CSS do template Woman Shop Template (--background, --foreground, 
+     --primary, --secondary, --font-display, --font-body, etc.) estão definidas no arquivo CSS
+     do template (obtido via getTemplateStylesPath) e são carregadas dinamicamente via JavaScript
+     no TemplateProvider e TemplateStyles. Isso garante que editor e web usem EXATAMENTE os mesmos estilos, sem abstrações. */
   
   /* Aplicar cor de texto globalmente nos componentes store */
   [class*="store-"] h1,
@@ -79,17 +78,17 @@ All colors MUST be HSL.
 }
 
 @layer base {
-  /* NOTA: Estilos base (body, h1-h6, fontes, html) estão definidos em 
-     templates/flor-de-menina/styles.css para garantir consistência total. */
+  /* NOTA: Estilos base (body, h1-h6, fontes, html) estão definidos no arquivo CSS
+     do template (obtido via getTemplateStylesPath) para garantir consistência total. */
 }
 
 @layer components {
-  /* NOTA: Container, fontes, cores, gradientes, shadows e animações estão definidos em 
-     templates/flor-de-menina/styles.css para garantir consistência entre editor e web. */
+  /* NOTA: Container, fontes, cores, gradientes, shadows e animações estão definidos no arquivo CSS
+     do template (obtido via getTemplateStylesPath) para garantir consistência entre editor e web. */
 }
 
 @layer utilities {
-  /* Classes do template com prefixo t- estão definidas em templates/flor-de-menina/styles.css */
+  /* Classes do template com prefixo t- estão definidas no arquivo CSS do template (obtido via getTemplateStylesPath) */
   /* Não precisamos mais dessas classes aqui, elas estão no CSS compartilhado */
 
   /* Animações para o provador virtual */

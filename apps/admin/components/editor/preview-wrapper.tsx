@@ -8,12 +8,14 @@
  */
 
 import { ReactNode, useEffect, useRef } from 'react'
+import { getTemplateStylesPath } from '@/lib/templates/template-loader'
 
 interface PreviewWrapperProps {
   children: ReactNode
+  templateId?: string
 }
 
-export function PreviewWrapper({ children }: PreviewWrapperProps) {
+export function PreviewWrapper({ children, templateId = 'woman-shop-template' }: PreviewWrapperProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -21,9 +23,10 @@ export function PreviewWrapper({ children }: PreviewWrapperProps) {
     if (wrapperRef.current) {
       const existingLink = wrapperRef.current.querySelector('link[data-template-styles]')
       if (!existingLink) {
+        const stylesPath = getTemplateStylesPath(templateId)
         const link = document.createElement('link')
         link.setAttribute('data-template-styles', 'true')
-        link.href = '/templates/flor-de-menina/styles.css'
+        link.href = stylesPath
         link.rel = 'stylesheet'
         wrapperRef.current.appendChild(link)
       }

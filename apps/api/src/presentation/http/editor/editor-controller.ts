@@ -73,11 +73,20 @@ export class EditorController {
         return
       }
 
-      // Validar que o layout tem ROOT válido
+      // Validar que o layout tem ROOT válido e não está vazio
       const layoutJson = layout.layout_json as Record<string, unknown>
       if (!layoutJson || !layoutJson.ROOT || typeof layoutJson.ROOT !== 'object') {
         // Layout inválido no banco, retornar 404 para usar layout padrão
         request.log.warn('Layout no banco não tem ROOT válido, retornando 404')
+        await reply.code(404).send({ error: 'Layout not found' })
+        return
+      }
+
+      // Verificar se o layout está vazio (apenas ROOT sem filhos)
+      const root = layoutJson.ROOT as any
+      const rootNodes = root?.nodes
+      if (!Array.isArray(rootNodes) || rootNodes.length === 0) {
+        request.log.warn('Layout no banco está vazio (sem filhos), retornando 404')
         await reply.code(404).send({ error: 'Layout not found' })
         return
       }

@@ -15,6 +15,26 @@ export interface TemplateMetadata {
 }
 
 /**
+ * Mapeia o templateId lógico para o diretório físico do template
+ * Isso permite renomear o template logicamente sem precisar renomear o diretório
+ */
+export function getTemplatePhysicalPath(templateId: string): string {
+  const templatePathMap: Record<string, string> = {
+    'woman-shop-template': 'flor-de-menina',
+    'flor-de-menina': 'flor-de-menina', // Mantém compatibilidade
+  }
+  return templatePathMap[templateId] || templateId
+}
+
+/**
+ * Obtém o caminho do CSS do template baseado no templateId
+ */
+export function getTemplateStylesPath(templateId: string): string {
+  const physicalPath = getTemplatePhysicalPath(templateId)
+  return `/templates/${physicalPath}/styles.css`
+}
+
+/**
  * Cria componentes React para elementos HTML nativos
  * que o Craft.js precisa no resolver
  */
@@ -30,7 +50,8 @@ export async function loadTemplateLayout(templateId: string): Promise<Record<str
   try {
     // Importar diretamente o arquivo JSON
     // O caminho é relativo a partir da raiz do projeto
-    const layoutModule = await import(`../../../../templates/${templateId}/layout.json`)
+    const physicalPath = getTemplatePhysicalPath(templateId)
+    const layoutModule = await import(`../../../../templates/${physicalPath}/layout.json`)
     const layout = layoutModule.default as Record<string, unknown>
     
     // Validar que o layout tem ROOT
@@ -56,7 +77,8 @@ export async function loadTemplateConfig(templateId: string): Promise<Record<str
   try {
     // Importar diretamente o arquivo JSON
     // O caminho é relativo a partir da raiz do projeto
-    const configModule = await import(`../../../../templates/${templateId}/template.config.json`)
+    const physicalPath = getTemplatePhysicalPath(templateId)
+    const configModule = await import(`../../../../templates/${physicalPath}/template.config.json`)
     return configModule.default as Record<string, unknown>
   } catch (error) {
     console.error(`Erro ao carregar config do template ${templateId}:`, error)
@@ -68,7 +90,8 @@ export async function loadTemplateConfig(templateId: string): Promise<Record<str
 export async function loadTemplateComponents(templateId: string) {
   try {
     // Importar dinamicamente o módulo do template
-    const templateModule = await import(`../../../../templates/${templateId}/index.ts`)
+    const physicalPath = getTemplatePhysicalPath(templateId)
+    const templateModule = await import(`../../../../templates/${physicalPath}/index.ts`)
     
     // Criar resolver base com elementos HTML nativos que o Craft.js precisa
     // O Craft.js precisa de componentes React, não strings
@@ -135,9 +158,9 @@ export async function loadTemplateComponents(templateId: string) {
 export function getAvailableTemplates(): TemplateMetadata[] {
   return [
     {
-      id: 'flor-de-menina',
-      name: 'Flor de Menina',
-      description: 'Template elegante para lojas de moda feminina',
+      id: 'woman-shop-template',
+      name: 'Woman Shop Template',
+      description: 'Elegant template for women fashion stores',
       configPath: '/templates/flor-de-menina/template.config.json',
       layoutPath: '/templates/flor-de-menina/layout.json'
     }

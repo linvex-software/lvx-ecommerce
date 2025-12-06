@@ -4,19 +4,22 @@
  * Componente que aplica os estilos globais do template no editor
  * Garante que o preview no editor seja 100% idêntico à renderização na web
  * 
- * IMPORTANTE: Usa o arquivo CSS compartilhado templates/flor-de-menina/styles.css
+ * IMPORTANTE: Usa o arquivo CSS compartilhado do template (obtido via getTemplateStylesPath)
  * para garantir que editor e web leiam da mesma fonte de estilos.
  */
 
 import { useEffect } from 'react'
+import { getTemplateStylesPath } from '@/lib/templates/template-loader'
 
 export function TemplateStyles() {
   useEffect(() => {
-    // Carregar estilos compartilhados do template Flor de Menina
+    // Carregar estilos compartilhados do template dinamicamente
     // Este arquivo é a FONTE ÚNICA de verdade para estilos do template
-    // CÓPIA EXATA de template1/flor-de-menina-boutique/src/index.css
+    // Por padrão usa woman-shop-template, mas pode ser configurado
+    const templateId = 'woman-shop-template' // TODO: Obter do contexto/state
+    const stylesPath = getTemplateStylesPath(templateId)
     const link = document.createElement('link')
-    link.href = '/templates/flor-de-menina/styles.css'
+    link.href = stylesPath
     link.rel = 'stylesheet'
     link.id = 'template-shared-styles'
     // Garantir que o CSS do template seja carregado DEPOIS do CSS do admin para ter prioridade

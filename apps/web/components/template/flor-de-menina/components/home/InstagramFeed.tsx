@@ -20,13 +20,13 @@ export function InstagramFeed() {
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <a
-            href="https://instagram.com/flordemeninaoficial"
+            href="#"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-3 text-foreground hover:text-primary transition-colors group"
           >
             <Instagram size={24} />
-            <span className="font-display text-2xl lg:text-3xl">@flordemeninaoficial</span>
+            <span className="font-display text-2xl lg:text-3xl">@sua_loja</span>
           </a>
           <p className="text-muted-foreground font-body text-sm mt-2">
             Siga-nos para mais inspiração
@@ -37,7 +37,7 @@ export function InstagramFeed() {
           {instagramPosts.map((post, index) => (
             <a
               key={index}
-              href="https://instagram.com/flordemeninaoficial"
+              href="#"
               target="_blank"
               rel="noopener noreferrer"
               className="relative aspect-square overflow-hidden group"

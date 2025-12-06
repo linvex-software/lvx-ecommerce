@@ -20,9 +20,9 @@ interface Template {
 
 const availableTemplates: Template[] = [
   {
-    id: 'flor-de-menina',
-    name: 'Flor de Menina',
-    description: 'Template elegante para lojas de moda feminina'
+    id: 'woman-shop-template',
+    name: 'Woman Shop Template',
+    description: 'Elegant template for women fashion stores'
   }
 ]
 
@@ -32,7 +32,7 @@ interface TemplateSelectorProps {
 }
 
 export function TemplateSelector({ onTemplateSelect, selectedTemplate: externalSelected }: TemplateSelectorProps) {
-  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(externalSelected || 'flor-de-menina')
+  const [selectedTemplate, setSelectedTemplate] = useState<string | null>(externalSelected || 'woman-shop-template')
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {

@@ -56,7 +56,7 @@ export default {
         'base-content': 'var(--color-base-content)',
         highlight: 'var(--color-highlight)',
         neutral: 'var(--color-neutral)',
-        // Template Flor de Menina colors - EXATAMENTE como na web
+        // Template Woman Shop Template colors - EXATAMENTE como na web
         gold: 'hsl(var(--gold))',
         'gold-light': 'hsl(var(--gold-light))',
         wine: 'hsl(var(--wine))',

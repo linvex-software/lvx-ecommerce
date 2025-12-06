@@ -23,7 +23,7 @@ function EditorContent() {
   const user = useAuthStore((state) => state.user)
   const [savedLayout, setSavedLayout] = useState<Record<string, unknown> | null | undefined>(undefined)
   const [isLoading, setIsLoading] = useState(true)
-  const [selectedTemplate, setSelectedTemplate] = useState<string>('flor-de-menina')
+  const [selectedTemplate, setSelectedTemplate] = useState<string>('woman-shop-template')
   const [templateResolver, setTemplateResolver] = useState<Record<string, any>>({})
   const [templateConfig, setTemplateConfig] = useState<Record<string, unknown> | null>(null)
 
@@ -170,8 +170,8 @@ function EditorContent() {
     }
 
     /* NOTA: Não aplicamos mais as variáveis CSS principais do template aqui (--background, --foreground, etc.)
-       porque elas estão todas definidas no arquivo CSS compartilhado templates/flor-de-menina/styles.css,
-       que é uma cópia exata do template original template1/flor-de-menina-boutique/src/index.css.
+       porque elas estão todas definidas no arquivo CSS compartilhado do template (obtido via getTemplateStylesPath),
+       que é uma cópia exata do template original.
        Isso garante que web e editor usem EXATAMENTE os mesmos estilos, sem abstrações. */
   }
 
@@ -441,7 +441,7 @@ function EditorContentInner({
                   minHeight: '100vh', // Garantir altura mínima para scroll
                 }}
               >
-                <RestrictedFrame data={layoutJson} />
+                <RestrictedFrame data={layoutJson} templateId={selectedTemplate} />
               </div>
             </DeviceFrameset>
           ) : (

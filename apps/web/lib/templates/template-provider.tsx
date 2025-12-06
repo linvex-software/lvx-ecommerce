@@ -6,7 +6,7 @@
 
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import type { TemplateConfig } from '../../../../templates/types'
-import { loadTemplateConfig, applyTemplateConfig } from './template-loader'
+import { loadTemplateConfig, applyTemplateConfig, getTemplateStylesPath } from './template-loader'
 
 interface TemplateContextType {
   config: TemplateConfig | null
@@ -34,10 +34,11 @@ export function TemplateProvider({
   // Carregar estilos compartilhados do template (CÓPIA EXATA de template1)
   // Este é o ÚNICO lugar onde os estilos do template são carregados
   useEffect(() => {
-    if (templateId === 'flor-de-menina' && typeof document !== 'undefined') {
-      // Carregar CSS compartilhado do template (cópia exata de template1/flor-de-menina-boutique/src/index.css)
+    if (templateId && typeof document !== 'undefined') {
+      // Carregar CSS compartilhado do template dinamicamente baseado no templateId
+      const stylesPath = getTemplateStylesPath(templateId)
       const link = document.createElement('link')
-      link.href = '/templates/flor-de-menina/styles.css'
+      link.href = stylesPath
       link.rel = 'stylesheet'
       link.id = 'template-shared-styles'
       document.head.appendChild(link)
@@ -52,8 +53,8 @@ export function TemplateProvider({
   }, [templateId])
   
   /* NOTA: Não aplicamos mais variáveis CSS via JavaScript aqui.
-     Todas as variáveis CSS estão definidas no arquivo CSS compartilhado
-     templates/flor-de-menina/styles.css, que é uma cópia exata do template original.
+     Todas as variáveis CSS estão definidas no arquivo CSS compartilhado do template
+     (obtido via getTemplateStylesPath), que é uma cópia exata do template original.
      Isso garante que web e editor usem EXATAMENTE os mesmos estilos, sem abstrações. */
 
   useEffect(() => {

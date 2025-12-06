@@ -58,13 +58,13 @@ export function MiniCart() {
             </div>
           ) : (
             <div className="space-y-6">
-              {items.map((item) => {
+              {items.map((item, index) => {
                 // Usar slug se disponível, senão usar id
                 const productUrl = item.product.slug ? `/produto/${item.product.slug}` : `/produto/${item.product.id}`
                 
                 return (
                 <div
-                  key={`${item.product.id}-${item.size}-${item.color}`}
+                  key={`${item.product.id}-${item.size}-${item.color}-${index}`}
                   className="flex gap-4 animate-fade-in"
                 >
                   <Link

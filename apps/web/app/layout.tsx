@@ -9,7 +9,7 @@ import { Toaster } from 'react-hot-toast'
 
 // Por enquanto, usar template padrão
 // Em produção, isso virá do banco de dados baseado na loja
-const DEFAULT_TEMPLATE_ID = 'flor-de-menina'
+const DEFAULT_TEMPLATE_ID = 'woman-shop-template'
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (

@@ -9,7 +9,7 @@
   "branding": {
     "logoUrl": "/logo.png",
     "faviconUrl": "/favicon.ico",
-    "storeName": "Flor de Menina Boutique"
+    "storeName": "Woman Shop"
   },
   "content": {
     "home": {
@@ -21,6 +21,7 @@
     }
   }
 }
+
 
 
 

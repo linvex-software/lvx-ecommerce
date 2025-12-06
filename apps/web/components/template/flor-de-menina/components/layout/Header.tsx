@@ -81,7 +81,7 @@ export function Header() {
 
     // Usar uma função assíncrona para carregar o módulo apenas no runtime
     // O caminho relativo é calculado a partir da estrutura de diretórios:
-    // Header.tsx está em: components/template/flor-de-menina/components/layout/
+    // Header.tsx está em: components/template/woman-shop-template/components/layout/
     // useAuthStore.ts está em: lib/store/
     // Caminho relativo: ../../../../lib/store/useAuthStore
     (async () => {
@@ -216,7 +216,7 @@ export function Header() {
               <h1 className="font-display text-2xl xl:text-3xl font-semibold text-foreground tracking-wide">
                 <EditableTextOrPlain
                   id="node_header_logo"
-                  content="Flor de Menina"
+                  content="Nome da loja"
                   tag="span"
                   className=""
                   isInCraftContext={isInCraftContext}

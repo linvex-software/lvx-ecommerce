@@ -20,6 +20,27 @@ interface TemplateLayoutRendererProps {
   templateId: string
 }
 
+/**
+ * Verifica se o layout está vazio (apenas ROOT sem filhos)
+ */
+function isLayoutEmpty(layout: Record<string, unknown> | null | undefined): boolean {
+  if (!layout || typeof layout !== 'object' || Array.isArray(layout)) {
+    return true
+  }
+
+  const root = layout.ROOT as any
+  if (!root || typeof root !== 'object') {
+    return true
+  }
+
+  const rootNodes = root.nodes
+  if (!Array.isArray(rootNodes) || rootNodes.length === 0) {
+    return true
+  }
+
+  return false
+}
+
 export function TemplateLayoutRenderer({ templateId }: TemplateLayoutRendererProps) {
   const [layoutJson, setLayoutJson] = useState<string | null>(null)
   const [resolver, setResolver] = useState<Record<string, any>>({})
@@ -58,9 +79,13 @@ export function TemplateLayoutRenderer({ templateId }: TemplateLayoutRendererPro
           }
         }
 
-        // 3. Se não houver layout salvo, usar layout padrão do template
-        if (!savedLayout) {
-          console.log('[TemplateLayoutRenderer] Carregando layout padrão do template')
+        // 3. Se não houver layout salvo OU se estiver vazio, usar layout padrão do template
+        if (!savedLayout || isLayoutEmpty(savedLayout)) {
+          if (isLayoutEmpty(savedLayout)) {
+            console.log('[TemplateLayoutRenderer] Layout vazio detectado - usando layout padrão do template')
+          } else {
+            console.log('[TemplateLayoutRenderer] Carregando layout padrão do template')
+          }
           savedLayout = await loadTemplateLayout(templateId)
         }
 

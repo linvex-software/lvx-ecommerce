@@ -31,7 +31,7 @@ export class TemplateSettingsController {
           branding: {
             logoUrl: '/logo.png',
             faviconUrl: '/favicon.ico',
-            storeName: 'Flor de Menina Boutique'
+            storeName: 'Woman Shop'
           },
           content: {
             home: {
@@ -85,7 +85,7 @@ export class TemplateSettingsController {
           branding: {
             logoUrl: '/logo.png',
             faviconUrl: '/favicon.ico',
-            storeName: 'Flor de Menina Boutique'
+            storeName: 'Woman Shop'
           },
           content: {
             home: {
@@ -153,7 +153,7 @@ export class TemplateSettingsController {
       const settings = await this.templateSettingsRepository.upsert({
         store_id: request.user.storeId,
         config_json: config,
-        template_id: 'flor-de-menina' // Por enquanto, fixo
+        template_id: 'woman-shop-template' // Por enquanto, fixo
       })
 
       await reply.send({

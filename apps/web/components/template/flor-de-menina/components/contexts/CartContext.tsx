@@ -12,7 +12,7 @@ let useCartStoreHook: any;
 if (typeof window !== 'undefined') {
   try {
     // Tentar importar usando caminho relativo
-    // apps/web/components/template/flor-de-menina/components/contexts/
+    // apps/web/components/template/woman-shop-template/components/contexts/
     // Para apps/web/lib/store/useCartStore: ../../../../../lib/store/useCartStore
     const storeModule = require('../../../../../lib/store/useCartStore');
     useCartStoreHook = storeModule.useCartStore;

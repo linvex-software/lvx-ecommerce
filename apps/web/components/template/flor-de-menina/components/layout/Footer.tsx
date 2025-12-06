@@ -72,7 +72,7 @@ export function Footer() {
                 is={EditableText}
                 tag="span"
                 className=""
-                content="Flor de Menina"
+                content="Nome da loja"
               />
             </h4>
             <Element
@@ -84,7 +84,7 @@ export function Footer() {
             />
             <div className="flex gap-4">
               <a
-                href="https://instagram.com/flordemeninaoficial"
+                href="#"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="w-10 h-10 rounded-full border border-secondary/30 flex items-center justify-center hover:bg-primary hover:border-primary transition-colors"
@@ -199,8 +199,8 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-primary flex-shrink-0" />
-                <a href="mailto:contato@flordemenina.com.br" className="text-secondary/70 hover:text-primary transition-colors">
-                  contato@flordemenina.com.br
+                <a href="mailto:contato@sualoja.com.br" className="text-secondary/70 hover:text-primary transition-colors">
+                  contato@sualoja.com.br
                 </a>
               </li>
             </ul>
@@ -210,7 +210,7 @@ export function Footer() {
         {/* Bottom */}
         <div className="border-t border-secondary/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-secondary/50 text-xs font-body">
-            © 2024 Flor de Menina. Todos os direitos reservados.
+            © 2024 Nome da loja. Todos os direitos reservados.
           </p>
           <div className="flex gap-6">
             <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/5e/Visa_Inc._logo.svg/200px-Visa_Inc._logo.svg.png" alt="Visa" className="h-6 opacity-50 hover:opacity-100 transition-opacity" />
