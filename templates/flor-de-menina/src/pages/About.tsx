@@ -90,8 +90,8 @@ export default function About() {
                 <div>
                   <h4 className="font-body font-medium mb-1">Endereço</h4>
                   <p className="text-muted-foreground">
-                    Rua Eng. Mário de Gusmão, 465<br />
-                    Ponta Verde, Maceió - AL<br />
+                    Rua Lorem ipsum, 123<br />
+                    Brasil<br />
                     CEP 57035-000
                   </p>
                 </div>

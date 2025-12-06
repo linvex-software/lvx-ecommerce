@@ -23,12 +23,12 @@ export function Footer() {
       {/* Newsletter */}
       <div className="bg-primary py-12">
         <div className="container mx-auto px-4 text-center">
-          <h3 className="font-display text-2xl lg:text-3xl text-primary-foreground mb-2">
+          <h3 className="font-display text-2xl lg:text-3xl text-white mb-2">
             <Element
               id={`${nodeId}_newsletter_title`}
               is={EditableText}
               tag="span"
-              className=""
+              className="text-white"
               content="Receba Novidades em Primeira Mão"
             />
           </h3>
@@ -66,12 +66,12 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
           <div>
-            <h4 className="font-display text-2xl text-secondary mb-4">
+            <h4 className="font-display text-2xl text-white mb-4">
               <Element
                 id={`${nodeId}_brand_name`}
                 is={EditableText}
                 tag="span"
-                className=""
+                className="text-white"
                 content="Nome da loja"
               />
             </h4>
@@ -104,12 +104,12 @@ export function Footer() {
 
           {/* Links */}
           <div>
-            <h5 className="font-display text-lg text-secondary mb-4">
+            <h5 className="font-display text-lg text-white mb-4">
               <Element
                 id={`${nodeId}_nav_title`}
                 is={EditableText}
                 tag="span"
-                className=""
+                className="text-white"
                 content="Navegação"
               />
             </h5>
@@ -139,12 +139,12 @@ export function Footer() {
 
           {/* Policies */}
           <div>
-            <h5 className="font-display text-lg text-secondary mb-4">
+            <h5 className="font-display text-lg text-white mb-4">
               <Element
                 id={`${nodeId}_help_title`}
                 is={EditableText}
                 tag="span"
-                className=""
+                className="text-white"
                 content="Ajuda"
               />
             </h5>
@@ -174,12 +174,12 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h5 className="font-display text-lg text-secondary mb-4">
+            <h5 className="font-display text-lg text-white mb-4">
               <Element
                 id={`${nodeId}_contact_title`}
                 is={EditableText}
                 tag="span"
-                className=""
+                className="text-white"
                 content="Contato"
               />
             </h5>
@@ -187,8 +187,8 @@ export function Footer() {
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-secondary/70">
-                  Rua Eng. Mário de Gusmão, 465<br />
-                  Ponta Verde, Maceió - AL
+                  Rua Lorem ipsum, 123<br />
+                  Brasil
                 </span>
               </li>
               <li className="flex items-center gap-3">

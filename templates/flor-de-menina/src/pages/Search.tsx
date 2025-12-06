@@ -19,7 +19,7 @@ export default function Search() {
     );
   }, [query]);
 
-  const suggestions = ["Vestido Vermelho", "Conjunto Branco", "Blazer", "Natal"];
+  const suggestions = ["Vestido", "Conjunto", "Blazer", "Acessórios"];
 
   return (
     <div className="min-h-screen">

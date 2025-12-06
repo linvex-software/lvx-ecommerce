@@ -285,28 +285,28 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
           <div className="mb-6 md:mb-4">
             {renderEditableText("node_hero_text_1", {
               tag: "span",
-              className: "inline-block text-sm tracking-[0.3em] uppercase font-body",
-              content: "Coleção Festas 2024"
+              className: "inline-block text-sm text-white tracking-[0.3em] uppercase font-body",
+              content: "Nova Coleção"
             })}
           </div>
           <h2 className="font-display text-4xl md:text-5xl lg:text-6xl leading-tight mb-8 md:mb-6">
             {renderEditableText("node_hero_text_2", {
               tag: "span",
-              className: "",
-              content: "Elegância em"
+              className: "text-gold",
+              content: "Estilo em"
             })}
             <br />
             {renderEditableText("node_hero_text_3", {
               tag: "span",
-              className: "",
-              content: "Vermelho & Branco"
+              className: "text-white",
+              content: "Cada Detalhe"
             })}
           </h2>
           <div className="mb-10 md:mb-8">
             {renderEditableText("node_hero_text_4", {
               tag: "p",
-              className: "text-secondary/80 font-body text-base md:text-lg max-w-md mx-auto md:mx-0 leading-relaxed",
-              content: "Descubra peças exclusivas para brilhar nas festas de fim de ano. Sofisticação e estilo que traduzem a essência feminina."
+              className: "text-white font-body text-base md:text-lg max-w-md mx-auto md:mx-0 leading-relaxed",
+              content: "Descubra peças exclusivas que combinam sofisticação e estilo. Qualidade e elegância em cada detalhe."
             })}
           </div>
           <div className="flex flex-col gap-4 md:flex-row md:gap-4">
@@ -323,12 +323,12 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
             {/* Segundo Botão CTA */}
             <Button asChild size="xl" variant="elegant" className="w-full md:w-auto">
               <Link 
-                className='border-primary hover:bg-primary hover:text-white' 
+                className='border-primary text-white hover:bg-primary hover:text-white' 
                 href={craftProps.cta2Link || '/produtos'}
               >
                 {renderEditableText("node_hero_cta2_text", {
                   tag: "span",
-                  className: "",
+                  className: "text-white",
                   content: craftProps.cta2Text || "Explorar Tudo"
                 })}
               </Link>

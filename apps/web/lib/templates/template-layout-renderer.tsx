@@ -84,7 +84,7 @@ export function TemplateLayoutRenderer({ templateId }: TemplateLayoutRendererPro
           if (isLayoutEmpty(savedLayout)) {
             console.log('[TemplateLayoutRenderer] Layout vazio detectado - usando layout padrão do template')
           } else {
-            console.log('[TemplateLayoutRenderer] Carregando layout padrão do template')
+          console.log('[TemplateLayoutRenderer] Carregando layout padrão do template')
           }
           savedLayout = await loadTemplateLayout(templateId)
         }

@@ -146,7 +146,7 @@ export default function SearchPage() {
     }))
   }, [data])
 
-  const suggestions = ['Vestido Vermelho', 'Conjunto Branco', 'Blazer', 'Natal']
+  const suggestions = ['Vestido', 'Conjunto', 'Blazer', 'Acessórios']
 
   const handleSuggestionClick = (suggestion: string) => {
     setQuery(suggestion)

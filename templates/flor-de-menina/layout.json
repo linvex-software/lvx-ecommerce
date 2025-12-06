@@ -210,7 +210,7 @@
       "id": "node_hero_text_2",
       "tag": "span",
       "className": "text-gold",
-      "content": "Elegância em"
+      "content": "Estilo em"
     },
     "displayName": "Texto Editável",
     "custom": {},
@@ -241,7 +241,7 @@
     "props": {
       "id": "node_hero_text_4",
       "tag": "p",
-      "className": "text-secondary/80 font-body text-base text-white md:text-lg mb-8 max-w-md leading-relaxed",
+      "className": "text-white font-body text-base md:text-lg mb-8 max-w-md leading-relaxed",
       "content": "Descubra peças exclusivas que combinam sofisticação e estilo. Qualidade e elegância em cada detalhe."
     },
     "displayName": "Texto Editável",
@@ -784,7 +784,7 @@
     "props": {
       "id": "node_footer_brand_name",
       "tag": "span",
-      "className": "",
+      "className": "text-white",
       "content": "Nome da loja"
     },
     "displayName": "Texto Editável",
@@ -816,7 +816,7 @@
     "props": {
       "id": "node_footer_nav_title",
       "tag": "span",
-      "className": "",
+      "className": "text-white",
       "content": "Navegação"
     },
     "displayName": "Texto Editável",
@@ -832,7 +832,7 @@
     "props": {
       "id": "node_footer_help_title",
       "tag": "span",
-      "className": "",
+      "className": "text-white",
       "content": "Ajuda"
     },
     "displayName": "Texto Editável",
@@ -848,7 +848,7 @@
     "props": {
       "id": "node_footer_contact_title",
       "tag": "span",
-      "className": "",
+      "className": "text-white",
       "content": "Contato"
     },
     "displayName": "Texto Editável",

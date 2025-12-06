@@ -36,12 +36,12 @@ export function PromoBanner() {
           className="inline-block text-xs text-white tracking-[0.4em] uppercase font-body mb-4"
           content="Ofertas Especiais"
         />
-        <h2 className="font-display text-4xl md:text-5xl lg:text-6xl text-primary-foreground mb-6">
+        <h2 className="font-display text-4xl md:text-5xl lg:text-6xl mb-6">
           <Element
             id={`${nodeId}_title`}
             is={EditableText}
             tag="span"
-            className=""
+            className="text-gold"
             content="Até 40% OFF"
           />
         </h2>

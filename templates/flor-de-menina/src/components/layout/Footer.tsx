@@ -7,7 +7,7 @@ export function Footer() {
       {/* Newsletter */}
       <div className="bg-primary py-12">
         <div className="container mx-auto px-4 text-center">
-          <h3 className="font-display text-2xl lg:text-3xl text-primary-foreground mb-2">
+          <h3 className="font-display text-2xl lg:text-3xl text-white mb-2">
             Receba Novidades em Primeira Mão
           </h3>
           <p className="text-primary-foreground/80 mb-6 font-body text-sm">
@@ -34,7 +34,7 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
           <div>
-            <h4 className="font-display text-2xl text-secondary mb-4">Flor de Menina</h4>
+            <h4 className="font-display text-2xl text-white mb-4">Flor de Menina</h4>
             <p className="text-secondary/70 text-sm font-body leading-relaxed mb-6">
               Moda feminina com elegância e sofisticação. Peças exclusivas para mulheres que valorizam estilo e qualidade.
             </p>
@@ -60,7 +60,7 @@ export function Footer() {
 
           {/* Links */}
           <div>
-            <h5 className="font-display text-lg text-secondary mb-4">Navegação</h5>
+            <h5 className="font-display text-lg text-white mb-4">Navegação</h5>
             <ul className="space-y-3 font-body text-sm">
               <li>
                 <Link to="/produtos" className="text-secondary/70 hover:text-primary transition-colors">
@@ -87,7 +87,7 @@ export function Footer() {
 
           {/* Policies */}
           <div>
-            <h5 className="font-display text-lg text-secondary mb-4">Ajuda</h5>
+            <h5 className="font-display text-lg text-white mb-4">Ajuda</h5>
             <ul className="space-y-3 font-body text-sm">
               <li>
                 <Link to="/politica-troca" className="text-secondary/70 hover:text-primary transition-colors">
@@ -114,13 +114,13 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h5 className="font-display text-lg text-secondary mb-4">Contato</h5>
+            <h5 className="font-display text-lg text-white mb-4">Contato</h5>
             <ul className="space-y-4 font-body text-sm">
               <li className="flex items-start gap-3">
                 <MapPin size={18} className="text-primary flex-shrink-0 mt-0.5" />
                 <span className="text-secondary/70">
-                  Rua Eng. Mário de Gusmão, 465<br />
-                  Ponta Verde, Maceió - AL
+                  Rua Lorem ipsum, 123<br />
+                  Brasil
                 </span>
               </li>
               <li className="flex items-center gap-3">
