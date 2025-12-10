@@ -64,6 +64,26 @@ export async function registerCatalogRoutes(
     }
   )
 
+  // GET /products/:id/stock - Consulta estoque público (com ou sem variante)
+  app.get<{
+    Params: { id: string }
+    Querystring: { variant_id?: string }
+  }>(
+    '/products/:id/stock',
+    {
+      onRequest: [tenantMiddleware]
+    },
+    async (
+      request: FastifyRequest<{
+        Params: { id: string }
+        Querystring: { variant_id?: string }
+      }>,
+      reply: FastifyReply
+    ) => {
+      await productController.getStock(request, reply)
+    }
+  )
+
   // GET /products/filters/sizes - Lista tamanhos disponíveis
   app.get(
     '/products/filters/sizes',
