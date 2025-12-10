@@ -8,6 +8,8 @@ import type {
   ProductListFilters,
   ProductListResult
 } from '../../../domain/catalog/product-types'
+import type { CriticalStockProduct } from '../../../domain/dashboard/dashboard-types'
+import { StockMovementRepository } from './stock-movement-repository'
 
 type ProductRow = typeof schema.products.$inferSelect
 type ProductRowWithImage = ProductRow & { main_image: string | null }
@@ -861,6 +863,65 @@ export class ProductRepository {
       main_image: row.main_image ?? null,
       category_name: row.category_name
     }
+  }
+
+  async getCriticalStockProducts(
+    storeId: string,
+    minStockThreshold: number = 10
+  ): Promise<CriticalStockProduct[]> {
+    // Buscar todos os produtos ativos da loja
+    const products = await db
+      .select({
+        id: schema.products.id,
+        name: schema.products.name,
+        sku: schema.products.sku
+      })
+      .from(schema.products)
+      .where(
+        and(
+          eq(schema.products.store_id, storeId),
+          eq(schema.products.status, 'active')
+        )
+      )
+
+    const stockMovementRepo = new StockMovementRepository()
+    const criticalProducts: CriticalStockProduct[] = []
+
+    // Para cada produto, calcular estoque atual e verificar se está abaixo do mínimo
+    for (const product of products) {
+      // Buscar estoque do produto (sem variante específica, estoque geral)
+      const stock = await stockMovementRepo.getProductStock(product.id, storeId, null)
+      
+      if (stock && stock.current_stock < minStockThreshold) {
+        criticalProducts.push({
+          id: product.id,
+          name: product.name,
+          sku: product.sku,
+          currentStock: stock.current_stock,
+          minStock: minStockThreshold // Por enquanto, usar valor padrão
+        })
+      }
+
+      // Também verificar estoque de variantes
+      const variantStocks = await stockMovementRepo.getProductStocksByProduct(product.id, storeId)
+      for (const variantStock of variantStocks) {
+        if (variantStock.variant_id && variantStock.current_stock < minStockThreshold) {
+          // Adicionar apenas se não já estiver na lista
+          if (!criticalProducts.find(p => p.id === product.id)) {
+            criticalProducts.push({
+              id: product.id,
+              name: product.name,
+              sku: product.sku,
+              currentStock: variantStock.current_stock,
+              minStock: minStockThreshold
+            })
+            break // Não adicionar o mesmo produto múltiplas vezes
+          }
+        }
+      }
+    }
+
+    return criticalProducts.sort((a, b) => a.currentStock - b.currentStock) // Ordenar por menor estoque primeiro
   }
 }
 
