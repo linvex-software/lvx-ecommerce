@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import Navbar from '@/components/Navbar'
 import { useCartStore } from '@/lib/store/useCartStore'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ArrowLeft, ShoppingCart } from 'lucide-react'
 import Link from 'next/link'
 import SizeChart from '@/components/SizeChart'
@@ -97,6 +97,9 @@ export default function ProductDetailPage() {
   const router = useRouter()
   const { addItem, items } = useCartStore()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [selectedSize, setSelectedSize] = useState<string>('')
+  const [selectedColor, setSelectedColor] = useState<string>('')
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
 
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0)
 
@@ -169,8 +172,88 @@ export default function ProductDetailPage() {
         }]
       : []
 
-  const price = parseFloat(product.base_price)
-  const currentStock = product.stock?.current_stock ?? 0
+  // Extrair tamanhos e cores únicos das variantes
+  const availableSizes = Array.from(new Set(
+    product.variants
+      .filter(v => v.active && v.size)
+      .map(v => v.size!)
+  )).sort()
+
+  const availableColors = Array.from(new Set(
+    product.variants
+      .filter(v => v.active && v.color)
+      .map(v => v.color!)
+  ))
+
+  // Encontrar variante correta baseada em size + color selecionados
+  const findVariant = (size: string | null, color: string | null): ProductVariant | null => {
+    if (!product.variants || product.variants.length === 0) return null
+
+    return product.variants.find(v =>
+      v.active &&
+      (size ? v.size === size : !v.size) &&
+      (color ? v.color === color : !v.color)
+    ) || null
+  }
+
+  // Selecionar primeira cor e tamanho disponíveis se não houver seleção
+  useEffect(() => {
+    if (!product) return
+
+    if (availableColors.length > 0 && !selectedColor) {
+      setSelectedColor(availableColors[0])
+    }
+    if (availableSizes.length > 0 && !selectedSize) {
+      setSelectedSize(availableSizes[0])
+    }
+  }, [product, selectedColor, selectedSize, availableColors, availableSizes])
+
+  // Atualizar variant_id quando size ou color mudar
+  useEffect(() => {
+    if (!product) return
+
+    const variant = findVariant(selectedSize || null, selectedColor || null)
+    setSelectedVariantId(variant?.id || null)
+  }, [product, selectedSize, selectedColor])
+
+  // Buscar estoque da variante selecionada ou do produto base
+  const { data: variantStockData } = useQuery<{ stock: { current_stock: number } }>({
+    queryKey: ['product-stock', product.id, selectedVariantId],
+    queryFn: async () => {
+      // Se não há variante selecionada, buscar estoque do produto base
+      if (!selectedVariantId) {
+        try {
+          const url = `/products/${product.id}/stock`
+          const response = await fetchAPI(url)
+          return response
+        } catch (error) {
+          // Fallback para estoque do produto retornado na busca inicial
+          return { stock: { current_stock: product.stock?.current_stock ?? 0 } }
+        }
+      }
+      // Buscar estoque da variante específica via endpoint público
+      try {
+        const url = `/products/${product.id}/stock?variant_id=${selectedVariantId}`
+        const response = await fetchAPI(url)
+        return response
+      } catch (error) {
+        // Se falhar, usar estoque do produto base como fallback
+        console.warn('Não foi possível buscar estoque da variante, usando estoque do produto base')
+        return { stock: { current_stock: product.stock?.current_stock ?? 0 } }
+      }
+    },
+    enabled: !!product.id,
+    retry: 1,
+  })
+
+  // Calcular preço: usar price_override da variante se existir, senão usar base_price
+  const selectedVariant = findVariant(selectedSize || null, selectedColor || null)
+  const price = selectedVariant?.price_override
+    ? parseFloat(selectedVariant.price_override)
+    : parseFloat(product.base_price)
+
+  // Estoque atual: da variante se selecionada, senão do produto base
+  const currentStock = variantStockData?.stock?.current_stock ?? product.stock?.current_stock ?? 0
   const isOutOfStock = currentStock === 0
 
   // Preparar produto para o carrinho (formato esperado pelo useCartStore)
@@ -184,10 +267,31 @@ export default function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
-    if (isOutOfStock) {
-      return // Não adiciona ao carrinho se estiver esgotado
+    // Validar se há variantes e se uma foi selecionada
+    const hasVariants = product.variants && product.variants.length > 0
+    if (hasVariants) {
+      if (availableSizes.length > 0 && !selectedSize) {
+        alert('Por favor, selecione um tamanho')
+        return
+      }
+      if (availableColors.length > 0 && !selectedColor) {
+        alert('Por favor, selecione uma cor')
+        return
+      }
+      if (!selectedVariant || !selectedVariant.active) {
+        alert('Por favor, selecione uma variante válida')
+        return
+      }
     }
-    addItem(cartProduct)
+
+    // Validar estoque
+    if (isOutOfStock || currentStock < 1) {
+      alert(`Estoque insuficiente. Disponível: ${currentStock} unidades`)
+      return
+    }
+
+    // Adicionar ao carrinho com variant_id
+    addItem(cartProduct, selectedVariantId || null)
   }
 
   return (
@@ -282,30 +386,59 @@ export default function ProductDetailPage() {
               </div>
             )}
 
-            {/* Variantes (se houver) */}
-            {product.variants.length > 0 && (
-              <div className="space-y-4 pt-4 border-t border-border">
-                <h3 className="font-semibold text-lg">Variações disponíveis</h3>
+            {/* Size Selection */}
+            {availableSizes.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Tamanho {selectedSize && `- ${selectedSize}`}
+                </label>
                 <div className="flex flex-wrap gap-2">
-                  {product.variants
-                    .filter((v) => v.active)
-                    .map((variant) => (
-                      <div
-                        key={variant.id}
-                        className="px-3 py-1 border border-border rounded text-sm"
-                      >
-                        {variant.size && <span>Tamanho: {variant.size}</span>}
-                        {variant.size && variant.color && <span> • </span>}
-                        {variant.color && <span>Cor: {variant.color}</span>}
-                        {variant.price_override && (
-                          <span className="ml-2 text-muted-foreground">
-                            (R$ {parseFloat(variant.price_override).toFixed(2)})
-                          </span>
-                        )}
-                      </div>
-                    ))}
+                  {availableSizes.map((size) => (
+                    <button
+                      key={size}
+                      onClick={() => setSelectedSize(size)}
+                      className={`px-4 py-2 border rounded-md transition-colors ${
+                        selectedSize === size
+                          ? 'border-foreground bg-foreground text-background'
+                          : 'border-border hover:border-foreground/50'
+                      }`}
+                    >
+                      {size}
+                    </button>
+                  ))}
                 </div>
               </div>
+            )}
+
+            {/* Color Selection */}
+            {availableColors.length > 0 && (
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Cor {selectedColor && `- ${selectedColor}`}
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {availableColors.map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setSelectedColor(color)}
+                      className={`px-4 py-2 border rounded-md transition-colors ${
+                        selectedColor === color
+                          ? 'border-foreground bg-foreground text-background'
+                          : 'border-border hover:border-foreground/50'
+                      }`}
+                    >
+                      {color}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Estoque da variante */}
+            {selectedVariantId && (
+              <p className="text-sm text-muted-foreground">
+                Estoque: <span className="font-semibold text-foreground">{currentStock} unidades</span>
+              </p>
             )}
 
             {/* Botão Descobrir meu tamanho */}

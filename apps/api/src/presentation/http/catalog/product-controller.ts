@@ -135,5 +135,44 @@ export class PublicProductController {
       await reply.code(500).send({ error: 'Internal server error' })
     }
   }
+
+  async getStock(
+    request: FastifyRequest<{
+      Params: { id: string }
+      Querystring: { variant_id?: string }
+    }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const { id } = request.params
+      const variantId = request.query.variant_id ?? null
+
+      // Se variant_id não for fornecido, buscar estoque do produto base (variantId = null)
+      // Se variant_id for fornecido, buscar estoque da variante específica
+      const stock = await getProductStockUseCase(
+        id,
+        storeId,
+        variantId,
+        {
+          stockMovementRepository: this.stockMovementRepository
+        }
+      )
+
+      await reply.send({ stock })
+    } catch (error) {
+      if (error instanceof Error) {
+        const statusCode = error.message.includes('not found') ? 404 : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
 }
 
