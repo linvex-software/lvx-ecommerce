@@ -207,7 +207,7 @@ export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
                 </TableCell>
                 <TableCell>
                   <span className="font-medium text-gray-900">
-                    {currencyFormatter.format(parseFloat(order.total) / 100)}
+                    {currencyFormatter.format(parseFloat(order.total))}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">

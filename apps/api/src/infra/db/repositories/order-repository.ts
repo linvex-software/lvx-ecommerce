@@ -1,6 +1,6 @@
  
 import { db, schema, sql } from '@white-label/db'
-import { eq, and, desc, gte, lte, inArray } from 'drizzle-orm'
+import { eq, and, or, desc, gte, lte, inArray } from 'drizzle-orm'
 
 import type {
   Order,
@@ -9,7 +9,12 @@ import type {
   ListOrdersFilters,
   UpdateOrderInput
 } from '../../../domain/orders/order-types'
-import type { TopProduct } from '../../../domain/dashboard/dashboard-types'
+import type { 
+  TopProduct,
+  SalesByDay,
+  RevenueMetrics,
+  OperationalMetrics
+} from '../../../domain/dashboard/dashboard-types'
 
 export class OrderRepository {
   async create(
@@ -537,6 +542,125 @@ export class OrderRepository {
         category
       }
     })
+  }
+
+  async getSalesByPeriod(
+    storeId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<SalesByDay[]> {
+    // Agrupar vendas por dia
+    // total está em reais (numeric 12,2), retornar em reais como string
+    const salesData = await db
+      .select({
+        date: sql<string>`DATE(${schema.orders.created_at})::text`.as('date'),
+        ordersCount: sql<number>`COUNT(${schema.orders.id})::int`.as('orders_count'),
+        revenue: sql<string>`COALESCE(SUM(${schema.orders.total}::numeric), 0)`.as('revenue')
+      })
+      .from(schema.orders)
+      .where(
+        and(
+          eq(schema.orders.store_id, storeId),
+          eq(schema.orders.payment_status, 'paid'),
+          gte(schema.orders.created_at, startDate),
+          lte(schema.orders.created_at, endDate)
+        )
+      )
+      .groupBy(sql`DATE(${schema.orders.created_at})`)
+      .orderBy(sql`DATE(${schema.orders.created_at})`)
+
+    return salesData.map((item) => ({
+      date: item.date,
+      ordersCount: typeof item.ordersCount === 'number' ? item.ordersCount : Number(item.ordersCount) || 0,
+      revenue: typeof item.revenue === 'string' ? item.revenue : String(item.revenue || '0')
+    }))
+  }
+
+  async getRevenueMetrics(
+    storeId: string,
+    startDate: Date,
+    endDate: Date
+  ): Promise<RevenueMetrics> {
+    // total está em reais (numeric 12,2), retornar em reais como string
+    const result = await db
+      .select({
+        totalRevenue: sql<string>`COALESCE(SUM(${schema.orders.total}::numeric), 0)`.as('total_revenue'),
+        ordersCount: sql<number>`COUNT(${schema.orders.id})::int`.as('orders_count')
+      })
+      .from(schema.orders)
+      .where(
+        and(
+          eq(schema.orders.store_id, storeId),
+          eq(schema.orders.payment_status, 'paid'),
+          gte(schema.orders.created_at, startDate),
+          lte(schema.orders.created_at, endDate)
+        )
+      )
+
+    const revenue = result[0]?.totalRevenue
+      ? (typeof result[0].totalRevenue === 'string' ? result[0].totalRevenue : String(result[0].totalRevenue))
+      : '0'
+    
+    const ordersCount = result[0]?.ordersCount
+      ? (typeof result[0].ordersCount === 'number' ? result[0].ordersCount : Number(result[0].ordersCount) || 0)
+      : 0
+
+    const totalRevenueNumeric = Number(revenue) || 0
+    const averageOrderValue = ordersCount > 0 ? String((totalRevenueNumeric / ordersCount).toFixed(2)) : '0'
+
+    return {
+      totalRevenue: revenue,
+      ordersCount,
+      averageOrderValue
+    }
+  }
+
+  async getOperationalMetrics(storeId: string): Promise<OperationalMetrics> {
+    // Pedidos pendentes (status pending OU payment_status pending)
+    const [pendingResult] = await db
+      .select({
+        count: sql<number>`COUNT(*)::int`.as('count')
+      })
+      .from(schema.orders)
+      .where(
+        and(
+          eq(schema.orders.store_id, storeId),
+          or(
+            eq(schema.orders.status, 'pending'),
+            eq(schema.orders.payment_status, 'pending')
+          )!
+        )
+      )
+
+    // Pedidos pagos aguardando expedição (status processing E payment_status paid)
+    const [awaitingShipmentResult] = await db
+      .select({
+        count: sql<number>`COUNT(*)::int`.as('count')
+      })
+      .from(schema.orders)
+      .where(
+        and(
+          eq(schema.orders.store_id, storeId),
+          eq(schema.orders.status, 'processing'),
+          eq(schema.orders.payment_status, 'paid')
+        )
+      )
+
+    const pendingOrders = pendingResult?.count 
+      ? (typeof pendingResult.count === 'number' ? pendingResult.count : Number(pendingResult.count) || 0)
+      : 0
+
+    const awaitingShipment = awaitingShipmentResult?.count
+      ? (typeof awaitingShipmentResult.count === 'number' ? awaitingShipmentResult.count : Number(awaitingShipmentResult.count) || 0)
+      : 0
+
+    // Estoque baixo será calculado separadamente no ProductRepository
+    // Por enquanto retornamos 0, será preenchido pelo use case que busca produtos
+    return {
+      pendingOrders,
+      awaitingShipment,
+      lowStock: 0 // Será preenchido pelo use case
+    }
   }
 }
 
