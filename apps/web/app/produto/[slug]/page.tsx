@@ -70,6 +70,7 @@ export default function ProductDetailPage() {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState<string>('')
+  const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
 
@@ -174,10 +175,6 @@ export default function ProductDetailPage() {
         }]
       : []
 
-  const price = parseFloat(product.base_price)
-  const currentStock = product.stock?.current_stock ?? 0
-  const isOutOfStock = currentStock === 0
-
   // Extrair tamanhos e cores únicos das variantes
   const availableSizes = Array.from(new Set(
     product.variants
@@ -191,6 +188,65 @@ export default function ProductDetailPage() {
       .map(v => v.color!)
   ))
 
+  // Encontrar variante correta baseada em size + color selecionados
+  const findVariant = (size: string | null, color: string | null): ProductVariant | null => {
+    if (!product.variants || product.variants.length === 0) return null
+
+    return product.variants.find(v =>
+      v.active &&
+      (size ? v.size === size : !v.size) &&
+      (color ? v.color === color : !v.color)
+    ) || null
+  }
+
+  // Atualizar variant_id quando size ou color mudar
+  useEffect(() => {
+    if (!data?.product) return
+
+    const variant = findVariant(selectedSize || null, selectedColor || null)
+    setSelectedVariantId(variant?.id || null)
+  }, [data?.product, selectedSize, selectedColor])
+
+  // Buscar estoque da variante selecionada ou do produto base
+  const { data: variantStockData } = useQuery<{ stock: { current_stock: number } }>({
+    queryKey: ['product-stock', product.id, selectedVariantId],
+    queryFn: async () => {
+      // Se não há variante selecionada, buscar estoque do produto base
+      if (!selectedVariantId) {
+        try {
+          const url = `/products/${product.id}/stock`
+          const response = await fetchAPI(url)
+          return response
+        } catch (error) {
+          // Fallback para estoque do produto retornado na busca inicial
+          return { stock: { current_stock: product.stock?.current_stock ?? 0 } }
+        }
+      }
+      // Buscar estoque da variante específica via endpoint público
+      try {
+        const url = `/products/${product.id}/stock?variant_id=${selectedVariantId}`
+        const response = await fetchAPI(url)
+        return response
+      } catch (error) {
+        // Se falhar, usar estoque do produto base como fallback
+        console.warn('Não foi possível buscar estoque da variante, usando estoque do produto base')
+        return { stock: { current_stock: product.stock?.current_stock ?? 0 } }
+      }
+    },
+    enabled: !!product.id,
+    retry: 1,
+  })
+
+  // Calcular preço: usar price_override da variante se existir, senão usar base_price
+  const selectedVariant = findVariant(selectedSize || null, selectedColor || null)
+  const price = selectedVariant?.price_override
+    ? parseFloat(selectedVariant.price_override)
+    : parseFloat(product.base_price)
+
+  // Estoque atual: da variante se selecionada, senão do produto base
+  const currentStock = variantStockData?.stock?.current_stock ?? product.stock?.current_stock ?? 0
+  const isOutOfStock = currentStock === 0
+
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('pt-BR', {
       style: 'currency',
@@ -199,12 +255,28 @@ export default function ProductDetailPage() {
   }
 
   const handleAddToCart = () => {
-    if (isOutOfStock) {
-      return
+    // Validar se há variantes e se uma foi selecionada
+    const hasVariants = product.variants && product.variants.length > 0
+    if (hasVariants) {
+      // Se há variantes disponíveis, verificar se uma foi selecionada
+      if (availableSizes.length > 0 && !selectedSize) {
+        alert('Por favor, selecione um tamanho')
+        return
+      }
+      if (availableColors.length > 0 && !selectedColor) {
+        alert('Por favor, selecione uma cor')
+        return
+      }
+      // Verificar se variante existe e está ativa
+      if (!selectedVariant || !selectedVariant.active) {
+        alert('Por favor, selecione uma variante válida')
+        return
+      }
     }
 
-    if (availableSizes.length > 0 && !selectedSize) {
-      alert('Por favor, selecione um tamanho')
+    // Validar estoque
+    if (isOutOfStock || currentStock < quantity) {
+      alert(`Estoque insuficiente. Disponível: ${currentStock} unidades`)
       return
     }
 
@@ -219,22 +291,24 @@ export default function ProductDetailPage() {
       description: product.description || '',
     }
 
+    // Passar variant_id correto para o carrinho
     addItem(
       productToAdd, 
       selectedSize || '', 
       selectedColor || '', 
-      quantity
+      quantity,
+      selectedVariantId || null
     )
   }
 
   const handlePreviousImage = () => {
-    setSelectedImageIndex((prev) => 
+    setSelectedImageIndex((prev) =>
       prev === 0 ? allImages.length - 1 : prev - 1
     )
   }
 
   const handleNextImage = () => {
-    setSelectedImageIndex((prev) => 
+    setSelectedImageIndex((prev) =>
       prev === allImages.length - 1 ? 0 : prev + 1
     )
   }
@@ -390,6 +464,15 @@ export default function ProductDetailPage() {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Estoque da variante */}
+            {selectedVariantId && (
+              <div>
+                <p className="text-sm text-muted-foreground">
+                  Estoque: <span className="font-semibold text-foreground">{currentStock} unidades</span>
+                </p>
               </div>
             )}
 
