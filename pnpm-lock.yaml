@@ -211,6 +211,9 @@ importers:
 
   apps/pdv:
     dependencies:
+      '@radix-ui/react-dialog':
+        specifier: ^1.1.15
+        version: 1.1.15(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       '@tanstack/react-query':
         specifier: ^5.0.0
         version: 5.90.10(react@18.3.1)
@@ -223,6 +226,9 @@ importers:
       axios:
         specifier: ^1.7.0
         version: 1.13.2
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       lucide-react:
         specifier: ^0.454.0
         version: 0.454.0(react@18.3.1)
@@ -235,6 +241,12 @@ importers:
       react-dom:
         specifier: 18.3.1
         version: 18.3.1(react@18.3.1)
+      react-hot-toast:
+        specifier: ^2.6.0
+        version: 2.6.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      tailwind-merge:
+        specifier: ^2.6.0
+        version: 2.6.0
       zustand:
         specifier: ^5.0.0
         version: 5.0.8(@types/react@18.3.27)(immer@9.0.21)(react@18.3.1)
@@ -375,6 +387,12 @@ importers:
 
   packages/db:
     dependencies:
+      '@radix-ui/react-dialog':
+        specifier: ^1.1.15
+        version: 1.1.15(@types/react-dom@18.3.7(@types/react@18.3.27))(@types/react@18.3.27)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      clsx:
+        specifier: ^2.1.1
+        version: 2.1.1
       drizzle-orm:
         specifier: ^0.32.0
         version: 0.32.2(@types/react@18.3.27)(pg@8.16.3)(postgres@3.4.7)(react@18.3.1)
@@ -384,6 +402,12 @@ importers:
       postgres:
         specifier: ^3.4.4
         version: 3.4.7
+      react-hot-toast:
+        specifier: ^2.6.0
+        version: 2.6.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      tailwind-merge:
+        specifier: ^2.5.0
+        version: 2.6.0
     devDependencies:
       dotenv:
         specifier: ^16.4.0

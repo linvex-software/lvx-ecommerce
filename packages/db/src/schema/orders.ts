@@ -121,16 +121,25 @@ export const physicalSalesCarts = pgTable(
     seller_user_id: uuid('seller_user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    customer_id: uuid('customer_id').references(() => customers.id, {
+      onDelete: 'set null'
+    }),
     status: text('status').notNull().default('active'), // active, abandoned, converted
     items_json: text('items_json').notNull().$type<Array<{
       product_id: string
       variant_id?: string | null
       quantity: number
       price: number
+      discount?: number // desconto aplicado no item (em centavos)
     }>>(),
     total: numeric('total', { precision: 12, scale: 2 }).notNull().default('0'),
+    discount_amount: numeric('discount_amount', { precision: 12, scale: 2 })
+      .notNull()
+      .default('0'), // desconto total do pedido (em centavos)
     coupon_code: text('coupon_code'),
     shipping_address: text('shipping_address'),
+    origin: text('origin'), // origem da venda: 'pdv', 'online', 'whatsapp', etc.
+    commission_rate: numeric('commission_rate', { precision: 5, scale: 2 }), // porcentagem de comissão
     last_activity_at: timestamp('last_activity_at', { withTimezone: true })
       .defaultNow()
       .notNull(),
@@ -149,6 +158,10 @@ export const physicalSalesCarts = pgTable(
     storeStatusIdx: index('physical_sales_carts_store_status_idx').on(
       table.store_id,
       table.status
+    ),
+    storeCustomerIdx: index('physical_sales_carts_store_customer_idx').on(
+      table.store_id,
+      table.customer_id
     )
   })
 )

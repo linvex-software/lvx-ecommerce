@@ -85,17 +85,22 @@ export interface PhysicalSalesCartItem {
   variant_id?: string | null
   quantity: number
   price: number // em centavos
+  discount?: number // desconto aplicado no item (em centavos)
 }
 
 export interface PhysicalSalesCart {
   id: string
   store_id: string
   seller_user_id: string
+  customer_id: string | null
   status: PhysicalSalesCartStatus
   items: PhysicalSalesCartItem[]
   total: string // em centavos
+  discount_amount: string // desconto total do pedido (em centavos)
   coupon_code: string | null
   shipping_address: string | null
+  origin: string | null // origem da venda: 'pdv', 'online', 'whatsapp', etc.
+  commission_rate: string | null // porcentagem de comissão
   last_activity_at: Date
   created_at: Date
   updated_at: Date
@@ -103,14 +108,22 @@ export interface PhysicalSalesCart {
 
 export interface CreatePhysicalSalesCartInput {
   items: PhysicalSalesCartItem[]
+  customer_id?: string | null
   coupon_code?: string | null
   shipping_address?: string | null
+  origin?: string | null
+  commission_rate?: number | null
 }
 
 export interface UpdatePhysicalSalesCartInput {
   items?: PhysicalSalesCartItem[]
+  customer_id?: string | null
   coupon_code?: string | null
   shipping_address?: string | null
+  origin?: string | null
+  commission_rate?: number | null
+  discount_amount?: number | null // desconto total do pedido (em centavos)
+  seller_user_id?: string | null // permitir atualizar vendedor (apenas admin/operador)
 }
 
 // Comissão

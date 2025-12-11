@@ -32,6 +32,10 @@ export class MercadoPagoGateway implements PaymentGateway {
         transaction_amount: input.amount / 100, // Converter centavos para reais
         description: input.description || `Pedido ${input.orderId}`,
         payment_method_id: input.paymentMethodId || input.paymentMethod,
+        external_reference: input.orderId, // Incluir order_id para webhook
+        metadata: {
+          order_id: input.orderId
+        },
         payer: {
           email: input.payer.email
         }
@@ -83,7 +87,7 @@ export class MercadoPagoGateway implements PaymentGateway {
     } catch (error: any) {
       // Log detalhado do erro para debug
       console.error('[MercadoPagoGateway] Erro ao criar pagamento:', error)
-      
+
       // Verificar erros específicos do Mercado Pago
       if (error?.error === 'unauthorized' || error?.status === 401) {
         const message = error?.message || error?.cause?.[0]?.description || 'Erro de autenticação'
@@ -96,7 +100,7 @@ export class MercadoPagoGateway implements PaymentGateway {
         }
         throw new Error(`Erro de autenticação no Mercado Pago: ${message}. Verifique se suas credenciais estão corretas.`)
       }
-      
+
       if (error instanceof Error) {
         // Verificar se é timeout
         if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
@@ -108,12 +112,12 @@ export class MercadoPagoGateway implements PaymentGateway {
         }
         throw new Error(`Erro ao criar pagamento no Mercado Pago: ${error.message}`)
       }
-      
+
       // Verificar se é erro do Mercado Pago com estrutura específica
       if (error?.cause?.[0]?.description) {
         throw new Error(`Erro do Mercado Pago: ${error.cause[0].description}`)
       }
-      
+
       throw new Error('Erro desconhecido ao criar pagamento no Mercado Pago')
     }
   }
@@ -145,7 +149,7 @@ export class MercadoPagoGateway implements PaymentGateway {
 
   private mapPaymentToResult(payment: any): PaymentResult {
     const status = this.mapStatus(payment.status || '')
-    
+
     const result: PaymentResult = {
       id: String(payment.id || ''),
       status,

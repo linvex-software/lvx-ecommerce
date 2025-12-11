@@ -20,5 +20,29 @@ export async function registerAdminCustomerRoutes(app: FastifyInstance): Promise
       await customerController.list(request, reply)
     }
   )
+
+  // GET /admin/customers/search - Buscar clientes
+  app.get<{ Querystring: { q?: string } }>(
+    '/admin/customers/search',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request, reply) => {
+      await customerController.search(request, reply)
+    }
+  )
+
+  // POST /admin/customers/quick - Criar cliente rápido (sem senha, para PDV)
+  app.post(
+    '/admin/customers/quick',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request, reply) => {
+      await customerController.createQuick(request, reply)
+    }
+  )
 }
 
