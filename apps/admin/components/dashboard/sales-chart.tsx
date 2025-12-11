@@ -40,15 +40,15 @@ const currencyFormatter = new Intl.NumberFormat('pt-BR', {
   maximumFractionDigits: 0
 })
 
-export function SalesChart({ 
-  data, 
-  isLoading = false, 
-  period = 7, 
+export function SalesChart({
+  data,
+  isLoading = false,
+  period = 7,
   onPeriodChange,
   onCustomDatesChange,
   customStartDate,
   customEndDate,
-  totalRevenue = 0 
+  totalRevenue = 0
 }: SalesChartProps) {
   const [isCustomDialogOpen, setIsCustomDialogOpen] = useState(false)
   const [localStartDate, setLocalStartDate] = useState(
@@ -58,13 +58,13 @@ export function SalesChart({
     customEndDate ? customEndDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]
   )
 
-  const average = data.length > 0 
-    ? data.reduce((acc, point) => acc + point.amount, 0) / data.length 
+  const average = data.length > 0
+    ? data.reduce((acc, point) => acc + point.amount, 0) / data.length
     : 0
-  
+
   let periodLabel = 'Semanal'
   let periodDays = '7 dias'
-  
+
   if (period === 30) {
     periodLabel = 'Mensal'
     periodDays = '30 dias'
@@ -78,43 +78,43 @@ export function SalesChart({
 
   const handleCustomDateApply = () => {
     if (!localStartDate || !localEndDate) return
-    
+
     const start = new Date(localStartDate)
     const end = new Date(localEndDate)
-    
+
     if (start > end) {
       alert('A data inicial não pode ser maior que a data final')
       return
     }
-    
+
     if (onCustomDatesChange) {
       onCustomDatesChange(start, end)
     }
-    
+
     if (onPeriodChange) {
       onPeriodChange('custom')
     }
-    
+
     setIsCustomDialogOpen(false)
   }
 
   return (
-    <Card className="w-full rounded-2xl border-gray-100 shadow-sm">
+    <Card className="w-full dark:bg-surface-2 dark:border-[#1D1D1D]">
       <CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex-1">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-text-tertiary">
               Receita {periodLabel.toLowerCase()}
             </p>
             {onPeriodChange && (
-              <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1">
+              <div className="flex items-center gap-1 rounded-lg border border-border bg-background p-1 dark:bg-[#111111] dark:border-[#2A2A2A]">
                 <button
                   onClick={() => onPeriodChange(7)}
                   className={cn(
                     'px-3 py-1 text-xs font-medium rounded-md transition-colors',
                     period === 7
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-primary text-white'
+                      : 'text-text-secondary hover:bg-hover dark:hover:bg-[#1A1A1A]'
                   )}
                 >
                   7 dias
@@ -124,8 +124,8 @@ export function SalesChart({
                   className={cn(
                     'px-3 py-1 text-xs font-medium rounded-md transition-colors',
                     period === 30
-                      ? 'bg-gray-900 text-white'
-                      : 'text-gray-600 hover:bg-gray-50'
+                      ? 'bg-primary text-white'
+                      : 'text-text-secondary hover:bg-hover dark:hover:bg-[#1A1A1A]'
                   )}
                 >
                   30 dias
@@ -136,8 +136,8 @@ export function SalesChart({
                       className={cn(
                         'px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-1',
                         period === 'custom'
-                          ? 'bg-gray-900 text-white'
-                          : 'text-gray-600 hover:bg-gray-50'
+                          ? 'bg-primary text-white'
+                          : 'text-text-secondary hover:bg-hover dark:hover:bg-[#1A1A1A]'
                       )}
                       onClick={(e) => {
                         e.stopPropagation()
@@ -148,29 +148,29 @@ export function SalesChart({
                       Custom
                     </button>
                   </DialogTrigger>
-                  <DialogContent>
+                  <DialogContent className="dark:bg-surface-2 dark:border-[#1D1D1D]">
                     <DialogHeader>
-                      <DialogTitle>Selecionar período customizado</DialogTitle>
+                      <DialogTitle className="dark:text-white">Selecionar período customizado</DialogTitle>
                     </DialogHeader>
                     <div className="space-y-4 py-4">
                       <div>
-                        <Label htmlFor="start-date">Data inicial</Label>
+                        <Label htmlFor="start-date" className="dark:text-[#CCCCCC]">Data inicial</Label>
                         <Input
                           id="start-date"
                           type="date"
                           value={localStartDate}
                           onChange={(e) => setLocalStartDate(e.target.value)}
-                          className="mt-1"
+                          className="mt-1 dark:bg-[#111111] dark:border-[#2A2A2A]"
                         />
                       </div>
                       <div>
-                        <Label htmlFor="end-date">Data final</Label>
+                        <Label htmlFor="end-date" className="dark:text-[#CCCCCC]">Data final</Label>
                         <Input
                           id="end-date"
                           type="date"
                           value={localEndDate}
                           onChange={(e) => setLocalEndDate(e.target.value)}
-                          className="mt-1"
+                          className="mt-1 dark:bg-[#111111] dark:border-[#2A2A2A]"
                           max={new Date().toISOString().split('T')[0]}
                         />
                       </div>
@@ -194,42 +194,44 @@ export function SalesChart({
               </div>
             )}
           </div>
-          <CardTitle className="text-3xl font-light tracking-tight text-gray-900">
+          <CardTitle className="text-3xl font-semibold tracking-tight text-text-primary dark:text-white">
             {isLoading ? (
-              <span className="inline-flex h-8 w-32 animate-pulse rounded bg-gray-200/80" />
+              <span className="inline-flex h-8 w-32 animate-pulse rounded bg-gray-200/80 dark:bg-[#111111]" />
             ) : (
               currencyFormatter.format(totalRevenue)
             )}
           </CardTitle>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-text-secondary dark:text-[#B5B5B5]">
             Últimos {periodDays} • {isLoading ? '—' : currencyFormatter.format(average)} média
           </p>
         </div>
       </CardHeader>
       <CardContent className="mt-2 pb-1 px-6 h-[240px]">
         {isLoading ? (
-          <div className="h-full w-full animate-pulse rounded-xl bg-gray-100/80" />
+          <div className="h-full w-full animate-pulse rounded-xl bg-gray-100/80 dark:bg-[#111111]" />
         ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart data={data} margin={{ top: 10, right: 0, left: -20, bottom: -40 }}>
               <defs>
                 <linearGradient id="chartGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="rgba(15,23,42,0.4)" stopOpacity={1} />
-                  <stop offset="100%" stopColor="rgba(15,23,42,0)" stopOpacity={0} />
+                  <stop offset="0%" stopColor="rgba(59,130,246,0.4)" stopOpacity={1} />
+                  <stop offset="100%" stopColor="rgba(59,130,246,0)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.25)" />
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.25)" className="dark:stroke-[#2A2A2A]" />
               <XAxis
                 dataKey="date"
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 12, fill: '#94a3b8' }}
+                className="dark:[&_text]:fill-[#B5B5B5]"
               />
               <YAxis
                 tickFormatter={(value) => currencyFormatter.format(Number(value))}
                 tickLine={false}
                 axisLine={false}
                 tick={{ fontSize: 12, fill: '#94a3b8' }}
+                className="dark:[&_text]:fill-[#B5B5B5]"
               />
               <Tooltip
                 cursor={{ stroke: 'rgba(148,163,184,0.4)' }}
@@ -238,13 +240,15 @@ export function SalesChart({
                 contentStyle={{
                   borderRadius: '16px',
                   borderColor: '#e2e8f0',
-                  boxShadow: '0 18px 30px rgba(15, 23, 42, 0.12)'
+                  boxShadow: '0 18px 30px rgba(15, 23, 42, 0.12)',
+                  backgroundColor: '#ffffff'
                 }}
+                className="dark:[&_.recharts-tooltip-label]:text-white dark:[&_.recharts-tooltip-item]:text-white"
               />
               <Area
                 type="monotone"
                 dataKey="amount"
-                stroke="#0f172a"
+                stroke="#3B82F6"
                 strokeWidth={2}
                 fill="url(#chartGradient)"
               />

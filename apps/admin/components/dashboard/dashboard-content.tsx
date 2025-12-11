@@ -30,7 +30,7 @@ export function DashboardContent() {
     }
     return new Date()
   }, [period, customEndDate])
-  
+
   const startDate = useMemo(() => {
     if (period === 'custom' && customStartDate) {
       return customStartDate
@@ -69,7 +69,7 @@ export function DashboardContent() {
 
     while (currentDate <= finalDate) {
       const dateStr = currentDate.toISOString().split('T')[0]
-      
+
       let formattedDate: string
       if (period === 7) {
         formattedDate = currentDate.toLocaleDateString('pt-BR', { weekday: 'short' }).replace('.', '')
@@ -105,7 +105,7 @@ export function DashboardContent() {
       {
         id: 'revenue',
         label: `Receita ${
-          period === 7 ? 'dos últimos 7 dias' 
+          period === 7 ? 'dos últimos 7 dias'
           : period === 30 ? 'dos últimos 30 dias'
           : 'do período selecionado'
         }`,
@@ -137,11 +137,11 @@ export function DashboardContent() {
     <div className="w-full space-y-8">
       {/* Header da página */}
       <div className="mb-8">
-        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-[0.35em] text-text-tertiary">
           {user?.storeId ? `Loja ${user.storeId.slice(0, 8)}...` : 'Loja'}
         </p>
-        <h1 className="mt-2 text-4xl font-light tracking-tight text-gray-900">Visão geral</h1>
-        <p className="mt-2 text-sm font-light text-gray-500">
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">Visão geral</h1>
+        <p className="mt-2 text-sm text-text-secondary">
           Bem-vindo ao painel administrativo
         </p>
       </div>
@@ -149,8 +149,8 @@ export function DashboardContent() {
       {/* Primeira linha: Gráfico + Status operacional */}
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2 space-y-6">
-          <SalesChart 
-            data={chartData} 
+          <SalesChart
+            data={chartData}
             isLoading={isLoadingSales}
             period={period}
             onPeriodChange={setPeriod}

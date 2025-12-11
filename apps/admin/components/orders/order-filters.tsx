@@ -67,15 +67,15 @@ export function OrderFilters({ filters, onFiltersChange }: OrderFiltersProps) {
     filters.end_date
 
   return (
-    <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm sm:flex-row sm:items-end">
+    <div className="flex flex-col gap-4 rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-[#1D1D1D] dark:bg-[#0A0A0A] sm:flex-row sm:items-end">
       <div className="sm:w-48">
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400 dark:text-[#CCCCCC]">
           Status
         </label>
         <select
           value={filters.status || 'all'}
           onChange={(e) => handleStatusChange(e.target.value)}
-          className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:placeholder:text-[#777777] dark:hover:border-[#3A3A3A] dark:ring-offset-black"
         >
           <option value="all">Todos</option>
           <option value="pending">Pendente</option>
@@ -87,13 +87,13 @@ export function OrderFilters({ filters, onFiltersChange }: OrderFiltersProps) {
       </div>
 
       <div className="sm:w-48">
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400 dark:text-[#CCCCCC]">
           Pagamento
         </label>
         <select
           value={filters.payment_status || 'all'}
           onChange={(e) => handlePaymentStatusChange(e.target.value)}
-          className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:placeholder:text-[#777777] dark:hover:border-[#3A3A3A] dark:ring-offset-black"
         >
           <option value="all">Todos</option>
           <option value="pending">Pendente</option>
@@ -104,14 +104,14 @@ export function OrderFilters({ filters, onFiltersChange }: OrderFiltersProps) {
       </div>
 
       <div className="sm:w-56">
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400 dark:text-[#CCCCCC]">
           Cliente
         </label>
         <select
           value={filters.customer_id || ''}
           onChange={(e) => handleCustomerChange(e.target.value)}
           disabled={customersLoading}
-          className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:placeholder:text-[#777777] dark:hover:border-[#3A3A3A] dark:ring-offset-black"
         >
           <option value="">Todos os clientes</option>
           {customers?.map((customer) => (
@@ -123,32 +123,32 @@ export function OrderFilters({ filters, onFiltersChange }: OrderFiltersProps) {
       </div>
 
       <div className="sm:w-44">
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400 dark:text-[#CCCCCC]">
           Data Início
         </label>
         <div className="relative">
-          <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-[#777777]" />
           <Input
             type="date"
             value={filters.start_date || ''}
             onChange={(e) => handleStartDateChange(e.target.value)}
-            className="pl-10"
+            className="pl-10 dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:hover:border-[#3A3A3A] dark:placeholder:text-[#777777]"
           />
         </div>
       </div>
 
       <div className="sm:w-44">
-        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+        <label className="mb-2 block text-xs font-semibold uppercase tracking-[0.35em] text-gray-400 dark:text-[#CCCCCC]">
           Data Fim
         </label>
         <div className="relative">
-          <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Calendar className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400 dark:text-[#777777]" />
           <Input
             type="date"
             value={filters.end_date || ''}
             onChange={(e) => handleEndDateChange(e.target.value)}
             min={filters.start_date}
-            className="pl-10"
+            className="pl-10 dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:hover:border-[#3A3A3A] dark:placeholder:text-[#777777]"
           />
         </div>
       </div>

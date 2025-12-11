@@ -13,43 +13,116 @@
 }
 
 @layer base {
+  /* ============================================
+     DESIGN SYSTEM - LIGHT MODE (DEFAULT)
+     ============================================ */
   :root {
-    --color-primary: 0 0 0; /* Preto como padrão */
-    
-    /* Colorful Bento Grid Theme */
-    --color-hightlight-light: #DADBF8;
-    --color-accent-light: #D9EAE3;
-    --color-primary-light: #FFCFE1;
-    --color-secondary-light: #FFFCE5;
-    --color-primary: #FF0F67;
-    --color-primary-content: #fff;
-    --color-secondary: #FFF07C;
-    --color-secondary-content: #0A0A0A;
-    --color-accent: #439775;
-    --color-accent-content: #0A0A0A;
-    --color-neutral: #222222;
-    --color-neutral-content: #FFFFFF;
-    --color-base-100: #f0f0f0;
-    --color-base-200: #ffffff;
-    --color-base-300: #F2F2F2;
-    --color-base-content: #0A0A0A;
-    --color-info: #3ABFF8;
-    --color-success: #36D399;
-    --color-warning: #FBBD23;
-    --color-error: #F87272;
-    --color-highlight: #454ADE;
-    --color-muted: #777777;
-    
-    --font-display: 'Outfit', sans-serif;
-    --font-sans: 'Inter Tight', sans-serif;
-    
-    /* Store Theme Variables - Will be overridden by theme provider */
-    --store-primary-color: #000000;
-    --store-secondary-color: #6366F1;
-    --store-text-color: #000000;
-    --store-icon-color: #000000;
+    /* Backgrounds */
+    --background: #FFFFFF;
+    --surface: #FAFAFA;
+    --surface-2: #F5F5F5;
+
+    /* Borders */
+    --border: #E5E5E5;
+    --border-hover: #D0D0D0;
+
+    /* Text */
+    --text-primary: #111111;
+    --text-secondary: #555555;
+    --text-tertiary: #999999;
+
+    /* Inputs */
+    --input-background: #FFFFFF;
+    --input-border: #D0D0D0;
+    --input-border-focus: #3B82F6;
+
+    /* Hover */
+    --hover: rgba(0, 0, 0, 0.04);
+    --hover-strong: rgba(0, 0, 0, 0.08);
+
+    /* Brand Colors */
+    --primary: #3B82F6;
+    --primary-hover: #2563EB;
+    --primary-light: #DBEAFE;
+    --primary-dark: #1E40AF;
+
+    /* Support Colors */
+    --error: #EF4444;
+    --error-hover: #DC2626;
+    --error-light: #FEE2E2;
+
+    --warning: #F59E0B;
+    --warning-hover: #D97706;
+    --warning-light: #FEF3C7;
+
+    --success: #10B981;
+    --success-hover: #059669;
+    --success-light: #D1FAE5;
+
+    /* Legacy compatibility */
+    --foreground: #111111;
+    --muted: #FAFAFA;
+    --muted-foreground: #555555;
+    --card: #FAFAFA;
+    --card-foreground: #111111;
+    --popover: #FFFFFF;
+    --popover-foreground: #111111;
+    --accent: #FAFAFA;
+    --accent-foreground: #111111;
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+    --secondary: #FAFAFA;
+    --secondary-foreground: #111111;
+    --ring: #3B82F6;
   }
-  
+
+  /* ============================================
+     DESIGN SYSTEM - DARK MODE (TRUE BLACK)
+     Hierarquia de profundidade com 3 níveis
+     ============================================ */
+  .dark {
+    /* Backgrounds - Hierarquia de profundidade */
+    --background: #000000;              /* Background global */
+    --surface: #050505;                 /* Área principal / layout */
+    --surface-2: #0E0E0E;               /* Cards e blocos de conteúdo */
+    --surface-3: #141414;                /* Elementos em destaque (chips, badges, alertas) */
+
+    /* Borders */
+    --border: #2A2A2A;                   /* Borda padrão */
+    --border-hover: #3A3A3A;             /* Borda hover */
+
+    /* Text - Contraste otimizado */
+    --text-primary: #FFFFFF;             /* Texto principal */
+    --text-secondary: #C7C7C7;           /* Texto secundário */
+    --text-tertiary: #7A7A7A;            /* Texto desabilitado/placeholder */
+
+    /* Inputs */
+    --input-background: #101010;         /* Background de inputs */
+    --input-border: #2A2A2A;             /* Borda padrão */
+    --input-border-hover: #3A3A3A;        /* Borda hover */
+    --input-border-focus: #3B82F6;       /* Borda focus (primária) */
+
+    /* Hover */
+    --hover: rgba(255, 255, 255, 0.05);
+    --hover-strong: rgba(255, 255, 255, 0.1);
+
+    /* Legacy compatibility */
+    --foreground: #FFFFFF;
+    --muted: #050505;
+    --muted-foreground: #C7C7C7;
+    --card: #0E0E0E;
+    --card-foreground: #FFFFFF;
+    --popover: #0E0E0E;
+    --popover-foreground: #FFFFFF;
+    --accent: #141414;
+    --accent-foreground: #FFFFFF;
+    --destructive: #EF4444;
+    --destructive-foreground: #FFFFFF;
+    --secondary: #111111;
+    --secondary-foreground: #FFFFFF;
+    --ring: #3B82F6;
+  }
+
   /* Aplicar cor de texto globalmente nos componentes store */
   [class*="store-"] h1,
   [class*="store-"] h2,
@@ -65,28 +138,17 @@
 
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu',
-    'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'kern' 1;
   text-rendering: optimizeLegibility;
+  background-color: var(--background);
+  color: var(--text-primary);
+  transition: background-color 200ms ease, color 200ms ease;
 }
 
-/* ============================================
-   ISOLAMENTO DO FRAME DO EDITOR
-   ============================================ */
-/* Garantir que o frame do editor use APENAS o CSS do template compartilhado */
-/* Bloquear qualquer interferência do CSS do admin */
-
-[data-craftjs-frame] {
-  /* Isolar completamente do CSS do admin */
-  isolation: isolate !important;
-  contain: style layout paint !important;
-  /* O CSS do template será aplicado via TemplateStyles com prioridade máxima */
-}
-
-/* Scrollbar premium */
+/* Scrollbar - Light Mode */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -97,25 +159,34 @@ body {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2);
+  background: var(--border);
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--border-hover);
+}
+
+/* Scrollbar - Dark Mode */
+.dark ::-webkit-scrollbar-thumb {
+  background: var(--border);
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
 }
 
 /* ============================================
-   ISOLAMENTO DO PREVIEW WRAPPER
+   ISOLAMENTO DO FRAME DO EDITOR
    ============================================ */
-/* Garantir que o preview-wrapper use APENAS o CSS do template compartilhado */
-/* Bloquear qualquer interferência do CSS do admin */
-
-.preview-wrapper {
-  /* Isolar completamente do CSS do admin */
+[data-craftjs-frame] {
   isolation: isolate !important;
   contain: style layout paint !important;
-  /* O CSS do template será aplicado via TemplateStyles com prioridade máxima */
+}
+
+.preview-wrapper {
+  isolation: isolate !important;
+  contain: style layout paint !important;
 }
 
 /* ============================================
@@ -127,14 +198,12 @@ body {
     -webkit-print-color-adjust: exact;
   }
 
-  /* Hide navigation, sidebar, and action buttons */
   nav,
   aside,
   .print\:hidden {
     display: none !important;
   }
 
-  /* Optimize layout for print */
   .print\:shadow-none {
     box-shadow: none !important;
   }
@@ -143,7 +212,6 @@ body {
     justify-content: flex-start !important;
   }
 
-  /* Page breaks */
   .print\:break-after-page {
     page-break-after: always;
   }
@@ -152,14 +220,11 @@ body {
     page-break-inside: avoid;
   }
 
-  /* Card borders for print */
   .rounded-2xl {
     border: 1px solid #e5e7eb;
   }
 
-  /* Ensure proper spacing */
   @page {
     margin: 1cm;
   }
 }
-

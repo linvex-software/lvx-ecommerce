@@ -32,23 +32,23 @@ export function OperationsCard({
   ]
 
   return (
-    <Card className="h-full rounded-2xl border-gray-100 shadow-sm">
+    <Card className="h-full dark:bg-surface-2 dark:border-[#1D1D1D]">
       <CardHeader>
-        <CardTitle className="text-base font-semibold text-gray-900">
+        <CardTitle className="text-base font-semibold text-text-primary dark:text-white">
           Status operacional
         </CardTitle>
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-text-secondary dark:text-[#B5B5B5]">
           Controle diário dos pedidos e alertas críticos
         </p>
       </CardHeader>
       <CardContent className="space-y-4">
         {items.map((item) => (
-          <div key={item.label} className="rounded-xl border border-gray-100 bg-gray-50/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+          <div key={item.label} className="rounded-xl border border-border bg-surface p-4 dark:bg-[#111111] dark:border-[#1D1D1D]">
+            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-text-tertiary">
               {item.label}
             </p>
-            <p className="mt-2 text-2xl font-semibold text-gray-900">{item.value}</p>
-            <p className="text-sm text-gray-500">{item.helper}</p>
+            <p className="mt-2 text-2xl font-semibold text-text-primary dark:text-white">{item.value}</p>
+            <p className="text-sm text-text-secondary dark:text-[#B5B5B5]">{item.helper}</p>
           </div>
         ))}
       </CardContent>

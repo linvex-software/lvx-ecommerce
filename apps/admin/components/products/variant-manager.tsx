@@ -52,11 +52,11 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
   }
 
   return (
-    <Card className="rounded-2xl border-gray-100 shadow-sm">
+    <Card className="dark:bg-surface-2">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl font-light">Variantes</CardTitle>
+            <CardTitle className="text-xl font-semibold">Variantes</CardTitle>
             <CardDescription>Tamanho, cor e outras variações do produto</CardDescription>
           </div>
           <Button type="button" variant="outline" size="sm" onClick={addVariant} className="gap-2">
@@ -67,9 +67,9 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
       </CardHeader>
       <CardContent>
         {variants.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-            <p className="text-sm text-gray-500">Nenhuma variante adicionada</p>
-            <p className="mt-1 text-xs text-gray-400">
+          <div className="rounded-lg border border-dashed border-border p-8 text-center dark:border-[#2A2A2A]">
+            <p className="text-sm text-text-secondary">Nenhuma variante adicionada</p>
+            <p className="mt-1 text-xs text-text-tertiary">
               Adicione variantes para produtos com diferentes tamanhos ou cores
             </p>
           </div>
@@ -78,10 +78,10 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
             {variants.map((variant, index) => (
               <div
                 key={index}
-                className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+                className="rounded-lg border border-border bg-surface p-4 dark:bg-surface-2 dark:border-[#2A2A2A]"
               >
                 <div className="mb-3 flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">
+                  <span className="text-sm font-medium text-text-primary">
                     Variante #{index + 1}
                   </span>
                   <Button
@@ -154,7 +154,7 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
                         )
                       }
                     />
-                    <p className="text-xs text-gray-500">
+                    <p className="text-xs text-text-secondary">
                       Valor adicional ao preço base (deixe vazio para usar preço base)
                     </p>
                   </div>
@@ -166,9 +166,9 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
                     id={`variant-active-${index}`}
                     checked={variant.active !== false}
                     onChange={(e) => updateVariant(index, 'active', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                    className="h-4 w-4 rounded border-input-border text-primary focus:ring-primary dark:border-[#2A2A2A]"
                   />
-                  <Label htmlFor={`variant-active-${index}`} className="cursor-pointer text-sm font-normal">
+                  <Label htmlFor={`variant-active-${index}`} className="cursor-pointer text-sm font-normal text-text-primary">
                     Variante ativa
                   </Label>
                 </div>

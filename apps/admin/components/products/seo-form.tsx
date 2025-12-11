@@ -26,65 +26,77 @@ export function SEOForm({ seo, onChange }: SEOFormProps) {
   }
 
   return (
-    <Card className="rounded-2xl border-gray-100 shadow-sm">
+    <Card className="dark:bg-surface-2">
       <CardHeader>
-        <CardTitle className="text-xl font-light">SEO</CardTitle>
-        <CardDescription>Otimização para mecanismos de busca</CardDescription>
+        <CardTitle className="text-xl font-semibold dark:text-white">SEO (opcional)</CardTitle>
+        <CardDescription className="dark:text-[#B5B5B5]">
+          Ajuda seu produto a aparecer melhor no Google e nas redes sociais.
+          <br />
+          <span className="text-xs">Se você não souber o que preencher aqui, pode deixar em branco.</span>
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="meta_title">Meta Title</Label>
+          <Label htmlFor="meta_title" className="dark:text-[#CCCCCC]">Título para o Google</Label>
           <Input
             id="meta_title"
-            placeholder="Título para SEO (máx. 60 caracteres)"
+            placeholder="Ex: Camiseta básica preta masculina | Nome da Loja"
             value={seo.meta_title || ''}
             onChange={(e) => updateField('meta_title', e.target.value)}
             maxLength={60}
+            className="dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:placeholder:text-[#777777] dark:hover:border-[#3A3A3A]"
           />
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-text-secondary dark:text-[#B5B5B5]">
+            Este é o título que aparece nos resultados do Google. Tente ser claro e direto (até cerca de 60 caracteres).
+            <br />
             {seo.meta_title?.length || 0}/60 caracteres
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="meta_description">Meta Description</Label>
+          <Label htmlFor="meta_description" className="dark:text-[#CCCCCC]">Descrição para o Google</Label>
           <Textarea
             id="meta_description"
-            placeholder="Descrição para SEO (máx. 160 caracteres)"
+            placeholder="Ex: Camiseta básica preta, confortável e versátil para o dia a dia."
             value={seo.meta_description || ''}
             onChange={(e) => updateField('meta_description', e.target.value)}
             maxLength={160}
             rows={3}
+            className="dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:placeholder:text-[#777777] dark:hover:border-[#3A3A3A]"
           />
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-text-secondary dark:text-[#B5B5B5]">
+            Texto curto que aparece abaixo do título no Google. Explique o produto de forma simples (até cerca de 160 caracteres).
+            <br />
             {seo.meta_description?.length || 0}/160 caracteres
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="meta_keywords">Meta Keywords</Label>
+          <Label htmlFor="meta_keywords" className="dark:text-[#CCCCCC]">Palavras-chave (opcional)</Label>
           <Input
             id="meta_keywords"
-            placeholder="palavra1, palavra2, palavra3"
+            placeholder="Ex: camiseta preta, camiseta básica, roupa masculina"
             value={seo.meta_keywords || ''}
             onChange={(e) => updateField('meta_keywords', e.target.value)}
+            className="dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:placeholder:text-[#777777] dark:hover:border-[#3A3A3A]"
           />
-          <p className="text-xs text-gray-500">
-            Separe as palavras-chave por vírgula
+          <p className="text-xs text-text-secondary dark:text-[#B5B5B5]">
+            Use algumas palavras que resumem o produto, separadas por vírgula. Não é obrigatório.
           </p>
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="open_graph_image">Open Graph Image URL</Label>
+          <Label htmlFor="open_graph_image" className="dark:text-[#CCCCCC]">Imagem para compartilhamento (link)</Label>
           <Input
             id="open_graph_image"
             type="url"
-            placeholder="https://example.com/og-image.jpg"
+            placeholder="https://example.com/imagem-do-produto.jpg"
             value={seo.open_graph_image || ''}
             onChange={(e) => updateField('open_graph_image', e.target.value)}
+            className="dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:placeholder:text-[#777777] dark:hover:border-[#3A3A3A]"
           />
-          <p className="text-xs text-gray-500">
-            Imagem para compartilhamento em redes sociais (recomendado: 1200x630px)
+          <p className="text-xs text-text-secondary dark:text-[#B5B5B5]">
+            Usada quando alguém compartilha o produto em redes sociais (Facebook, Instagram, WhatsApp, etc.). Coloque o link de uma imagem do produto.
           </p>
         </div>
       </CardContent>
