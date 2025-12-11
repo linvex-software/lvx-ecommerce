@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { PhysicalSalesCartRepository } from '../../../infra/db/repositories/physical-sales-cart-repository'
+import { PhysicalSaleRepository } from '../../../infra/db/repositories/physical-sale-repository'
 import { OrderRepository } from '../../../infra/db/repositories/order-repository'
 import { ProductRepository } from '../../../infra/db/repositories/product-repository'
 import { StockMovementRepository } from '../../../infra/db/repositories/stock-movement-repository'
@@ -29,6 +30,7 @@ const finalizePdvSaleSchema = z.object({
 
 export interface FinalizePdvSaleDependencies {
   physicalSalesCartRepository: PhysicalSalesCartRepository
+  physicalSaleRepository: PhysicalSaleRepository
   orderRepository: OrderRepository
   productRepository: ProductRepository
   stockMovementRepository: StockMovementRepository
@@ -44,6 +46,7 @@ export async function finalizePdvSaleUseCase(
 ): Promise<OrderWithItems> {
   const {
     physicalSalesCartRepository,
+    physicalSaleRepository,
     orderRepository,
     productRepository,
     stockMovementRepository,
@@ -166,6 +169,48 @@ export async function finalizePdvSaleUseCase(
       coupon_id: couponId
     }
   )
+
+  // Criar registros em physical_sales (um por produto)
+  // Isso é importante para que as vendas apareçam na tela de "Vendas Físicas"
+  
+  // Calcular o desconto proporcional de cada item
+  const totalItemsValue = cart.items.reduce((sum, item) => {
+    return sum + (item.price * item.quantity)
+  }, 0)
+  
+  const cartDiscountAmount = parseFloat(cart.discount_amount) || 0
+  
+  for (const item of cart.items) {
+    const itemSubtotal = item.price * item.quantity
+    
+    // Desconto do item + proporcional do desconto do carrinho
+    let itemDiscount = item.discount ?? 0
+    
+    // Se há desconto no carrinho (cupom ou desconto manual), distribuir proporcionalmente
+    if (cartDiscountAmount > 0 && totalItemsValue > 0) {
+      const itemProportion = itemSubtotal / totalItemsValue
+      itemDiscount += Math.round(cartDiscountAmount * itemProportion)
+    }
+    
+    const itemFinalTotal = itemSubtotal - itemDiscount
+
+    await physicalSaleRepository.create(
+      {
+        product_id: item.product_id,
+        quantity: item.quantity,
+        subtotal: itemSubtotal,
+        discount_amount: itemDiscount,
+        total: itemFinalTotal,
+        coupon_id: couponId,
+        shipping_cost: 0,
+        commission_amount: null, // Pode ser calculado depois se houver regra
+        cart_id: cart.id,
+        status: 'completed'
+      },
+      storeId,
+      sellerUserId
+    )
+  }
 
   // Atualizar carrinho para "converted"
   await physicalSalesCartRepository.updateStatus(cart.id, storeId, 'converted')

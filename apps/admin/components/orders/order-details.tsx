@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Package, Download, ExternalLink, User, Printer, MapPin, Copy, Check } from 'lucide-react'
+import { ArrowLeft, Package, Download, ExternalLink, User, Printer, MapPin, Copy, Check, Ban } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@white-label/ui'
 import { Card } from '@/components/ui/card'
@@ -13,6 +13,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { useCustomers } from '@/lib/hooks/use-customers'
 import { useUpdateOrder, type Order, type OrderStatus, type PaymentStatus } from '@/lib/hooks/use-orders'
 
@@ -20,6 +29,13 @@ interface OrderDetailsProps {
   order: Order
   onDownloadLabel: () => void
   isDownloading?: boolean
+  onCancelOrder?: () => void
+  isCancelling?: boolean
+  showCancelDialog?: boolean
+  onCloseCancelDialog?: () => void
+  onConfirmCancel?: () => void
+  cancelReason?: string
+  onCancelReasonChange?: (value: string) => void
 }
 
 const currencyFormatter = new Intl.NumberFormat('pt-BR', {
@@ -84,7 +100,18 @@ const getPaymentStatusLabel = (status: Order['payment_status']) => {
   }
 }
 
-export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: OrderDetailsProps) {
+export function OrderDetails({ 
+  order, 
+  onDownloadLabel, 
+  isDownloading = false,
+  onCancelOrder,
+  isCancelling = false,
+  showCancelDialog = false,
+  onCloseCancelDialog,
+  onConfirmCancel,
+  cancelReason = '',
+  onCancelReasonChange
+}: OrderDetailsProps) {
   const { data: customers } = useCustomers()
   const updateOrderMutation = useUpdateOrder()
   const [copiedAddress, setCopiedAddress] = useState(false)
@@ -172,8 +199,62 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
             <Printer className="h-4 w-4" />
             Imprimir
           </Button>
+          {onCancelOrder && order.status !== 'cancelled' && order.status !== 'delivered' && (
+            <Button
+              variant="destructive"
+              onClick={onCancelOrder}
+              disabled={isCancelling}
+              className="gap-2"
+            >
+              <Ban className="h-4 w-4" />
+              {isCancelling ? 'Cancelando...' : 'Cancelar Pedido'}
+            </Button>
+          )}
         </div>
       </div>
+
+      {/* Dialog de Cancelamento */}
+      {showCancelDialog && onCloseCancelDialog && onConfirmCancel && onCancelReasonChange && (
+        <Dialog open={showCancelDialog} onOpenChange={onCloseCancelDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Cancelar Pedido</DialogTitle>
+              <DialogDescription>
+                Tem certeza que deseja cancelar este pedido? O estoque será automaticamente estornado.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">
+                  Motivo do cancelamento (opcional)
+                </label>
+                <Textarea
+                  placeholder="Ex: Cliente solicitou cancelamento, produto indisponível, erro no pedido..."
+                  value={cancelReason}
+                  onChange={(e) => onCancelReasonChange(e.target.value)}
+                  rows={4}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={onCloseCancelDialog}
+                disabled={isCancelling}
+              >
+                Voltar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={onConfirmCancel}
+                disabled={isCancelling}
+              >
+                {isCancelling ? 'Cancelando...' : 'Confirmar Cancelamento'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* Informações principais */}
