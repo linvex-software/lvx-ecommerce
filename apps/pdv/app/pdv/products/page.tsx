@@ -26,8 +26,10 @@ export default function ProductsStepPage() {
   const { state, setCart, setCartId, setCurrentStep, createCartIfNotExists } = usePDV()
   const [searchQuery, setSearchQuery] = useState('')
   const [discountModalOpen, setDiscountModalOpen] = useState(false)
-  const [discountCode, setDiscountCode] = useState('')
-  const [discountAmount, setDiscountAmount] = useState<number | null>(null)
+  const [discountType, setDiscountType] = useState<'coupon' | 'manual'>('manual')
+  const [couponCode, setCouponCode] = useState('')
+  const [manualDiscountType, setManualDiscountType] = useState<'percentage' | 'fixed'>('fixed')
+  const [manualDiscountValue, setManualDiscountValue] = useState('')
 
   // Validar requisitos da etapa
   useEffect(() => {
@@ -179,20 +181,59 @@ export default function ProductsStepPage() {
     }
 
     try {
-      const updatedCart = await applyDiscount.mutateAsync({
-        cart_id: state.cartId,
-        coupon_code: discountCode || null,
-        discount_amount: discountAmount ?? undefined
-      })
+      let requestData: {
+        cart_id: string
+        coupon_code?: string | null
+        discount_amount?: number
+      } = {
+        cart_id: state.cartId
+      }
+
+      if (discountType === 'coupon') {
+        // Aplicar cupom
+        if (!couponCode.trim()) {
+          toast.error('Digite um código de cupom')
+          return
+        }
+        requestData.coupon_code = couponCode.trim().toUpperCase()
+      } else {
+        // Desconto manual
+        if (!manualDiscountValue.trim()) {
+          toast.error('Digite um valor de desconto')
+          return
+        }
+
+        const discountValue = parseFloat(manualDiscountValue.replace(',', '.'))
+        if (isNaN(discountValue) || discountValue <= 0) {
+          toast.error('Valor de desconto inválido')
+          return
+        }
+
+        if (manualDiscountType === 'percentage') {
+          // Calcular desconto percentual
+          if (discountValue > 100) {
+            toast.error('Percentual não pode ser maior que 100%')
+            return
+          }
+          const cartSubtotal = subtotal
+          const discountAmount = Math.round((cartSubtotal * discountValue) / 100)
+          requestData.discount_amount = discountAmount
+        } else {
+          // Desconto fixo em reais -> converter para centavos
+          requestData.discount_amount = Math.round(discountValue * 100)
+        }
+      }
+
+      const updatedCart = await applyDiscount.mutateAsync(requestData)
 
       // Atualizar contexto
       setCart(updatedCart)
       setCartId(updatedCart.id)
 
-      toast.success('Desconto aplicado')
+      toast.success('Desconto aplicado com sucesso!')
       setDiscountModalOpen(false)
-      setDiscountCode('')
-      setDiscountAmount(null)
+      setCouponCode('')
+      setManualDiscountValue('')
     } catch (error: any) {
       console.error('Erro ao aplicar desconto:', error.response?.data || error)
       toast.error(error.response?.data?.error || 'Erro ao aplicar desconto')
@@ -466,32 +507,107 @@ export default function ProductsStepPage() {
 
       {/* Modal de Desconto */}
       <Dialog open={discountModalOpen} onOpenChange={setDiscountModalOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Aplicar Desconto</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Cupom ou valor (R$)
-              </label>
-              <Input
-                type="text"
-                placeholder="Cupom ou valor (R$)"
-                value={discountCode}
-                onChange={(e) => {
-                  const value = e.target.value
-                  setDiscountCode(value)
-                  const numericValue = value.replace(/[^\d,.]/g, '').replace(',', '.')
-                  if (numericValue && !isNaN(parseFloat(numericValue))) {
-                    setDiscountAmount(Math.round(parseFloat(numericValue) * 100))
-                  } else {
-                    setDiscountAmount(null)
-                  }
-                }}
-              />
+            {/* Abas: Cupom ou Desconto Manual */}
+            <div className="flex gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-lg">
+              <button
+                onClick={() => setDiscountType('manual')}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                  discountType === 'manual'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                Desconto Manual
+              </button>
+              <button
+                onClick={() => setDiscountType('coupon')}
+                className={`flex-1 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
+                  discountType === 'coupon'
+                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow'
+                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                }`}
+              >
+                Cupom
+              </button>
             </div>
-            <Button onClick={handleApplyDiscount} className="w-full" disabled={applyDiscount.isPending}>
+
+            {/* Conteúdo conforme o tipo selecionado */}
+            {discountType === 'coupon' ? (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Código do Cupom
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder="Ex: DESCONTO10"
+                    value={couponCode}
+                    onChange={(e) => setCouponCode(e.target.value.toUpperCase())}
+                    className="uppercase"
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    Digite o código promocional do cupom
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {/* Tipo de desconto: % ou R$ */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setManualDiscountType('fixed')}
+                    className={`flex-1 py-2 px-3 border rounded-md text-sm font-medium transition-colors ${
+                      manualDiscountType === 'fixed'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    Valor Fixo (R$)
+                  </button>
+                  <button
+                    onClick={() => setManualDiscountType('percentage')}
+                    className={`flex-1 py-2 px-3 border rounded-md text-sm font-medium transition-colors ${
+                      manualDiscountType === 'percentage'
+                        ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
+                        : 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 hover:border-gray-400 dark:hover:border-gray-500'
+                    }`}
+                  >
+                    Percentual (%)
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    {manualDiscountType === 'percentage' ? 'Percentual de Desconto' : 'Valor do Desconto'}
+                  </label>
+                  <Input
+                    type="text"
+                    placeholder={manualDiscountType === 'percentage' ? 'Ex: 10' : 'Ex: 50.00'}
+                    value={manualDiscountValue}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/[^\d,.]/g, '')
+                      setManualDiscountValue(value)
+                    }}
+                  />
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                    {manualDiscountType === 'percentage' 
+                      ? 'Digite o percentual de desconto (ex: 10 para 10%)'
+                      : 'Digite o valor em reais (ex: 50.00)'}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <Button 
+              onClick={handleApplyDiscount} 
+              className="w-full" 
+              disabled={applyDiscount.isPending}
+            >
               <Percent className="h-4 w-4 mr-2" />
               {applyDiscount.isPending ? 'Aplicando...' : 'Aplicar Desconto'}
             </Button>

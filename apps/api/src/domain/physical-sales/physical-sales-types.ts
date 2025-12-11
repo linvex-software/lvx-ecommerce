@@ -5,7 +5,9 @@ export interface PhysicalSale {
   store_id: string
   product_id: string
   quantity: number
-  total: string // numeric como string do Drizzle (em centavos)
+  subtotal: string // numeric como string do Drizzle
+  discount_amount: string // numeric como string do Drizzle
+  total: string // numeric como string do Drizzle
   seller_user_id: string | null
   coupon_id: string | null
   shipping_cost: string // em centavos
