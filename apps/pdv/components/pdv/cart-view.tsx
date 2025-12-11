@@ -17,9 +17,10 @@ import toast from 'react-hot-toast'
 interface CartViewProps {
   onGoToPayment: () => void
   onSelectCustomer: () => void
+  onBackToHome: () => void
 }
 
-export function CartView({ onGoToPayment, onSelectCustomer }: CartViewProps) {
+export function CartView({ onGoToPayment, onSelectCustomer, onBackToHome }: CartViewProps) {
   const { data: cart, isLoading: cartLoading } = useActivePdvCart()
   const { data: sellersData } = useSellers()
   const { data: productsData } = useProducts({ status: 'active', limit: 100 })
@@ -195,11 +196,19 @@ export function CartView({ onGoToPayment, onSelectCustomer }: CartViewProps) {
       {/* Vendedor e Origem */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Vendedor</label>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Vendedor <span className="text-red-500">*</span>
+          </label>
           <Select
-            value={cart.seller_user_id}
-            onChange={(e) => handleSellerChange(e.target.value)}
+            value={cart.seller_user_id || ''}
+            onChange={(e) => {
+              if (e.target.value) {
+                handleSellerChange(e.target.value)
+              }
+            }}
+            required
           >
+            <option value="">Selecione um vendedor</option>
             {sellers.map((seller) => (
               <option key={seller.id} value={seller.id}>
                 {seller.name}
@@ -316,14 +325,30 @@ export function CartView({ onGoToPayment, onSelectCustomer }: CartViewProps) {
             <span className="text-gray-900">{formatCurrency(total)}</span>
           </div>
 
-          <Button
-            onClick={onGoToPayment}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-semibold"
-            size="lg"
-          >
-            Ir para o pagamento
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+          <div className="space-y-3">
+            <Button
+              onClick={() => {
+                if (!cart.seller_user_id) {
+                  toast.error('Selecione um vendedor antes de finalizar')
+                  return
+                }
+                onGoToPayment()
+              }}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 text-base font-semibold"
+              size="lg"
+              disabled={!cart.seller_user_id}
+            >
+              Finalizar venda
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button
+              onClick={onBackToHome}
+              variant="outline"
+              className="w-full"
+            >
+              Voltar e adicionar mais produtos
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>

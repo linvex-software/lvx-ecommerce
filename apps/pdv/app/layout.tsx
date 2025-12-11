@@ -5,6 +5,9 @@ import { useRouter, usePathname } from 'next/navigation'
 import { LogOut } from 'lucide-react'
 import { useAuthStore } from '@/store/auth-store'
 import { QueryProvider } from '@/components/providers/query-provider'
+import { PDVProvider } from '@/context/pdv-context'
+import { ThemeProvider } from '@/providers/theme-provider'
+import { ThemeToggle } from '@/components/pdv/theme-toggle'
 import { apiClient } from '@/lib/api-client'
 import { Toaster } from 'react-hot-toast'
 import './globals.css'
@@ -28,12 +31,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
   useEffect(() => {
     setIsMounted(true)
-    
+
     // Aguardar um pouco mais para garantir que o Zustand hidratou
     const timer = setTimeout(() => {
       setIsChecking(false)
     }, 100)
-    
+
     return () => clearTimeout(timer)
   }, [])
 
@@ -82,8 +85,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }
 
   // Verificar também localStorage diretamente (para quando Zustand ainda não hidratou após login)
-  const hasLocalStorageAuth = typeof window !== 'undefined' && 
-    localStorage.getItem('accessToken') && 
+  const hasLocalStorageAuth = typeof window !== 'undefined' &&
+    localStorage.getItem('accessToken') &&
     localStorage.getItem('user')
 
   // Se não tem usuário ou não está autenticado, mas tem dados no localStorage, aguardar
@@ -148,47 +151,58 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   }
 
   return (
-    <html lang="pt-BR">
-      <body>
+    <html lang="pt-BR" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <QueryProvider>
-          <div className="flex min-h-screen w-full flex-col bg-gray-50">
+          <ThemeProvider>
+            <PDVProvider>
+              <div className="flex min-h-screen w-full flex-col bg-gray-50 dark:bg-gray-900">
             {/* Header igual ao admin */}
-            <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-gray-200/60 bg-white/95 backdrop-blur-sm px-10">
+            <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-gray-200/60 dark:border-gray-800/60 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm px-4 md:px-10">
               <div className="flex items-center gap-4">
-                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-900 text-sm font-semibold uppercase tracking-wide text-white shadow-lg">
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-900 dark:bg-gray-700 text-sm font-semibold uppercase tracking-wide text-white shadow-lg">
                   {getUserInitials()}
                 </div>
-                
+
                 <div className="text-left">
-                  <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-                  <p className="text-xs font-light text-gray-500">{user?.email}</p>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{user?.name}</p>
+                  <p className="text-xs font-light text-gray-500 dark:text-gray-400">{user?.email}</p>
                 </div>
               </div>
 
-              <button
-                onClick={async () => {
-                  try {
-                    await apiClient.post('/auth/logout')
-                  } catch (error) {
-                    // Ignorar erros de logout
-                  } finally {
-                    clearSession()
-                    router.push('/login')
-                  }
-                }}
-                className="inline-flex items-center gap-2 rounded-2xl border border-gray-200/80 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-white"
-              >
-                <LogOut className="h-4 w-4" />
-                Sair
-              </button>
+              <div className="flex items-center gap-3">
+                {pathname?.startsWith('/pdv/') && <ThemeToggle />}
+                <button
+                  onClick={async () => {
+                    try {
+                      await apiClient.post('/auth/logout')
+                    } catch (error) {
+                      // Ignorar erros de logout
+                    } finally {
+                      clearSession()
+                      router.push('/login')
+                    }
+                  }}
+                  className="inline-flex items-center gap-2 rounded-2xl border border-gray-200/80 dark:border-gray-700/80 px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 transition hover:border-gray-300 dark:hover:border-gray-600 hover:bg-white dark:hover:bg-gray-800"
+                >
+                  <LogOut className="h-4 w-4" />
+                  Sair
+                </button>
+              </div>
             </header>
 
             {/* Conteúdo principal - alinhado com header */}
             <main className="flex-1 overflow-y-auto">
-              <div className="w-full px-10 py-8">{children}</div>
+              {pathname?.startsWith('/pdv/') ? (
+                <div className="w-full">{children}</div>
+              ) : (
+                <div className="w-full px-10 py-8">{children}</div>
+              )}
             </main>
           </div>
           <Toaster position="top-center" reverseOrder={false} />
+            </PDVProvider>
+          </ThemeProvider>
         </QueryProvider>
       </body>
     </html>

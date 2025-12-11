@@ -10,6 +10,7 @@ import type { OrderWithItems } from '../../../domain/orders/order-types'
 const finalizePdvSaleSchema = z.object({
   cart_id: z.string().uuid(),
   origin: z.string().optional().default('pdv'), // origem da venda
+  payment_method: z.enum(['pix', 'credit_card', 'debit_card', 'cash', 'other']).optional(),
   // commission_rate removido - será calculado pelo backend baseado em regras de negócio
   shipping_address: z
     .object({
@@ -55,6 +56,10 @@ export async function finalizePdvSaleUseCase(
   const cart = await physicalSalesCartRepository.findById(validated.cart_id, storeId)
   if (!cart) {
     throw new Error('Cart not found')
+  }
+
+  if (!cart.seller_user_id) {
+    throw new Error('Seller is required. Please select a seller before finalizing the sale.')
   }
 
   if (cart.seller_user_id !== sellerUserId) {
@@ -108,7 +113,7 @@ export async function finalizePdvSaleUseCase(
     }
   }
 
-  // Preparar shipping_address com metadados do PDV (origem, vendedor)
+  // Preparar shipping_address com metadados do PDV (origem, vendedor, método de pagamento)
   // Comissão será calculada pelo backend baseado em regras de negócio (não vem do frontend)
   // Se houver endereço de entrega, incluir também; senão, usar apenas para metadados
   const shippingAddressWithMetadata = validated.shipping_address
@@ -116,26 +121,29 @@ export async function finalizePdvSaleUseCase(
         ...validated.shipping_address,
         _pdv_metadata: {
           origin: validated.origin || cart.origin || 'pdv',
-          seller_user_id: sellerUserId
+          seller_user_id: sellerUserId,
+          payment_method: validated.payment_method || 'cash'
           // commission_rate será calculado pelo backend se houver regra configurada
         }
       }
     : {
         _pdv_metadata: {
           origin: validated.origin || cart.origin || 'pdv',
-          seller_user_id: sellerUserId
+          seller_user_id: sellerUserId,
+          payment_method: validated.payment_method || 'cash'
           // commission_rate será calculado pelo backend se houver regra configurada
         }
       }
 
   // Criar pedido diretamente usando repository
+  // PDV físico: pagamento é registrado imediatamente, então payment_status = 'paid'
   const order = await orderRepository.createWithStockMovements(
     {
       store_id: storeId,
       customer_id: cart.customer_id,
       total: finalTotal,
-      status: 'pending',
-      payment_status: 'pending',
+      status: 'completed', // PDV físico: venda concluída imediatamente
+      payment_status: 'paid', // PDV físico: pagamento registrado imediatamente
       shipping_cost: shippingCost,
       delivery_type: null, // PDV geralmente não tem entrega
       delivery_option_id: null,

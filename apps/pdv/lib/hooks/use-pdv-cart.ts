@@ -123,8 +123,12 @@ export function useRemoveItemFromPdvCart() {
       )
       return response.data.cart
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['pdv-cart', variables.cart_id] })
+    onSuccess: (cart) => {
+      // Invalidar todas as queries de carrinho
+      queryClient.invalidateQueries({ queryKey: ['pdv-cart'] })
+      // Atualizar cache com o carrinho retornado
+      queryClient.setQueryData(['pdv-cart', cart.id], cart)
+      queryClient.setQueryData(['pdv-cart', 'active'], cart)
     }
   })
 }
@@ -145,8 +149,12 @@ export function useUpdateItemQuantity() {
       )
       return response.data.cart
     },
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['pdv-cart', variables.cart_id] })
+    onSuccess: (cart, variables) => {
+      // Invalidar todas as queries de carrinho
+      queryClient.invalidateQueries({ queryKey: ['pdv-cart'] })
+      // Atualizar cache com o carrinho retornado
+      queryClient.setQueryData(['pdv-cart', cart.id], cart)
+      queryClient.setQueryData(['pdv-cart', 'active'], cart)
     }
   })
 }
@@ -199,6 +207,7 @@ export function useFinalizePdvSale() {
     mutationFn: async (input: {
       cart_id: string
       origin?: string
+      payment_method?: 'pix' | 'credit_card' | 'debit_card' | 'cash' | 'other'
       // commission_rate removido - será calculado pelo backend
       shipping_address?: {
         zip_code: string

@@ -1,9 +1,10 @@
 'use client'
 
-import { Search, User, Percent, Package, FileText, Truck } from 'lucide-react'
+import { Search, User, Percent, ShoppingCart } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@white-label/ui'
 import { cn } from '@/lib/utils'
+import { useActivePdvCart } from '@/lib/hooks/use-pdv-cart'
 
 interface ActionCard {
   id: string
@@ -17,13 +18,9 @@ interface ActionsHomeProps {
 }
 
 export function ActionsHome({ onSelectAction }: ActionsHomeProps) {
+  const { data: activeCart } = useActivePdvCart()
+
   const actions: ActionCard[] = [
-    {
-      id: 'search-products',
-      title: 'Buscar produtos',
-      icon: <Search className="h-6 w-6" />,
-      onClick: () => onSelectAction('search-products')
-    },
     {
       id: 'select-customer',
       title: 'Selecionar cliente',
@@ -31,39 +28,29 @@ export function ActionsHome({ onSelectAction }: ActionsHomeProps) {
       onClick: () => onSelectAction('select-customer')
     },
     {
+      id: 'search-products',
+      title: 'Buscar produtos',
+      icon: <Search className="h-6 w-6" />,
+      onClick: () => onSelectAction('search-products')
+    },
+    {
       id: 'apply-discount',
       title: 'Aplicar desconto',
       icon: <Percent className="h-6 w-6" />,
       onClick: () => onSelectAction('apply-discount')
-    },
-    {
-      id: 'create-product',
-      title: 'Criar produto',
-      icon: <Package className="h-6 w-6" />,
-      onClick: () => onSelectAction('create-product')
-    },
-    {
-      id: 'add-note',
-      title: 'Adicionar nota',
-      icon: <FileText className="h-6 w-6" />,
-      onClick: () => onSelectAction('add-note')
-    },
-    {
-      id: 'add-shipping',
-      title: 'Adicionar envio',
-      icon: <Truck className="h-6 w-6" />,
-      onClick: () => onSelectAction('add-shipping')
     }
   ]
 
+  const hasItems = activeCart && activeCart.items.length > 0
+
   return (
-    <div className="w-full">
-      <div className="mb-8">
+    <div className="w-full max-w-4xl mx-auto">
+      <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">Ponto de Venda</h1>
-        <p className="text-gray-600">Selecione uma ação para começar</p>
+        <p className="text-gray-600">Inicie uma nova venda</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {actions.map((action) => (
           <Card
             key={action.id}
@@ -82,6 +69,19 @@ export function ActionsHome({ onSelectAction }: ActionsHomeProps) {
           </Card>
         ))}
       </div>
+
+      {hasItems && (
+        <div className="mt-8 text-center">
+          <Button
+            onClick={() => onSelectAction('go-to-cart')}
+            className="bg-blue-600 hover:bg-blue-700 text-white h-12 px-8 text-base font-semibold"
+            size="lg"
+          >
+            <ShoppingCart className="h-5 w-5 mr-2" />
+            Ir para o carrinho ({activeCart.items.length} {activeCart.items.length === 1 ? 'item' : 'itens'})
+          </Button>
+        </div>
+      )}
     </div>
   )
 }
