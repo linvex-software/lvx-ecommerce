@@ -145,6 +145,15 @@ export function ProductSearch({ onSelect, placeholder = 'Buscar produto por nome
                             )}
                           </div>
                         </div>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleSelect(product)
+                          }}
+                          className="px-3 py-1.5 bg-gray-900 text-white text-sm font-medium rounded-lg hover:bg-gray-800 transition-colors whitespace-nowrap"
+                        >
+                          Adicionar
+                        </button>
                       </div>
                     </li>
                   ))}

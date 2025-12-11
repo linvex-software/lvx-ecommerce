@@ -182,7 +182,7 @@ export class UserRepository {
     }
 
     const row = result[0]
-    
+
     if (!row.store_id || !row.store.id) {
       return {
         id: row.id,
@@ -220,6 +220,34 @@ export class UserRepository {
       name: row.name,
       email: row.email,
       password_hash: row.password_hash,
+      role: row.role as User['role'],
+      created_at: row.created_at
+    }))
+  }
+
+  async listVendorsByStore(storeId: string): Promise<Omit<User, 'password_hash'>[]> {
+    const result = await db
+      .select({
+        id: schema.users.id,
+        store_id: schema.users.store_id,
+        name: schema.users.name,
+        email: schema.users.email,
+        role: schema.users.role,
+        created_at: schema.users.created_at
+      })
+      .from(schema.users)
+      .where(
+        and(
+          eq(schema.users.store_id, storeId),
+          eq(schema.users.role, 'vendedor')
+        )
+      )
+
+    return result.map((row) => ({
+      id: row.id,
+      store_id: row.store_id,
+      name: row.name,
+      email: row.email,
       role: row.role as User['role'],
       created_at: row.created_at
     }))

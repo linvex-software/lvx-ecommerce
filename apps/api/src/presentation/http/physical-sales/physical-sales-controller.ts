@@ -24,6 +24,20 @@ import {
 } from '../../../application/physical-sales/use-cases/create-physical-sales-cart'
 import { abandonPhysicalSalesCartUseCase } from '../../../application/physical-sales/use-cases/abandon-physical-sales-cart'
 import { listAbandonedCartsUseCase } from '../../../application/physical-sales/use-cases/list-abandoned-carts'
+import { addItemToPdvCartUseCase, addItemToPdvCartSchema } from '../../../application/physical-sales/use-cases/add-item-to-pdv-cart'
+import { removeItemFromPdvCartUseCase, removeItemFromPdvCartSchema } from '../../../application/physical-sales/use-cases/remove-item-from-pdv-cart'
+import { updateItemQuantityPdvCartUseCase, updateItemQuantityPdvCartSchema } from '../../../application/physical-sales/use-cases/update-item-quantity-pdv-cart'
+import { applyDiscountToPdvCartUseCase, applyDiscountToPdvCartSchema } from '../../../application/physical-sales/use-cases/apply-discount-to-pdv-cart'
+import { associateCustomerToPdvCartUseCase, associateCustomerToPdvCartSchema } from '../../../application/physical-sales/use-cases/associate-customer-to-pdv-cart'
+import { finalizePdvSaleUseCase, finalizePdvSaleSchema } from '../../../application/physical-sales/use-cases/finalize-pdv-sale'
+import { generatePaymentLinkUseCase, generatePaymentLinkSchema } from '../../../application/physical-sales/use-cases/generate-payment-link'
+import { setCartOriginUseCase, setCartOriginSchema } from '../../../application/physical-sales/use-cases/set-cart-origin'
+import { setCartSellerUseCase, setCartSellerSchema } from '../../../application/physical-sales/use-cases/set-cart-seller'
+import { OrderRepository } from '../../../infra/db/repositories/order-repository'
+import { PaymentMethodRepository } from '../../../infra/db/repositories/payment-method-repository'
+import { CustomerRepository } from '../../../infra/db/repositories/customer-repository'
+import { UserRepository } from '../../../infra/db/repositories/user-repository'
+import { MercadoPagoGateway } from '../../../infra/gateways/mercado-pago-gateway'
 
 export class PhysicalSalesController {
   constructor(
@@ -289,6 +303,625 @@ export class PhysicalSalesController {
     } catch (error) {
       if (error instanceof Error) {
         await reply.code(500).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async getCart(
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      const { id } = request.params
+
+      const cart = await this.physicalSalesCartRepository.findById(id, storeId)
+      if (!cart) {
+        await reply.code(404).send({ error: 'Cart not found' })
+        return
+      }
+
+      if (cart.seller_user_id !== userId) {
+        await reply.code(403).send({ error: 'Cart does not belong to seller' })
+        return
+      }
+
+      await reply.send({ cart })
+    } catch (error) {
+      if (error instanceof Error) {
+        await reply.code(500).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async getActiveCart(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      // Buscar carrinho ativo do vendedor
+      const activeCarts = await this.physicalSalesCartRepository.findBySeller(
+        storeId,
+        userId,
+        'active'
+      )
+
+      if (activeCarts.length > 0) {
+        // Retornar o mais recente
+        await reply.send({ cart: activeCarts[0] })
+        return
+      }
+
+      // Se não houver carrinho ativo, retornar null (frontend criará se necessário)
+      await reply.send({ cart: null })
+    } catch (error) {
+      if (error instanceof Error) {
+        await reply.code(500).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async addItemToCart(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      // Se não tiver cart_id no body, buscar carrinho ativo ou criar
+      const body = request.body as any
+      let cartId = body.cart_id
+
+      if (!cartId) {
+        // Buscar carrinho ativo
+        const activeCarts = await this.physicalSalesCartRepository.findBySeller(
+          storeId,
+          userId,
+          'active'
+        )
+
+        if (activeCarts.length > 0) {
+          cartId = activeCarts[0].id
+        } else {
+          // Criar novo carrinho
+          const newCart = await createPhysicalSalesCartUseCase(
+            { items: [] },
+            storeId,
+            userId,
+            {
+              physicalSalesCartRepository: this.physicalSalesCartRepository,
+              productRepository: this.productRepository,
+              couponRepository: this.couponRepository
+            }
+          )
+          cartId = newCart.id
+        }
+      }
+
+      // Validar schema (cart_id pode ser opcional agora)
+      const validated = addItemToPdvCartSchema.parse({
+        ...body,
+        cart_id: cartId
+      })
+
+      const cart = await addItemToPdvCartUseCase(validated, storeId, userId, {
+        physicalSalesCartRepository: this.physicalSalesCartRepository,
+        productRepository: this.productRepository
+      })
+
+      await reply.send({ cart })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message === 'Cart not found' ||
+          error.message === 'Product not found' ||
+          error.message.includes('does not belong') ||
+          error.message.includes('not active')
+            ? 400
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async removeItemFromCart(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      const validated = removeItemFromPdvCartSchema.parse(request.body)
+
+      const cart = await removeItemFromPdvCartUseCase(validated, storeId, userId, {
+        physicalSalesCartRepository: this.physicalSalesCartRepository
+      })
+
+      await reply.send({ cart })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message === 'Cart not found' ||
+          error.message === 'Item not found in cart' ||
+          error.message.includes('does not belong') ||
+          error.message.includes('not active') ||
+          error.message.includes('must have at least one item')
+            ? 400
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async updateItemQuantity(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      const validated = updateItemQuantityPdvCartSchema.parse(request.body)
+
+      const cart = await updateItemQuantityPdvCartUseCase(validated, storeId, userId, {
+        physicalSalesCartRepository: this.physicalSalesCartRepository
+      })
+
+      await reply.send({ cart })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message === 'Cart not found' ||
+          error.message === 'Item not found in cart' ||
+          error.message.includes('does not belong') ||
+          error.message.includes('not active')
+            ? 400
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async applyDiscount(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      const validated = applyDiscountToPdvCartSchema.parse(request.body)
+
+      const cart = await applyDiscountToPdvCartUseCase(validated, storeId, userId, {
+        physicalSalesCartRepository: this.physicalSalesCartRepository,
+        couponRepository: this.couponRepository
+      })
+
+      await reply.send({ cart })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message === 'Cart not found' ||
+          error.message.includes('does not belong') ||
+          error.message.includes('not active') ||
+          error.message.includes('Cupom')
+            ? 400
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async associateCustomer(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      const validated = associateCustomerToPdvCartSchema.parse(request.body)
+
+      const customerRepository = new CustomerRepository()
+
+      const cart = await associateCustomerToPdvCartUseCase(validated, storeId, userId, {
+        physicalSalesCartRepository: this.physicalSalesCartRepository,
+        customerRepository
+      })
+
+      await reply.send({ cart })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message === 'Cart not found' ||
+          error.message === 'Customer not found' ||
+          error.message.includes('does not belong') ||
+          error.message.includes('not active')
+            ? 400
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async finalizeSale(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      const validated = finalizePdvSaleSchema.parse(request.body)
+
+      const orderRepository = new OrderRepository()
+
+      const order = await finalizePdvSaleUseCase(validated, storeId, userId, {
+        physicalSalesCartRepository: this.physicalSalesCartRepository,
+        orderRepository,
+        productRepository: this.productRepository,
+        stockMovementRepository: this.stockMovementRepository,
+        couponRepository: this.couponRepository,
+        physicalSalesCommissionRepository: this.physicalSalesCommissionRepository
+      })
+
+      await reply.code(201).send({ order })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message === 'Cart not found' ||
+          error.message === 'Cart is empty' ||
+          error.message.includes('does not belong') ||
+          error.message.includes('not active') ||
+          error.message.includes('not found') ||
+          error.message.includes('Insufficient stock')
+            ? 400
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async generatePaymentLink(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const validated = generatePaymentLinkSchema.parse(request.body)
+
+      const orderRepository = new OrderRepository()
+      const paymentMethodRepository = new PaymentMethodRepository()
+
+      // Buscar credenciais do Mercado Pago
+      const paymentMethod = await paymentMethodRepository.findByProvider(storeId, 'mercadopago')
+      if (!paymentMethod || !paymentMethod.active) {
+        await reply.code(400).send({
+          error: 'Mercado Pago payment method not configured or inactive'
+        })
+        return
+      }
+
+      const config = paymentMethod.config_json as Record<string, unknown> | null
+      const accessToken =
+        (config?.access_token as string) ||
+        (config?.accessToken as string) ||
+        (config?.accessTokenProd as string) ||
+        (config?.access_token_prod as string) ||
+        process.env.MERCADOPAGO_ACCESS_TOKEN
+
+      if (!accessToken) {
+        await reply.code(500).send({ error: 'Mercado Pago access token not found' })
+        return
+      }
+
+      const paymentGateway = new MercadoPagoGateway(accessToken)
+
+      const result = await generatePaymentLinkUseCase(validated, storeId, {
+        orderRepository,
+        paymentMethodRepository,
+        paymentGateway
+      })
+
+      await reply.send(result)
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message === 'Order not found' ||
+          error.message === 'Order already paid' ||
+          error.message.includes('not configured')
+            ? 400
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async getOrderStatus(
+    request: FastifyRequest<{ Params: { orderId: string } }>,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const { orderId } = request.params
+
+      const orderRepository = new OrderRepository()
+
+      const order = await orderRepository.findById(orderId, storeId)
+      if (!order) {
+        await reply.code(404).send({ error: 'Order not found' })
+        return
+      }
+
+      // Retornar apenas status do pedido
+      await reply.send({
+        order_id: order.id,
+        status: order.status,
+        payment_status: order.payment_status
+      })
+    } catch (error) {
+      if (error instanceof Error) {
+        const statusCode = error.message === 'Order not found' ? 404 : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async getOrderReceipt(
+    request: FastifyRequest<{ Params: { orderId: string } }>,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const { orderId } = request.params
+
+      const orderRepository = new OrderRepository()
+
+      const order = await orderRepository.findByIdWithItems(orderId, storeId)
+      if (!order) {
+        await reply.code(404).send({ error: 'Order not found' })
+        return
+      }
+
+      // Retornar dados do pedido para gerar recibo no frontend
+      await reply.send({ order })
+    } catch (error) {
+      if (error instanceof Error) {
+        const statusCode = error.message === 'Order not found' ? 404 : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async setCartOrigin(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      const validated = setCartOriginSchema.parse(request.body)
+
+      const cart = await setCartOriginUseCase(validated, storeId, userId, {
+        physicalSalesCartRepository: this.physicalSalesCartRepository
+      })
+
+      await reply.send({ cart })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message === 'Cart not found' ||
+          error.message.includes('does not belong') ||
+          error.message.includes('not active')
+            ? 400
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async setCartSeller(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id
+      if (!userId) {
+        await reply.code(401).send({ error: 'User ID is required' })
+        return
+      }
+
+      const validated = setCartSellerSchema.parse(request.body)
+
+      const userRepository = new UserRepository()
+
+      const cart = await setCartSellerUseCase(validated, storeId, userId, {
+        physicalSalesCartRepository: this.physicalSalesCartRepository,
+        userRepository
+      })
+
+      await reply.send({ cart })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message === 'Cart not found' ||
+          error.message === 'Seller not found' ||
+          error.message.includes('does not belong') ||
+          error.message.includes('not active') ||
+          error.message.includes('not a valid seller') ||
+          error.message.includes('can change seller')
+            ? 400
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
         return
       }
       await reply.code(500).send({ error: 'Internal server error' })
