@@ -129,7 +129,7 @@ export class CustomerRepository {
   async createQuick(
     data: {
       name: string
-      cpf: string
+      cpf: string | null
       email: string | null
       phone: string | null
     },
@@ -141,7 +141,7 @@ export class CustomerRepository {
         store_id: storeId,
         name: data.name,
         email: data.email ?? null,
-        cpf: data.cpf,
+        cpf: data.cpf ?? null,
         phone: data.phone ?? null,
         password_hash: null // Cliente criado sem senha (para PDV)
       })

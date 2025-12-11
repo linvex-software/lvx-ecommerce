@@ -18,7 +18,7 @@ export const customers = pgTable(
       .references(() => stores.id, { onDelete: 'cascade' }),
     name: text('name').notNull(),
     email: text('email'),
-    cpf: text('cpf').notNull(), // CPF obrigatório para login
+    cpf: text('cpf'), // CPF opcional para criação rápida no PDV
     phone: text('phone'),
     password_hash: text('password_hash'),
     created_at: timestamp('created_at', { withTimezone: true })
