@@ -35,8 +35,6 @@ export interface Order {
   }
 }
 
-// TODO: Implementar endpoint GET /customers/me/orders no backend
-// Por enquanto, retorna array vazio
 export function useCustomerOrders() {
   const { accessToken, customer } = useAuthStore()
   const isAuthenticated = !!(accessToken && customer)
@@ -44,14 +42,11 @@ export function useCustomerOrders() {
   return useQuery({
     queryKey: ['customer-orders'],
     queryFn: async () => {
-      // Quando o endpoint estiver disponível, usar:
-      // const data = await fetchAPI('/customers/me/orders')
-      // return data.orders as Order[]
-      
-      // Por enquanto, retorna vazio
-      return [] as Order[]
+      const data = await fetchAPI('/customers/me/orders')
+      return (data as { orders: Order[] }).orders
     },
     enabled: isAuthenticated,
+    staleTime: 30 * 1000, // Cache por 30 segundos
   })
 }
 
@@ -62,11 +57,11 @@ export function useCustomerOrder(orderId: string) {
   return useQuery({
     queryKey: ['customer-order', orderId],
     queryFn: async () => {
-      // TODO: Implementar endpoint GET /customers/me/orders/:id no backend
-      // Por enquanto, retorna null
-      return null as Order | null
+      const data = await fetchAPI(`/customers/me/orders/${orderId}`)
+      return (data as { order: Order }).order
     },
     enabled: isAuthenticated && !!orderId,
+    staleTime: 30 * 1000, // Cache por 30 segundos
   })
 }
 

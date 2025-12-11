@@ -53,3 +53,40 @@ export async function requireCustomerAuth(
   }
 }
 
+/**
+ * Middleware opcional de autenticação do cliente
+ * Tenta extrair customer_id do token JWT se disponível,
+ * mas não falha se o token não existir (para suportar guest checkout)
+ */
+export async function optionalCustomerAuth(
+  request: FastifyRequest,
+  _reply: FastifyReply
+): Promise<void> {
+  try {
+    const authHeader = request.headers.authorization
+
+    // Se não tiver token, apenas continua sem popular request.customer
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return
+    }
+
+    // Tentar decodificar o token
+    const decoded = await request.jwtVerify<{
+      sub: string
+      storeId: string
+      type: string
+    }>()
+
+    // Verificar se é token de cliente
+    if (decoded.type === 'customer' && decoded.sub && decoded.storeId) {
+      request.customer = {
+        id: decoded.sub,
+        storeId: decoded.storeId
+      }
+    }
+  } catch {
+    // Token inválido ou expirado - apenas ignora e continua
+    // Não retorna erro para permitir guest checkout
+  }
+}
+
