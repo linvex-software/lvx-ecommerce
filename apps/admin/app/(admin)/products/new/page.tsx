@@ -15,11 +15,11 @@ export default function NewProductPage() {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 pb-24 sm:pb-8">
       <div>
-        <h1 className="text-4xl font-light tracking-tight text-gray-900">Novo produto</h1>
-        <p className="mt-2 text-sm font-light text-gray-500">
-          Adicione um novo produto ao catálogo da loja
+        <h1 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">Novo produto</h1>
+        <p className="mt-2 text-sm text-text-secondary">
+          Cadastre um novo produto para o catálogo da sua loja.
         </p>
       </div>
 

@@ -58,5 +58,20 @@ export async function registerAdminUserRoutes(app: FastifyInstance): Promise<voi
       await userController.listVendors(request, reply)
     }
   )
+
+  // PUT /admin/users/:id/password - Atualiza senha de um usuário (apenas admin)
+  app.put<{ Params: { id: string }; Body: { new_password: string } }>(
+    '/admin/users/:id/password',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin'])]
+    },
+    async (
+      request: FastifyRequest<{ Params: { id: string }; Body: { new_password: string } }>,
+      reply: FastifyReply
+    ) => {
+      await userController.updatePassword(request, reply)
+    }
+  )
 }
 

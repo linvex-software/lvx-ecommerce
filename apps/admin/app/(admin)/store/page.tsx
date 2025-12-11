@@ -19,7 +19,7 @@ export default function StorePage() {
   const [bannerUrl, setBannerUrl] = useState<string | null>(null)
 
   const storeId = user?.storeId || user?.store?.id || ''
-  
+
   const { data: theme, isLoading: isLoadingTheme } = useStoreTheme()
   const updateLogo = useUpdateStoreLogo()
   const updateBanner = useUpdateStoreBanner()
@@ -62,14 +62,14 @@ export default function StorePage() {
     return (
       <div className="space-y-8">
         <div>
-          <h1 className="text-4xl font-light tracking-tight text-gray-900">Loja</h1>
-          <p className="mt-2 text-sm font-light text-gray-500">
+          <h1 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">Loja</h1>
+          <p className="mt-2 text-sm text-text-secondary">
             Informações da sua loja
           </p>
         </div>
-        <Card>
+        <Card className="dark:bg-surface-2 dark:border-[#1D1D1D]">
           <CardContent className="pt-6">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-text-secondary">
               Nenhuma loja encontrada. Complete o onboarding para criar sua loja.
             </p>
           </CardContent>
@@ -82,17 +82,17 @@ export default function StorePage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-4xl font-light tracking-tight text-gray-900">Loja</h1>
-        <p className="mt-2 text-sm font-light text-gray-500">
+        <h1 className="text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl">Loja</h1>
+        <p className="mt-2 text-sm text-text-secondary">
           Informações da sua loja e configuração para deploy
         </p>
       </div>
 
       {/* Store Info Card */}
-      <Card className="border-0 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white/80 backdrop-blur-sm">
+      <Card className="dark:bg-surface-2 dark:border-[#1D1D1D]">
         <CardHeader>
-          <CardTitle className="text-xl font-light">Informações da Loja</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl font-semibold text-text-primary">Informações da Loja</CardTitle>
+          <CardDescription className="text-text-secondary">
             Dados básicos da sua loja
           </CardDescription>
         </CardHeader>
@@ -100,20 +100,20 @@ export default function StorePage() {
           {user.store && (
             <>
               <div>
-                <Label className="text-sm font-light text-gray-700">Nome</Label>
-                <p className="mt-1 text-sm text-gray-900">{user.store.name}</p>
+                <Label className="text-sm font-semibold text-text-primary dark:text-[#CCCCCC]">Nome</Label>
+                <p className="mt-1 text-sm text-text-primary dark:text-white">{user.store.name}</p>
               </div>
               <div>
-                <Label className="text-sm font-light text-gray-700">Domínio</Label>
-                <p className="mt-1 text-sm text-gray-900">{user.store.domain}</p>
+                <Label className="text-sm font-semibold text-text-primary dark:text-[#CCCCCC]">Domínio</Label>
+                <p className="mt-1 text-sm text-text-primary dark:text-white">{user.store.domain}</p>
               </div>
               <div>
-                <Label className="text-sm font-light text-gray-700">Status</Label>
+                <Label className="text-sm font-semibold text-text-primary dark:text-[#CCCCCC]">Status</Label>
                 <p className="mt-1">
                   <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                     user.store.active
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300 dark:border dark:border-emerald-800/50'
+                      : 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300 dark:border dark:border-gray-700'
                   }`}>
                     {user.store.active ? 'Ativa' : 'Inativa'}
                   </span>
@@ -125,16 +125,16 @@ export default function StorePage() {
       </Card>
 
       {/* Store ID Card */}
-      <Card className="border-0 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white/80 backdrop-blur-sm">
+      <Card className="dark:bg-surface-2 dark:border-[#1D1D1D]">
         <CardHeader>
-          <CardTitle className="text-xl font-light">Store ID</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl font-semibold text-text-primary">Store ID</CardTitle>
+          <CardDescription className="text-text-secondary">
             Use este ID para configurar sua aplicação web no deploy ou no arquivo .env
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="storeId" className="text-sm font-light text-gray-700">
+            <Label htmlFor="storeId" className="text-sm font-semibold text-text-primary dark:text-[#CCCCCC]">
               ID da Loja
             </Label>
             <div className="flex gap-2">
@@ -143,7 +143,7 @@ export default function StorePage() {
                 type="text"
                 value={storeId}
                 readOnly
-                className="font-mono text-sm"
+                className="font-mono text-sm dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white"
               />
               <Button
                 type="button"
@@ -152,7 +152,7 @@ export default function StorePage() {
                 variant="outline"
               >
                 {copied ? (
-                  <Check className="h-4 w-4 text-emerald-600" />
+                  <Check className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                 ) : (
                   <Copy className="h-4 w-4" />
                 )}
@@ -161,11 +161,11 @@ export default function StorePage() {
           </div>
 
           <div className="mt-6 space-y-2">
-            <Label className="text-sm font-light text-gray-700">
+            <Label className="text-sm font-semibold text-text-primary dark:text-[#CCCCCC]">
               Variável de ambiente (.env)
             </Label>
-            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-              <code className="text-sm font-mono text-gray-900">{envExample}</code>
+            <div className="rounded-lg border border-border bg-surface p-4 dark:bg-[#111111] dark:border-[#2A2A2A]">
+              <code className="text-sm font-mono text-text-primary dark:text-white">{envExample}</code>
             </div>
             <Button
               type="button"
@@ -179,13 +179,13 @@ export default function StorePage() {
             </Button>
           </div>
 
-          <div className="mt-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
-            <p className="text-sm font-medium text-blue-900 mb-2">
+          <div className="mt-6 rounded-lg border border-primary/20 bg-primary/5 p-4 dark:border-primary/30 dark:bg-primary/10">
+            <p className="text-sm font-medium text-text-primary dark:text-white mb-2">
               💡 Como usar
             </p>
-            <ul className="text-sm text-blue-800 space-y-1 list-disc list-inside">
+            <ul className="text-sm text-text-secondary dark:text-[#B5B5B5] space-y-1 list-disc list-inside">
               <li>Copie o Store ID acima</li>
-              <li>Adicione no arquivo .env da aplicação web: <code className="bg-blue-100 px-1 rounded">NEXT_PUBLIC_STORE_ID=seu-store-id</code></li>
+              <li>Adicione no arquivo .env da aplicação web: <code className="bg-primary/10 dark:bg-primary/20 px-1 rounded text-text-primary dark:text-white">NEXT_PUBLIC_STORE_ID=seu-store-id</code></li>
               <li>Ou configure como variável de ambiente no seu serviço de deploy</li>
             </ul>
           </div>
@@ -193,17 +193,17 @@ export default function StorePage() {
       </Card>
 
       {/* Logo Configuration Card */}
-      <Card className="border-0 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white/80 backdrop-blur-sm">
+      <Card className="dark:bg-surface-2 dark:border-[#1D1D1D]">
         <CardHeader>
-          <CardTitle className="text-xl font-light">Logo da Loja</CardTitle>
-          <CardDescription>
+          <CardTitle className="text-xl font-semibold text-text-primary">Logo da Loja</CardTitle>
+          <CardDescription className="text-text-secondary">
             Configure o logo que aparecerá na sua loja
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {isLoadingTheme ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-sm font-light text-gray-500">Carregando...</div>
+              <div className="text-sm text-text-secondary">Carregando...</div>
             </div>
           ) : (
             <>
@@ -242,11 +242,10 @@ export default function StorePage() {
 
       {/* Payment Methods Configuration */}
       <div>
-        <h2 className="text-2xl font-light tracking-tight text-gray-900 mb-6">Métodos de Pagamento</h2>
+        <h2 className="text-2xl font-semibold tracking-tight text-text-primary mb-6">Métodos de Pagamento</h2>
         <MercadoPagoConfig />
       </div>
 
     </div>
   )
 }
-

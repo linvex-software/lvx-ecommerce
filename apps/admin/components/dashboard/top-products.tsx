@@ -22,31 +22,31 @@ export function TopProducts({ products, isLoading = false }: TopProductsProps) {
     : products
 
   return (
-    <Card className="rounded-2xl border-gray-100 shadow-sm">
+    <Card className="dark:bg-surface-2 dark:border-[#1D1D1D]">
       <CardHeader className="flex flex-row items-center justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400">
+          <p className="text-xs font-semibold uppercase tracking-[0.35em] text-text-tertiary">
             Top produtos
           </p>
-          <CardTitle className="text-2xl font-light text-gray-900">Mais vendidos</CardTitle>
+          <CardTitle className="text-2xl font-semibold text-text-primary dark:text-white">Mais vendidos</CardTitle>
         </div>
         {!isLoading && (
-          <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600">
+          <span className="rounded-full bg-surface px-3 py-1 text-xs font-medium text-text-secondary dark:bg-[#111111] dark:text-[#B5B5B5]">
             Últimos 30 dias
           </span>
         )}
       </CardHeader>
-      <CardContent className="divide-y divide-gray-100">
+      <CardContent className="divide-y divide-border dark:divide-[#1D1D1D]">
         {items.map((product, index) => (
           <div key={product ? product.id : index} className="flex items-center gap-4 py-4">
-            <span className="text-sm font-semibold text-gray-400">#{index + 1}</span>
+            <span className="text-sm font-semibold text-text-tertiary">#{index + 1}</span>
             <div className="flex flex-1 flex-col">
               {product ? (
                 <>
-                  <p className="text-base font-medium text-gray-900">{product.name}</p>
-                  <div className="flex items-center gap-2 text-sm text-gray-500">
+                  <p className="text-base font-medium text-text-primary dark:text-white">{product.name}</p>
+                  <div className="flex items-center gap-2 text-sm text-text-secondary dark:text-[#B5B5B5]">
                     {product.sku && (
-                      <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
+                      <code className="rounded bg-surface px-1.5 py-0.5 text-xs text-text-secondary dark:bg-[#111111] dark:text-[#B5B5B5]">
                         {product.sku}
                       </code>
                     )}
@@ -55,21 +55,21 @@ export function TopProducts({ products, isLoading = false }: TopProductsProps) {
                 </>
               ) : (
                 <>
-                  <span className="mb-1 block h-4 w-40 animate-pulse rounded bg-gray-200/80" />
-                  <span className="block h-3 w-32 animate-pulse rounded bg-gray-200/60" />
+                  <span className="mb-1 block h-4 w-40 animate-pulse rounded bg-gray-200/80 dark:bg-[#111111]" />
+                  <span className="block h-3 w-32 animate-pulse rounded bg-gray-200/60 dark:bg-[#111111]" />
                 </>
               )}
             </div>
             <div className="text-right">
               {product ? (
                 <>
-                  <p className="text-sm font-semibold text-gray-900">{product.revenue}</p>
-                  <p className="text-xs text-gray-500">{product.unitsSold} unidades</p>
+                  <p className="text-sm font-semibold text-text-primary dark:text-white">{product.revenue}</p>
+                  <p className="text-xs text-text-secondary dark:text-[#B5B5B5]">{product.unitsSold} unidades</p>
                 </>
               ) : (
                 <>
-                  <span className="mb-1 block h-4 w-24 animate-pulse rounded bg-gray-200/80" />
-                  <span className="block h-3 w-16 animate-pulse rounded bg-gray-200/60" />
+                  <span className="mb-1 block h-4 w-24 animate-pulse rounded bg-gray-200/80 dark:bg-[#111111]" />
+                  <span className="block h-3 w-16 animate-pulse rounded bg-gray-200/60 dark:bg-[#111111]" />
                 </>
               )}
             </div>
