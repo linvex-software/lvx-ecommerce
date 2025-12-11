@@ -61,9 +61,8 @@ const navItems: NavItem[] = [
     icon: Palette
   },
   {
- 
     title: 'Cupons',
-    href: '/coupons',
+    href: '/cupons',
     icon: Ticket
   },
   {

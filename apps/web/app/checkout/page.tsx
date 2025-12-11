@@ -13,6 +13,7 @@ import { cn } from '@/lib/utils'
 import { DeliveryOptionsWithCep } from '@/components/checkout/DeliveryOptionsWithCep'
 import { MercadoPagoPayment } from '@/components/checkout/MercadoPagoPayment'
 import { PixQrCode } from '@/components/checkout/PixQrCode'
+import { CouponInput } from '@/components/checkout/CouponInput'
 import { useIsAuthenticated, useHasHydrated, useAuthStore } from '@/lib/store/useAuthStore'
 import { useCustomerProfile } from '@/lib/hooks/use-customer-profile'
 import { useAddresses } from '@/lib/hooks/use-addresses'
@@ -67,6 +68,10 @@ export default function CheckoutPage() {
   const [paymentResult, setPaymentResult] = useState<any>(null)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [hasInitializedForm, setHasInitializedForm] = useState(false)
+  const [appliedCoupon, setAppliedCoupon] = useState<{
+    code: string
+    discountValue: number
+  } | null>(null)
 
   // Verificar autenticação e redirecionar se necessário
   useEffect(() => {
@@ -167,9 +172,10 @@ export default function CheckoutPage() {
   }
 
   // Calcular total do carrinho
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
+  const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0)
   const finalShippingCost = selectedDeliveryOption?.type === 'shipping' ? shippingCost : 0
-  const finalTotal = total + finalShippingCost
+  const discount = appliedCoupon?.discountValue || 0
+  const total = subtotal - discount + finalShippingCost
 
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep)
 
@@ -246,7 +252,7 @@ export default function CheckoutPage() {
         shipping_cost: Math.round(finalShippingCost * 100), // converter para centavos
         delivery_type: selectedDeliveryOption.type,
         delivery_option_id: selectedDeliveryOption.id,
-        coupon_code: null,
+        coupon_code: appliedCoupon?.code || null,
         shipping_address: shippingAddress,
       })
 
@@ -577,7 +583,7 @@ export default function CheckoutPage() {
                   ) : (
                     <MercadoPagoPayment
                       orderId={createdOrder?.id || ''}
-                      amount={Math.round(finalTotal * 100)} // converter para centavos
+                      amount={Math.round(total * 100)} // converter para centavos
                       payer={{
                         email: formData.email,
                         firstName: formData.name.split(' ')[0] || '',
@@ -687,18 +693,39 @@ export default function CheckoutPage() {
                 ))}
                     </div>
 
+              {/* Campo de Cupom */}
+              <div className="pt-4 border-t border-border">
+                <CouponInput
+                  subtotal={subtotal}
+                  onCouponApplied={(couponData) => {
+                    setAppliedCoupon({
+                      code: couponData.code,
+                      discountValue: couponData.discountValue,
+                    })
+                  }}
+                  onCouponRemoved={() => setAppliedCoupon(null)}
+                  appliedCoupon={appliedCoupon?.code || null}
+                />
+              </div>
+
               <div className="space-y-3 pt-4 border-t border-border">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Subtotal</span>
-                  <span>{formatPrice(total)}</span>
+                  <span>{formatPrice(subtotal)}</span>
                 </div>
+                {appliedCoupon && (
+                  <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                    <span>Desconto ({appliedCoupon.code})</span>
+                    <span>-{formatPrice(appliedCoupon.discountValue)}</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">Frete</span>
                   <span>{finalShippingCost === 0 ? 'Grátis' : formatPrice(finalShippingCost)}</span>
                 </div>
                 <div className="flex justify-between pt-3 border-t border-border">
                   <span className="font-display text-lg">Total</span>
-                  <span className="font-display text-xl">{formatPrice(finalTotal)}</span>
+                  <span className="font-display text-xl">{formatPrice(total)}</span>
                 </div>
               </div>
             </div>
