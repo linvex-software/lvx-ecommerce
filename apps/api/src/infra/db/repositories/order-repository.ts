@@ -60,6 +60,7 @@ export class OrderRepository {
           shipping_cost: (orderData.shipping_cost / 100).toFixed(2), // Converter centavos para reais
           delivery_type: orderData.delivery_type ?? null,
           delivery_option_id: orderData.delivery_option_id ?? null,
+          shipping_address: orderData.shipping_address ?? null, // JSONB: Drizzle faz stringify automaticamente
           shipping_label_url: null,
           tracking_code: null
         })
@@ -121,7 +122,7 @@ export class OrderRepository {
       shipping_cost: number // em centavos
       delivery_type?: 'shipping' | 'pickup_point' | null
       delivery_option_id?: string | null
-      shipping_address: {
+      shipping_address?: {
         zip_code: string
         street?: string
         number?: string
@@ -163,6 +164,7 @@ export class OrderRepository {
           shipping_cost: (orderData.shipping_cost / 100).toFixed(2), // Converter centavos para reais
           delivery_type: orderData.delivery_type ?? null,
           delivery_option_id: orderData.delivery_option_id ?? null,
+          shipping_address: orderData.shipping_address ?? null, // JSONB: Drizzle faz stringify automaticamente
           shipping_label_url: null,
           tracking_code: null
         })
@@ -289,20 +291,53 @@ export class OrderRepository {
       .where(and(...conditions))
       .orderBy(desc(schema.orders.created_at))
 
-    return result.map((row) => ({
-      id: row.id,
-      store_id: row.store_id,
-      customer_id: row.customer_id,
-      total: row.total,
-      status: row.status as Order['status'],
-      payment_status: row.payment_status as Order['payment_status'],
-      shipping_cost: row.shipping_cost,
-      shipping_label_url: row.shipping_label_url,
-      tracking_code: row.tracking_code,
-      delivery_type: row.delivery_type as Order['delivery_type'],
-      delivery_option_id: row.delivery_option_id,
-      created_at: row.created_at
-    }))
+    // Carregar items de cada pedido
+    const ordersWithItems = await Promise.all(
+      result.map(async (row) => {
+        // Buscar itens do pedido com nome do produto
+        const itemsResult = await db
+          .select({
+            id: schema.orderItems.id,
+            order_id: schema.orderItems.order_id,
+            product_id: schema.orderItems.product_id,
+            variant_id: schema.orderItems.variant_id,
+            quantity: schema.orderItems.quantity,
+            price: schema.orderItems.price,
+            product_name: schema.products.name
+          })
+          .from(schema.orderItems)
+          .leftJoin(schema.products, eq(schema.orderItems.product_id, schema.products.id))
+          .where(eq(schema.orderItems.order_id, row.id))
+
+        const items: OrderItem[] = itemsResult.map((item) => ({
+          id: item.id,
+          order_id: item.order_id,
+          product_id: item.product_id,
+          variant_id: item.variant_id,
+          quantity: item.quantity,
+          price: item.price,
+          product_name: item.product_name || null
+        }))
+
+        return {
+          id: row.id,
+          store_id: row.store_id,
+          customer_id: row.customer_id,
+          total: row.total,
+          status: row.status as Order['status'],
+          payment_status: row.payment_status as Order['payment_status'],
+          shipping_cost: row.shipping_cost,
+          shipping_label_url: row.shipping_label_url,
+          tracking_code: row.tracking_code,
+          delivery_type: row.delivery_type as Order['delivery_type'],
+          delivery_option_id: row.delivery_option_id,
+          created_at: row.created_at,
+          items
+        }
+      })
+    )
+
+    return ordersWithItems
   }
 
   async findById(id: string, storeId: string): Promise<Order | null> {
@@ -339,10 +374,23 @@ export class OrderRepository {
   }
 
   async findByIdWithItems(id: string, storeId: string): Promise<OrderWithItems | null> {
-    const order = await this.findById(id, storeId)
-    if (!order) {
+    // Buscar pedido completo incluindo shipping_address
+    const result = await db
+      .select()
+      .from(schema.orders)
+      .where(
+        and(
+          eq(schema.orders.id, id),
+          eq(schema.orders.store_id, storeId)
+        )
+      )
+      .limit(1)
+
+    if (result.length === 0) {
       return null
     }
+
+    const row = result[0]
 
     // Buscar itens com nome do produto
     const itemsResult = await db
@@ -359,22 +407,32 @@ export class OrderRepository {
       .leftJoin(schema.products, eq(schema.orderItems.product_id, schema.products.id))
       .where(eq(schema.orderItems.order_id, id))
 
-    const items: OrderItem[] = itemsResult.map((row) => ({
-      id: row.id,
-      order_id: row.order_id,
-      product_id: row.product_id,
-      variant_id: row.variant_id,
-      quantity: row.quantity,
-      price: row.price,
-      product_name: row.product_name || null
+    const items: OrderItem[] = itemsResult.map((item) => ({
+      id: item.id,
+      order_id: item.order_id,
+      product_id: item.product_id,
+      variant_id: item.variant_id,
+      quantity: item.quantity,
+      price: item.price,
+      product_name: item.product_name || null
     }))
 
-    // Buscar endereço de entrega (opcional - tabela pode não existir)
-    // Por enquanto, retornar null pois a tabela não existe
-    const shippingAddress = null
+    // JSONB: Drizzle faz parse automaticamente, retorna objeto direto
+    const shippingAddress = row.shipping_address ?? null
 
     return {
-      ...order,
+      id: row.id,
+      store_id: row.store_id,
+      customer_id: row.customer_id,
+      total: row.total,
+      status: row.status as Order['status'],
+      payment_status: row.payment_status as Order['payment_status'],
+      shipping_cost: row.shipping_cost,
+      shipping_label_url: row.shipping_label_url,
+      tracking_code: row.tracking_code,
+      delivery_type: row.delivery_type as Order['delivery_type'],
+      delivery_option_id: row.delivery_option_id,
+      created_at: row.created_at,
       items,
       shipping_address: shippingAddress
     }
