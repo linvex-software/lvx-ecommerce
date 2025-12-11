@@ -60,12 +60,26 @@ export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchPro
     }
 
     try {
-      const customer = await createCustomer.mutateAsync({
-        name: createForm.name,
-        cpf: cpfUnmasked || null, // Enviar sem máscara ou null
-        email: createForm.email || null,
-        phone: createForm.phone ? unmaskPhone(createForm.phone) : null // Enviar sem máscara
-      })
+      const payload: any = {
+        name: createForm.name.trim(),
+      }
+      
+      // Só incluir CPF se preenchido
+      if (cpfUnmasked) {
+        payload.cpf = cpfUnmasked
+      }
+      
+      // Só incluir email se preenchido
+      if (createForm.email && createForm.email.trim()) {
+        payload.email = createForm.email.trim()
+      }
+      
+      // Só incluir telefone se preenchido
+      if (createForm.phone) {
+        payload.phone = unmaskPhone(createForm.phone)
+      }
+
+      const customer = await createCustomer.mutateAsync(payload)
       onSelect(customer)
       setShowCreateForm(false)
       setCreateForm({ name: '', cpf: '', email: '', phone: '' })
@@ -73,7 +87,21 @@ export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchPro
       setSearchQuery('')
       toast.success('Cliente criado com sucesso')
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Erro ao criar cliente')
+      // Melhorar tratamento de erro para mostrar detalhes de validação
+      const errorData = error.response?.data
+      if (errorData?.details && Array.isArray(errorData.details)) {
+        // Erros de validação do Zod
+        const errorMessages = errorData.details.map((err: any) => {
+          const field = err.path?.join('.') || 'campo'
+          return `${field}: ${err.message}`
+        })
+        toast.error(`Erro de validação: ${errorMessages.join(', ')}`)
+      } else if (errorData?.error) {
+        toast.error(errorData.error)
+      } else {
+        toast.error('Erro ao criar cliente')
+      }
+      console.error('Erro ao criar cliente:', error.response?.data || error)
     }
   }
 
