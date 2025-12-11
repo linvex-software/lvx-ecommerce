@@ -46,5 +46,17 @@ export async function registerAdminUserRoutes(app: FastifyInstance): Promise<voi
       await userController.delete(request, reply)
     }
   )
+
+  // GET /admin/users/vendors - Lista vendedores da loja (admin, operador ou vendedor)
+  app.get(
+    '/admin/users/vendors',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await userController.listVendors(request, reply)
+    }
+  )
 }
 

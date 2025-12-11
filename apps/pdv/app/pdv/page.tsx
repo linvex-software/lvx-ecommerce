@@ -4,7 +4,7 @@ import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { usePDV } from '@/context/pdv-context'
 
-export default function PDVPage() {
+export default function PDVIndexPage() {
   const router = useRouter()
   const { state } = usePDV()
 
@@ -31,3 +31,4 @@ export default function PDVPage() {
     </div>
   )
 }
+

@@ -6,6 +6,7 @@ import { Button } from '@white-label/ui'
 import { useSearchCustomers, useCreateCustomer, type Customer } from '@/lib/hooks/use-customers'
 import { useDebounce } from '@/lib/hooks/use-debounce'
 import { maskCPF, unmaskCPF, maskPhone, unmaskPhone, validateCPF } from '@/lib/utils/masks'
+import toast from 'react-hot-toast'
 
 interface CustomerSearchProps {
   onSelect: (customer: Customer | null) => void
@@ -35,29 +36,33 @@ export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchPro
   }
 
   const handleCreateCustomer = async () => {
-    if (!createForm.name || !createForm.cpf) {
-      alert('Nome e CPF são obrigatórios')
+    if (!createForm.name.trim()) {
+      toast.error('Nome é obrigatório')
       return
     }
 
-    // Validar CPF
-    const cpfUnmasked = unmaskCPF(createForm.cpf)
-    if (cpfUnmasked.length !== 11) {
-      setCpfError('CPF deve ter 11 dígitos')
-      return
-    }
+    // CPF é opcional para criação rápida
+    let cpfUnmasked: string | null = null
+    if (createForm.cpf && createForm.cpf.trim()) {
+      // Validar CPF
+      cpfUnmasked = unmaskCPF(createForm.cpf)
+      if (cpfUnmasked.length !== 11) {
+        setCpfError('CPF deve ter 11 dígitos')
+        return
+      }
 
-    if (!validateCPF(createForm.cpf)) {
-      setCpfError('CPF inválido. Verifique os dígitos.')
-      return
-    }
+      if (!validateCPF(createForm.cpf)) {
+        setCpfError('CPF inválido. Verifique os dígitos.')
+        return
+      }
 
-    setCpfError(null)
+      setCpfError(null)
+    }
 
     try {
       const customer = await createCustomer.mutateAsync({
         name: createForm.name,
-        cpf: cpfUnmasked, // Enviar sem máscara
+        cpf: cpfUnmasked || null, // Enviar sem máscara ou null
         email: createForm.email || null,
         phone: createForm.phone ? unmaskPhone(createForm.phone) : null // Enviar sem máscara
       })
@@ -66,8 +71,9 @@ export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchPro
       setCreateForm({ name: '', cpf: '', email: '', phone: '' })
       setCpfError(null)
       setSearchQuery('')
+      toast.success('Cliente criado com sucesso')
     } catch (error: any) {
-      alert(error.response?.data?.error || 'Erro ao criar cliente')
+      toast.error(error.response?.data?.error || 'Erro ao criar cliente')
     }
   }
 
@@ -162,12 +168,12 @@ export function CustomerSearch({ onSelect, selectedCustomer }: CustomerSearchPro
               <div>
                 <input
                   type="text"
-                  placeholder="CPF * (000.000.000-00)"
+                  placeholder="CPF (opcional) (000.000.000-00)"
                   value={createForm.cpf}
                   onChange={(e) => {
                     const masked = maskCPF(e.target.value)
                     setCreateForm({ ...createForm, cpf: masked })
-                    // Validar em tempo real
+                    // Validar em tempo real apenas se preenchido
                     if (masked.length > 0) {
                       const unmasked = unmaskCPF(masked)
                       if (unmasked.length === 11) {

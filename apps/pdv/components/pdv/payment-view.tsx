@@ -12,15 +12,13 @@ interface PaymentViewProps {
   onComplete: (orderId: string) => void
 }
 
-type PaymentMethod = 'pix' | 'credit_card' | 'debit_card' | 'cash'
-type PaymentStatus = 'now' | 'pending' | 'on_delivery'
+type PaymentMethod = 'pix' | 'credit_card' | 'debit_card' | 'cash' | 'other'
 
 export function PaymentView({ onBack, onComplete }: PaymentViewProps) {
   const { data: cart } = useActivePdvCart()
   const finalizeSale = useFinalizePdvSale()
 
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('pix')
-  const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>('now')
 
   const formatCurrency = (cents: number | string) => {
     const value = typeof cents === 'string' ? parseFloat(cents) : cents
@@ -59,7 +57,8 @@ export function PaymentView({ onBack, onComplete }: PaymentViewProps) {
     try {
       const order = await finalizeSale.mutateAsync({
         cart_id: cart.id,
-        origin: cart.origin || 'pdv'
+        origin: cart.origin || 'pdv',
+        payment_method: paymentMethod
       })
 
       toast.success('Venda registrada com sucesso!')
@@ -163,67 +162,21 @@ export function PaymentView({ onBack, onComplete }: PaymentViewProps) {
                   )}
                 </div>
               </button>
-            </CardContent>
-          </Card>
 
-          {/* Status do Pagamento */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Registrar pagamento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
               <button
-                onClick={() => setPaymentStatus('now')}
+                onClick={() => setPaymentMethod('other')}
                 className={`w-full p-4 border-2 rounded-lg text-left transition-all ${
-                  paymentStatus === 'now'
+                  paymentMethod === 'other'
                     ? 'border-blue-600 bg-blue-50'
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold text-gray-900">Registrar pagamento agora</p>
-                    <p className="text-sm text-gray-600">Pagamento confirmado imediatamente</p>
+                    <p className="font-semibold text-gray-900">Outro</p>
+                    <p className="text-sm text-gray-600">Outro método de pagamento</p>
                   </div>
-                  {paymentStatus === 'now' && (
-                    <Check className="h-5 w-5 text-blue-600" />
-                  )}
-                </div>
-              </button>
-
-              <button
-                onClick={() => setPaymentStatus('pending')}
-                className={`w-full p-4 border-2 rounded-lg text-left transition-all ${
-                  paymentStatus === 'pending'
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">Registrar como pendente</p>
-                    <p className="text-sm text-gray-600">Aguardando confirmação</p>
-                  </div>
-                  {paymentStatus === 'pending' && (
-                    <Check className="h-5 w-5 text-blue-600" />
-                  )}
-                </div>
-              </button>
-
-              <button
-                onClick={() => setPaymentStatus('on_delivery')}
-                className={`w-full p-4 border-2 rounded-lg text-left transition-all ${
-                  paymentStatus === 'on_delivery'
-                    ? 'border-blue-600 bg-blue-50'
-                    : 'border-gray-200 hover:border-gray-300'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-semibold text-gray-900">Registrar quando entregue</p>
-                    <p className="text-sm text-gray-600">Pagamento na entrega</p>
-                  </div>
-                  {paymentStatus === 'on_delivery' && (
+                  {paymentMethod === 'other' && (
                     <Check className="h-5 w-5 text-blue-600" />
                   )}
                 </div>

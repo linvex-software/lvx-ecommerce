@@ -5,6 +5,7 @@ import {
   createUserSchema
 } from '../../../application/users/use-cases/create-user'
 import { listUsersUseCase } from '../../../application/users/use-cases/list-users'
+import { listVendorsUseCase } from '../../../application/users/use-cases/list-vendors'
 import { UserRepository } from '../../../infra/db/repositories/user-repository'
 
 export class UserController {
@@ -89,6 +90,28 @@ export class UserController {
       await this.userRepository.delete(id, storeId)
 
       await reply.code(204).send()
+    } catch (error) {
+      if (error instanceof Error) {
+        await reply.code(500).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async listVendors(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const result = await listVendorsUseCase(storeId, {
+        userRepository: this.userRepository
+      })
+
+      await reply.send(result)
     } catch (error) {
       if (error instanceof Error) {
         await reply.code(500).send({ error: error.message })
