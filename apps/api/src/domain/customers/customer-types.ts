@@ -3,7 +3,7 @@ export interface Customer {
   store_id: string
   name: string
   email: string | null
-  cpf: string // CPF obrigatório
+  cpf: string | null // CPF opcional para criação rápida no PDV
   phone: string | null
   password_hash: string | null
   created_at: Date
@@ -33,7 +33,7 @@ export interface CustomerProfile {
   store_id: string
   name: string
   email: string | null
-  cpf: string // CPF obrigatório
+  cpf: string | null // CPF opcional para criação rápida no PDV
   phone: string | null
   created_at: Date
 }
