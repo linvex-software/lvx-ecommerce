@@ -184,32 +184,32 @@ export const physicalSalesCommissions = pgTable(
   })
 )
 
-// Tabela shipping_addresses comentada temporariamente
-// A tabela não existe no banco e não é necessária para criar pedidos
-// TODO: Criar tabela e descomentar quando necessário
-/*
-export const shippingAddresses = pgTable(
-  'shipping_addresses',
+export const orderStatusHistory = pgTable(
+  'order_status_history',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     order_id: uuid('order_id')
       .notNull()
       .references(() => orders.id, { onDelete: 'cascade' }),
-    zip_code: text('zip_code').notNull(),
-    street: text('street'),
-    number: text('number'),
-    complement: text('complement'),
-    neighborhood: text('neighborhood'),
-    city: text('city'),
-    state: text('state'),
-    country: text('country'),
+    from_status: text('from_status'),
+    to_status: text('to_status').notNull(),
+    from_payment_status: text('from_payment_status'),
+    to_payment_status: text('to_payment_status'),
+    changed_by_user_id: uuid('changed_by_user_id').references(() => users.id, {
+      onDelete: 'set null'
+    }),
+    notes: text('notes'),
     created_at: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull()
   },
   (table) => ({
-    orderIdIdx: index('shipping_addresses_order_id_idx').on(table.order_id)
+    orderIdIdx: index('order_status_history_order_id_idx').on(table.order_id),
+    orderCreatedIdx: index('order_status_history_order_created_idx').on(
+      table.order_id,
+      table.created_at
+    )
   })
 )
-*/
+
 

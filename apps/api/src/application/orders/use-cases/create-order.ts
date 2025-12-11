@@ -210,8 +210,7 @@ export async function createOrderUseCase(
       payment_status: 'pending',
       shipping_cost: shippingCost,
       delivery_type: deliveryType,
-      delivery_option_id: deliveryOptionId,
-      shipping_address: validated.shipping_address ?? null
+      delivery_option_id: deliveryOptionId
     },
     validated.items.map(item => ({
       product_id: item.product_id,

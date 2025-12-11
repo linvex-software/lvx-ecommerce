@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Package } from 'lucide-react'
 import { AccountNavMenu } from '@/components/account/AccountNavMenu'
 import { AccountBreadcrumb } from '@/components/account/AccountBreadcrumb'
+import { OrderTimeline, type OrderStatus, type PaymentStatus } from '@/components/account/order-timeline'
 
 export default function PedidoDetalhePage({
   params,
@@ -113,6 +114,15 @@ export default function PedidoDetalhePage({
                 />
               </div>
 
+              {/* Timeline do Pedido */}
+              <div className="mb-6">
+                <OrderTimeline
+                  status={order.status as OrderStatus}
+                  paymentStatus={order.payment_status as PaymentStatus}
+                  createdAt={order.created_at}
+                />
+              </div>
+
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 mb-6">
                 <div className="flex items-center justify-between mb-6">
                   <h1 className="text-2xl font-bold text-gray-900">
@@ -123,21 +133,10 @@ export default function PedidoDetalhePage({
                   </span>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div>
-                    <p className="text-sm text-gray-600">Status</p>
-                    <p className="font-semibold">{order.status}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-gray-600">Pagamento</p>
-                    <p className="font-semibold">{order.payment_status}</p>
-                  </div>
-                </div>
-
                 {order.tracking_code && (
-                  <div className="mb-6">
+                  <div className="mb-6 rounded-lg border border-blue-200 bg-blue-50 p-4">
                     <p className="text-sm text-gray-600 mb-1">Código de Rastreamento</p>
-                    <p className="font-semibold text-blue-600">{order.tracking_code}</p>
+                    <p className="font-semibold text-blue-900">{order.tracking_code}</p>
                   </div>
                 )}
 

@@ -1,13 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Package, Download, ExternalLink, User, MapPin } from 'lucide-react'
-import { useMemo } from 'react'
+import { ArrowLeft, Package, Download, ExternalLink, User, Printer } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { Button } from '@white-label/ui'
 import { Card } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { useCustomers } from '@/lib/hooks/use-customers'
-import type { Order } from '@/lib/hooks/use-orders'
+import { useUpdateOrder, type Order, type OrderStatus, type PaymentStatus } from '@/lib/hooks/use-orders'
 
 interface OrderDetailsProps {
   order: Order
@@ -79,6 +86,8 @@ const getPaymentStatusLabel = (status: Order['payment_status']) => {
 
 export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: OrderDetailsProps) {
   const { data: customers } = useCustomers()
+  const updateOrderMutation = useUpdateOrder()
+  
   const customer = useMemo(() => {
     if (!order.customer_id || !customers) return null
     return customers.find((c) => c.id === order.customer_id) || null
@@ -98,12 +107,30 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
     }
   }
 
+  const handleStatusChange = async (newStatus: OrderStatus) => {
+    await updateOrderMutation.mutateAsync({
+      orderId: order.id,
+      data: { status: newStatus }
+    })
+  }
+
+  const handlePaymentStatusChange = async (newPaymentStatus: PaymentStatus) => {
+    await updateOrderMutation.mutateAsync({
+      orderId: order.id,
+      data: { payment_status: newPaymentStatus }
+    })
+  }
+
+  const handlePrint = () => {
+    window.print()
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between print:justify-start">
         <div className="flex items-center gap-4">
-          <Link href="/orders">
+          <Link href="/orders" className="print:hidden">
             <Button variant="outline" className="h-10 w-10 p-0">
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -116,6 +143,16 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
               Criado em {dateFormatter.format(new Date(order.created_at))}
             </p>
           </div>
+        </div>
+        <div className="flex items-center gap-2 print:hidden">
+          <Button
+            variant="outline"
+            onClick={handlePrint}
+            className="gap-2"
+          >
+            <Printer className="h-4 w-4" />
+            Imprimir
+          </Button>
         </div>
       </div>
 
@@ -143,20 +180,45 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
           )}
 
           {/* Status e pagamento */}
-          <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
+          <Card className="rounded-2xl border-gray-100 p-6 shadow-sm print:shadow-none">
             <h2 className="mb-4 text-lg font-semibold text-gray-900">Status do Pedido</h2>
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-gray-600">Status:</span>
-                <Badge variant={getStatusBadgeVariant(order.status)}>
-                  {getStatusLabel(order.status)}
-                </Badge>
+                <Select 
+                  value={order.status} 
+                  onValueChange={handleStatusChange}
+                  disabled={updateOrderMutation.isPending}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="processing">Em Separação</SelectItem>
+                    <SelectItem value="shipped">Enviado</SelectItem>
+                    <SelectItem value="delivered">Entregue</SelectItem>
+                    <SelectItem value="cancelled">Cancelado</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <span className="text-sm text-gray-600">Pagamento:</span>
-                <Badge variant={order.payment_status === 'paid' ? 'success' : 'secondary'}>
-                  {getPaymentStatusLabel(order.payment_status)}
-                </Badge>
+                <Select 
+                  value={order.payment_status} 
+                  onValueChange={handlePaymentStatusChange}
+                  disabled={updateOrderMutation.isPending}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="paid">Pago</SelectItem>
+                    <SelectItem value="refunded">Reembolsado</SelectItem>
+                    <SelectItem value="failed">Falhou</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-gray-600">Tipo de Entrega:</span>
@@ -189,36 +251,7 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
             </Card>
           )}
 
-          {/* Endereço de entrega */}
-          {order.shipping_address && (
-            <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
-              <div className="mb-4 flex items-center gap-2">
-                <MapPin className="h-5 w-5 text-gray-400" />
-                <h2 className="text-lg font-semibold text-gray-900">Endereço de Entrega</h2>
-              </div>
-              <div className="space-y-2 text-sm text-gray-600">
-                {order.shipping_address.street && (
-                  <p>
-                    {order.shipping_address.street}
-                    {order.shipping_address.number && `, ${order.shipping_address.number}`}
-                    {order.shipping_address.complement && ` - ${order.shipping_address.complement}`}
-                  </p>
-                )}
-                {order.shipping_address.neighborhood && (
-                  <p>{order.shipping_address.neighborhood}</p>
-                )}
-                {(order.shipping_address.city || order.shipping_address.state) && (
-                  <p>
-                    {order.shipping_address.city}
-                    {order.shipping_address.state && `, ${order.shipping_address.state}`}
-                  </p>
-                )}
-                {order.shipping_address.zip_code && (
-                  <p className="font-medium">CEP: {order.shipping_address.zip_code.replace(/^(\d{5})(\d{3})$/, '$1-$2')}</p>
-                )}
-              </div>
-            </Card>
-          )}
+          {/* TODO: Implementar exibição de endereço via customer_addresses */}
         </div>
 
         {/* Sidebar - Frete e etiqueta */}
