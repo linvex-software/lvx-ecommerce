@@ -311,5 +311,17 @@ export class UserRepository {
       .delete(schema.users)
       .where(and(eq(schema.users.id, id), eq(schema.users.store_id, storeId)))
   }
+
+  async updatePassword(id: string, storeId: string, passwordHash: string): Promise<void> {
+    const result = await db
+      .update(schema.users)
+      .set({ password_hash: passwordHash })
+      .where(and(eq(schema.users.id, id), eq(schema.users.store_id, storeId)))
+      .returning()
+
+    if (result.length === 0) {
+      throw new Error('User not found')
+    }
+  }
 }
 

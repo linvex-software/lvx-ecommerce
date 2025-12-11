@@ -105,26 +105,26 @@ export function CategoryTable({ categories, onEdit, isLoading = false }: Categor
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-[#1D1D1D] dark:bg-[#0A0A0A]">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead>Slug</TableHead>
-              <TableHead className="w-[100px]">Ações</TableHead>
+            <TableRow className="dark:border-[#1D1D1D]">
+              <TableHead className="dark:text-[#E0E0E0]">Nome</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Slug</TableHead>
+              <TableHead className="w-[100px] dark:text-[#E0E0E0]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {[1, 2, 3].map((i) => (
-              <TableRow key={i}>
+              <TableRow key={i} className="dark:border-[#1D1D1D]">
                 <TableCell>
-                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-8 w-8 animate-pulse rounded bg-gray-200" />
+                  <div className="h-8 w-8 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
               </TableRow>
             ))}
@@ -136,9 +136,9 @@ export function CategoryTable({ categories, onEdit, isLoading = false }: Categor
 
   if (categories.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-sm">
-        <p className="text-sm font-medium text-gray-500">Nenhuma categoria encontrada</p>
-        <p className="mt-1 text-xs text-gray-400">
+      <div className="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-sm dark:border-[#1D1D1D] dark:bg-[#0A0A0A]">
+        <p className="text-sm font-medium text-gray-500 dark:text-[#CCCCCC]">Nenhuma categoria encontrada</p>
+        <p className="mt-1 text-xs text-gray-400 dark:text-[#B5B5B5]">
           Tente ajustar os filtros ou criar uma nova categoria
         </p>
       </div>
@@ -146,27 +146,27 @@ export function CategoryTable({ categories, onEdit, isLoading = false }: Categor
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden dark:border-[#1D1D1D] dark:bg-[#0A0A0A]">
       <div className="overflow-x-auto">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Nome</TableHead>
-              <TableHead className="hidden sm:table-cell">Slug</TableHead>
-              <TableHead className="w-[100px] text-right">Ações</TableHead>
+            <TableRow className="dark:border-[#1D1D1D] hover:bg-transparent">
+              <TableHead className="dark:text-[#E0E0E0]">Nome</TableHead>
+              <TableHead className="hidden sm:table-cell dark:text-[#E0E0E0]">Slug</TableHead>
+              <TableHead className="w-[100px] text-right dark:text-[#E0E0E0]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {categoryTree.map((category) => (
-              <TableRow 
+              <TableRow
                 key={category.id}
-                className={category.level > 0 ? 'bg-gray-50/50' : ''}
+                className={`${category.level > 0 ? 'bg-gray-50/50 dark:bg-[#111111]/30' : ''} dark:border-[#1D1D1D] dark:hover:bg-[#1A1A1A] even:dark:bg-[#111111]/30`}
               >
                 <TableCell>
                   <div className="flex items-center gap-3 min-w-0">
                     {category.level > 0 && (
-                      <div 
-                        className="flex items-center flex-shrink-0" 
+                      <div
+                        className="flex items-center flex-shrink-0"
                         style={{ width: `${category.level * 24}px`, paddingLeft: `${(category.level - 1) * 8}px` }}
                       >
                         <div className="flex items-center">
@@ -177,34 +177,34 @@ export function CategoryTable({ categories, onEdit, isLoading = false }: Categor
                     )}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className={`font-medium truncate ${category.level > 0 ? 'text-gray-700' : 'text-gray-900'}`}>
+                        <p className={`font-medium truncate ${category.level > 0 ? 'text-gray-700 dark:text-[#CCCCCC]' : 'text-gray-900 dark:text-white'}`}>
                           {category.name}
                         </p>
                         {category.level > 0 && (
-                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 shrink-0">
+                          <span className="inline-flex items-center rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 shrink-0 dark:bg-blue-900/30 dark:text-blue-300">
                             Subcategoria
                           </span>
                         )}
                       </div>
                       <div className="flex items-center gap-2 mt-0.5 sm:hidden">
-                        <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600 truncate max-w-[200px]">
+                        <code className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600 truncate max-w-[200px] dark:bg-[#111111] dark:text-[#B5B5B5]">
                           {category.slug}
                         </code>
                       </div>
                       {category.parentName && (
-                        <p className="text-xs text-blue-600 mt-1.5 font-medium hidden sm:flex items-center gap-1.5">
-                          <span className="inline-flex items-center gap-1 text-gray-400">
-                            <span className="w-1 h-1 rounded-full bg-gray-400" />
+                        <p className="text-xs text-blue-600 mt-1.5 font-medium hidden sm:flex items-center gap-1.5 dark:text-blue-400">
+                          <span className="inline-flex items-center gap-1 text-gray-400 dark:text-[#777777]">
+                            <span className="w-1 h-1 rounded-full bg-gray-400 dark:bg-[#777777]" />
                             Pai:
                           </span>
-                          <span className="font-semibold text-blue-700">{category.parentName}</span>
+                          <span className="font-semibold text-blue-700 dark:text-blue-300">{category.parentName}</span>
                         </p>
                       )}
                     </div>
                   </div>
                 </TableCell>
                 <TableCell className="hidden sm:table-cell">
-                  <code className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600">
+                  <code className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 dark:bg-[#111111] dark:text-[#B5B5B5]">
                     {category.slug}
                   </code>
                 </TableCell>

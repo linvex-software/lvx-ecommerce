@@ -95,42 +95,42 @@ export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-[#1D1D1D] dark:bg-[#0A0A0A]">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Cliente</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Pagamento</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+            <TableRow className="dark:border-[#1D1D1D]">
+              <TableHead className="dark:text-[#E0E0E0]">ID</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Data</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Cliente</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Status</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Pagamento</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Total</TableHead>
+              <TableHead className="text-right dark:text-[#E0E0E0]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
+              <TableRow key={i} className="dark:border-[#1D1D1D]">
                 <TableCell>
-                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-6 w-20 animate-pulse rounded-full bg-gray-200" />
+                  <div className="h-6 w-20 animate-pulse rounded-full bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-6 w-16 animate-pulse rounded-full bg-gray-200" />
+                  <div className="h-6 w-16 animate-pulse rounded-full bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="ml-auto h-8 w-8 animate-pulse rounded bg-gray-200" />
+                  <div className="ml-auto h-8 w-8 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
               </TableRow>
             ))}
@@ -142,10 +142,10 @@ export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
 
   if (orders.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-sm">
-        <Package className="mx-auto h-12 w-12 text-gray-400" />
-        <p className="mt-4 text-sm font-medium text-gray-500">Nenhum pedido encontrado</p>
-        <p className="mt-1 text-xs text-gray-400">
+      <div className="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-sm dark:border-[#1D1D1D] dark:bg-[#0A0A0A]">
+        <Package className="mx-auto h-12 w-12 text-gray-400 dark:text-[#777777]" />
+        <p className="mt-4 text-sm font-medium text-gray-500 dark:text-[#CCCCCC]">Nenhum pedido encontrado</p>
+        <p className="mt-1 text-xs text-gray-400 dark:text-[#B5B5B5]">
           Tente ajustar os filtros ou aguarde novos pedidos
         </p>
       </div>
@@ -153,46 +153,46 @@ export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-[#1D1D1D] dark:bg-[#0A0A0A]">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Data</TableHead>
-            <TableHead>Cliente</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Pagamento</TableHead>
-            <TableHead>Total</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
+          <TableRow className="dark:border-[#1D1D1D] hover:bg-transparent">
+            <TableHead className="dark:text-[#E0E0E0]">ID</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Data</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Cliente</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Status</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Pagamento</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Total</TableHead>
+            <TableHead className="text-right dark:text-[#E0E0E0]">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {orders.map((order) => {
             const customer = order.customer_id ? customersMap[order.customer_id] : null
             return (
-              <TableRow key={order.id}>
+              <TableRow key={order.id} className="dark:border-[#1D1D1D] dark:hover:bg-[#1A1A1A] even:dark:bg-[#111111]/30">
                 <TableCell>
                   <div>
-                    <p className="font-medium text-gray-900">
+                    <p className="font-medium text-gray-900 dark:text-white">
                       #{order.id.slice(0, 8).toUpperCase()}
                     </p>
                   </div>
                 </TableCell>
                 <TableCell>
-                  <span className="text-sm text-gray-600">
+                  <span className="text-sm text-gray-600 dark:text-[#B5B5B5]">
                     {dateFormatter.format(new Date(order.created_at))}
                   </span>
                 </TableCell>
                 <TableCell>
                   {customer ? (
                     <div>
-                      <p className="text-sm font-medium text-gray-900">{customer.name}</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{customer.name}</p>
                       {customer.email && (
-                        <p className="text-xs text-gray-500">{customer.email}</p>
+                        <p className="text-xs text-gray-500 dark:text-[#B5B5B5]">{customer.email}</p>
                       )}
                     </div>
                   ) : (
-                    <span className="text-sm text-gray-400">-</span>
+                    <span className="text-sm text-gray-400 dark:text-[#777777]">-</span>
                   )}
                 </TableCell>
                 <TableCell>
@@ -206,13 +206,13 @@ export function OrderTable({ orders, isLoading = false }: OrderTableProps) {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  <span className="font-medium text-gray-900">
+                  <span className="font-medium text-gray-900 dark:text-white">
                     {currencyFormatter.format(parseFloat(order.total))}
                   </span>
                 </TableCell>
                 <TableCell className="text-right">
                   <Link href={`/orders/${order.id}`}>
-                    <Button variant="outline" className="h-8 w-8 p-0">
+                    <Button variant="outline" className="h-8 w-8 p-0 dark:bg-[#111111] dark:border-[#2A2A2A] dark:hover:bg-[#1A1A1A] dark:text-white">
                       <ExternalLink className="h-4 w-4" />
                     </Button>
                   </Link>

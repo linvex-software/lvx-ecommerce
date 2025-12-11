@@ -1,14 +1,19 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { LogOut } from 'lucide-react'
+import { LogOut, Moon, Sun, Menu } from 'lucide-react'
 import { useAuthStore } from '@/store/auth-store'
 import { apiClient } from '@/lib/api-client'
+import { useTheme } from '@/components/providers/theme-provider'
+import { Button } from '@/components/ui/button'
+import { useSidebar } from './sidebar-context'
 
 export function Header() {
   const router = useRouter()
   const user = useAuthStore((state) => state.user)
   const clearSession = useAuthStore((state) => state.clearSession)
+  const { theme, toggleTheme } = useTheme()
+  const { setIsMobileOpen } = useSidebar()
 
   const handleLogout = async () => {
     try {
@@ -31,26 +36,68 @@ export function Header() {
   }
 
   return (
-    <header className="sticky top-0 z-30 flex h-20 items-center justify-between border-b border-gray-200/60 bg-white/95 backdrop-blur-sm px-10">
-      <div className="flex items-center gap-4">
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-gray-900 text-sm font-semibold uppercase tracking-wide text-white shadow-lg">
+    <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-border bg-background/95 backdrop-blur-sm px-4 sm:px-6 dark:bg-background/95">
+      <div className="flex items-center gap-3 sm:gap-4">
+        {/* Botão menu mobile */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setIsMobileOpen(true)}
+          className="lg:hidden h-9 w-9"
+          aria-label="Abrir menu"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+
+        <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-full bg-primary text-label font-semibold uppercase tracking-wide text-white shadow-sm flex-shrink-0">
           {getUserInitials()}
         </div>
-        
-        <div className="text-left">
-          <p className="text-sm font-medium text-gray-900">{user?.name}</p>
-          <p className="text-xs font-light text-gray-500">{user?.email}</p>
+
+        <div className="text-left min-w-0 hidden sm:block">
+          <p className="text-body font-semibold text-text-primary truncate">{user?.name}</p>
+          <p className="text-small font-normal text-text-secondary truncate">{user?.email}</p>
+        </div>
+        <div className="text-left sm:hidden">
+          <p className="text-sm font-semibold text-text-primary truncate max-w-[120px]">{user?.name}</p>
         </div>
       </div>
 
-      <button
-        onClick={handleLogout}
-        className="inline-flex items-center gap-2 rounded-2xl border border-gray-200/80 px-4 py-2 text-sm font-medium text-gray-700 transition hover:border-gray-300 hover:bg-white"
-      >
-        <LogOut className="h-4 w-4" />
-        Sair
-      </button>
+      <div className="flex items-center gap-2">
+        {/* Theme Toggle */}
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={toggleTheme}
+          className="h-9 w-9"
+          aria-label={theme === 'dark' ? 'Alternar para modo claro' : 'Alternar para modo escuro'}
+        >
+          {theme === 'dark' ? (
+            <Sun className="h-4 w-4 transition-transform duration-200" />
+          ) : (
+            <Moon className="h-4 w-4 transition-transform duration-200" />
+          )}
+        </Button>
+
+        {/* Logout Button */}
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          size="sm"
+          className="gap-2 hidden sm:flex"
+        >
+          <LogOut className="h-4 w-4" />
+          <span className="hidden sm:inline">Sair</span>
+        </Button>
+        <Button
+          onClick={handleLogout}
+          variant="outline"
+          size="icon"
+          className="sm:hidden h-9 w-9"
+          aria-label="Sair"
+        >
+          <LogOut className="h-4 w-4" />
+        </Button>
+      </div>
     </header>
   )
 }
-
