@@ -5,6 +5,7 @@ import { CheckoutOrderController } from './order-controller'
 import { DeliveryOptionsController } from './delivery-options-controller'
 import { CouponRepository } from '../../../infra/db/repositories/coupon-repository'
 import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
+import { optionalCustomerAuth } from '../../../infra/http/middlewares/customer-auth'
 import { createOrderSchema } from '../../../application/orders/use-cases/create-order'
 import { getDeliveryOptionsSchema } from '../../../application/checkout/use-cases/get-delivery-options'
 
@@ -36,11 +37,11 @@ export async function registerCheckoutRoutes(app: FastifyInstance): Promise<void
     }
   )
 
-  // POST /orders - Cria pedido (checkout público, apenas tenantMiddleware)
+  // POST /orders - Cria pedido (checkout com autenticação opcional)
   app.post<{ Body: z.infer<typeof createOrderSchema> }>(
     '/orders',
     {
-      onRequest: [tenantMiddleware]
+      onRequest: [tenantMiddleware, optionalCustomerAuth]
     },
     async (request: FastifyRequest<{ Body: z.infer<typeof createOrderSchema> }>, reply: FastifyReply) => {
       await checkoutOrderController.create(request, reply)

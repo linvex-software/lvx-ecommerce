@@ -118,4 +118,48 @@ body {
   /* O CSS do template será aplicado via TemplateStyles com prioridade máxima */
 }
 
+/* ============================================
+   ESTILOS DE IMPRESSÃO PARA PEDIDOS
+   ============================================ */
+@media print {
+  body {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+
+  /* Hide navigation, sidebar, and action buttons */
+  nav,
+  aside,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Optimize layout for print */
+  .print\:shadow-none {
+    box-shadow: none !important;
+  }
+
+  .print\:justify-start {
+    justify-content: flex-start !important;
+  }
+
+  /* Page breaks */
+  .print\:break-after-page {
+    page-break-after: always;
+  }
+
+  .print\:break-inside-avoid {
+    page-break-inside: avoid;
+  }
+
+  /* Card borders for print */
+  .rounded-2xl {
+    border: 1px solid #e5e7eb;
+  }
+
+  /* Ensure proper spacing */
+  @page {
+    margin: 1cm;
+  }
+}
 
