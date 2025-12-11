@@ -6,14 +6,14 @@ export interface Customer {
   store_id: string
   name: string
   email: string | null
-  cpf: string
+  cpf: string | null
   phone: string | null
   created_at: string
 }
 
 export interface CreateCustomerInput {
   name: string
-  cpf: string
+  cpf?: string | null
   email?: string | null
   phone?: string | null
 }
