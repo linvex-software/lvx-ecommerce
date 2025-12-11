@@ -21,6 +21,20 @@ export const stores = pgTable(
       precision: 12,
       scale: 2
     }),
+    // Configurações gerais da loja
+    cnpj_cpf: text('cnpj_cpf'),
+    whatsapp: text('whatsapp'),
+    email: text('email'),
+    address: text('address'),
+    social_media: jsonb('social_media').$type<{
+      facebook?: string
+      instagram?: string
+      twitter?: string
+      linkedin?: string
+      youtube?: string
+      tiktok?: string
+    }>(),
+    favicon_url: text('favicon_url'),
     created_at: timestamp('created_at', { withTimezone: true })
       .defaultNow()
       .notNull()

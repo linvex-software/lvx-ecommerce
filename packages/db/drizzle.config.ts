@@ -17,6 +17,7 @@ export default {
   schema: './src/schema',
   out: './drizzle',
   dialect: 'postgresql',
+  strict: false,
   dbCredentials: {
     url: process.env.DATABASE_URL as string
   }

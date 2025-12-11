@@ -134,6 +134,13 @@
       "when": 1764808717727,
       "tag": "0017_burly_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1765467616039,
+      "tag": "0019_massive_sinister_six",
+      "breakpoints": true
     }
   ]
 }
