@@ -140,5 +140,170 @@ export async function registerPhysicalSalesRoutes(
       await physicalSalesController.listAbandonedCarts(request, reply)
     }
   )
+
+  // GET /physical-sales/cart/active - Buscar carrinho ativo do vendedor
+  app.get(
+    '/physical-sales/cart/active',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.getActiveCart(request, reply)
+    }
+  )
+
+  // GET /physical-sales/cart/:id - Buscar carrinho por ID
+  app.get<{ Params: { id: string } }>(
+    '/physical-sales/cart/:id',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (
+      request: FastifyRequest<{ Params: { id: string } }>,
+      reply: FastifyReply
+    ) => {
+      await physicalSalesController.getCart(request, reply)
+    }
+  )
+
+  // POST /physical-sales/cart/add-item - Adicionar item ao carrinho
+  app.post(
+    '/physical-sales/cart/add-item',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.addItemToCart(request, reply)
+    }
+  )
+
+  // POST /physical-sales/cart/remove-item - Remover item do carrinho
+  app.post(
+    '/physical-sales/cart/remove-item',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.removeItemFromCart(request, reply)
+    }
+  )
+
+  // PUT /physical-sales/cart/update-quantity - Atualizar quantidade de item
+  app.put(
+    '/physical-sales/cart/update-quantity',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.updateItemQuantity(request, reply)
+    }
+  )
+
+  // POST /physical-sales/cart/apply-discount - Aplicar desconto
+  app.post(
+    '/physical-sales/cart/apply-discount',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.applyDiscount(request, reply)
+    }
+  )
+
+  // POST /physical-sales/cart/associate-customer - Associar cliente ao carrinho
+  app.post(
+    '/physical-sales/cart/associate-customer',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.associateCustomer(request, reply)
+    }
+  )
+
+  // POST /physical-sales/finalize - Finalizar venda PDV
+  app.post(
+    '/physical-sales/finalize',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.finalizeSale(request, reply)
+    }
+  )
+
+  // POST /physical-sales/generate-payment-link - Gerar link de pagamento
+  app.post(
+    '/physical-sales/generate-payment-link',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.generatePaymentLink(request, reply)
+    }
+  )
+
+  // GET /physical-sales/order/:orderId/status - Buscar status do pedido
+  app.get<{ Params: { orderId: string } }>(
+    '/physical-sales/order/:orderId/status',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (
+      request: FastifyRequest<{ Params: { orderId: string } }>,
+      reply: FastifyReply
+    ) => {
+      await physicalSalesController.getOrderStatus(request, reply)
+    }
+  )
+
+  // GET /physical-sales/order/:orderId/receipt - Buscar dados do pedido para recibo
+  app.get<{ Params: { orderId: string } }>(
+    '/physical-sales/order/:orderId/receipt',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (
+      request: FastifyRequest<{ Params: { orderId: string } }>,
+      reply: FastifyReply
+    ) => {
+      await physicalSalesController.getOrderReceipt(request, reply)
+    }
+  )
+
+  // POST /physical-sales/cart/set-origin - Atualizar origem do carrinho
+  app.post(
+    '/physical-sales/cart/set-origin',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.setCartOrigin(request, reply)
+    }
+  )
+
+  // POST /physical-sales/cart/set-seller - Atualizar vendedor do carrinho
+  app.post(
+    '/physical-sales/cart/set-seller',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await physicalSalesController.setCartSeller(request, reply)
+    }
+  )
 }
 

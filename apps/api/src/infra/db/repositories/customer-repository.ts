@@ -1,5 +1,5 @@
 import { db, schema } from '@white-label/db'
-import { eq, and } from 'drizzle-orm'
+import { eq, and, or, like, sql } from 'drizzle-orm'
 import bcrypt from 'bcryptjs'
 import type {
   Customer,
@@ -126,6 +126,40 @@ export class CustomerRepository {
     }
   }
 
+  async createQuick(
+    data: {
+      name: string
+      cpf: string
+      email: string | null
+      phone: string | null
+    },
+    storeId: string
+  ): Promise<Customer> {
+    const result = await db
+      .insert(schema.customers)
+      .values({
+        store_id: storeId,
+        name: data.name,
+        email: data.email ?? null,
+        cpf: data.cpf,
+        phone: data.phone ?? null,
+        password_hash: null // Cliente criado sem senha (para PDV)
+      })
+      .returning()
+
+    const row = result[0]
+    return {
+      id: row.id,
+      store_id: row.store_id,
+      name: row.name,
+      email: row.email,
+      cpf: row.cpf,
+      phone: row.phone,
+      password_hash: row.password_hash,
+      created_at: row.created_at
+    }
+  }
+
   async update(
     id: string,
     storeId: string,
@@ -211,6 +245,53 @@ export class CustomerRepository {
       .from(schema.customers)
       .where(eq(schema.customers.store_id, storeId))
       .orderBy(schema.customers.name)
+
+    return result.map((row) => ({
+      id: row.id,
+      store_id: row.store_id,
+      name: row.name,
+      email: row.email,
+      cpf: row.cpf,
+      phone: row.phone,
+      password_hash: row.password_hash,
+      created_at: row.created_at
+    }))
+  }
+
+  async searchByStore(storeId: string, searchTerm: string): Promise<Customer[]> {
+    if (!searchTerm || searchTerm.trim().length === 0) {
+      return this.listByStore(storeId)
+    }
+
+    const normalizedSearch = searchTerm.trim().replace(/\D/g, '') // Remove formatação para busca de CPF/telefone
+    const searchPattern = `%${searchTerm.trim()}%`
+    const cpfPhonePattern = normalizedSearch.length > 0 ? `%${normalizedSearch}%` : searchPattern
+
+    const result = await db
+      .select({
+        id: schema.customers.id,
+        store_id: schema.customers.store_id,
+        name: schema.customers.name,
+        email: schema.customers.email,
+        cpf: schema.customers.cpf,
+        phone: schema.customers.phone,
+        password_hash: schema.customers.password_hash,
+        created_at: schema.customers.created_at
+      })
+      .from(schema.customers)
+      .where(
+        and(
+          eq(schema.customers.store_id, storeId),
+          or(
+            like(sql`lower(${schema.customers.name})`, sql`lower(${searchPattern})`),
+            like(sql`lower(${schema.customers.email})`, sql`lower(${searchPattern})`),
+            like(schema.customers.cpf, cpfPhonePattern), // Busca CPF com ou sem máscara
+            like(schema.customers.phone, cpfPhonePattern) // Busca telefone com ou sem máscara
+          )
+        )
+      )
+      .orderBy(schema.customers.name)
+      .limit(50)
 
     return result.map((row) => ({
       id: row.id,

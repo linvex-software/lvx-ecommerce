@@ -34,20 +34,18 @@ export async function createPhysicalSalesCartUseCase(
 
   const validated = createPhysicalSalesCartSchema.parse(input)
 
-  // Validar que há pelo menos um item
-  if (validated.items.length === 0) {
-    throw new Error('Cart must have at least one item')
-  }
-
-  // Validar produtos existem e pertencem à loja
-  for (const item of validated.items) {
-    const product = await productRepository.findById(item.product_id, storeId)
-    if (!product) {
-      throw new Error(`Product ${item.product_id} not found`)
+  // Permitir carrinho vazio (será preenchido depois)
+  // Validar produtos existem e pertencem à loja apenas se houver itens
+  if (validated.items.length > 0) {
+    for (const item of validated.items) {
+      const product = await productRepository.findById(item.product_id, storeId)
+      if (!product) {
+        throw new Error(`Product ${item.product_id} not found`)
+      }
     }
   }
 
-  // Calcular total
+  // Calcular total (pode ser 0 se carrinho vazio)
   const subtotal = validated.items.reduce((sum, item) => sum + item.price * item.quantity, 0)
 
   // Validar cupom se fornecido

@@ -134,6 +134,13 @@
       "when": 1764808717727,
       "tag": "0017_burly_squadron_supreme",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1765000000000,
+      "tag": "0018_add_pdv_cart_customer_fields",
+      "breakpoints": true
     }
   ]
 }

@@ -6,6 +6,7 @@ import { LogOut } from 'lucide-react'
 import { useAuthStore } from '@/store/auth-store'
 import { QueryProvider } from '@/components/providers/query-provider'
 import { apiClient } from '@/lib/api-client'
+import { Toaster } from 'react-hot-toast'
 import './globals.css'
 
 // Roles permitidas para acessar o PDV
@@ -187,6 +188,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="w-full px-10 py-8">{children}</div>
             </main>
           </div>
+          <Toaster position="top-center" reverseOrder={false} />
         </QueryProvider>
       </body>
     </html>

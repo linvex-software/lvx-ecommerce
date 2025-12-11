@@ -1,202 +1,234 @@
 'use client'
 
-import { useState } from 'react'
-import { Plus, Clock, ShoppingCart } from 'lucide-react'
+import { useState, useEffect } from 'react'
+import { ActionsHome } from '@/components/pdv/actions-home'
+import { CartView } from '@/components/pdv/cart-view'
+import { PaymentView } from '@/components/pdv/payment-view'
+import { ProductSearch } from '@/components/pdv/product-search'
+import { CustomerSearch } from '@/components/pdv/customer-search'
+import { useActivePdvCart, useAddItemToPdvCart, useApplyDiscount } from '@/lib/hooks/use-pdv-cart'
+import { useProducts, type Product } from '@/lib/hooks/use-products'
+import { useSearchCustomers, useCreateCustomer, type Customer } from '@/lib/hooks/use-customers'
+import { useAssociateCustomer } from '@/lib/hooks/use-pdv-cart'
+import toast from 'react-hot-toast'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Percent } from 'lucide-react'
 import { Button } from '@white-label/ui'
-import { NewSaleModal } from '@/components/pdv/new-sale-modal'
-import { SaleConfirmation } from '@/components/pdv/sale-confirmation'
-import { usePhysicalSales, type PhysicalSale } from '@/lib/hooks/use-physical-sales'
-import { useAuthStore } from '@/store/auth-store'
-import { useQueryClient } from '@tanstack/react-query'
+import { Input } from '@/components/ui/input'
+
+type View = 'home' | 'cart' | 'payment'
+type Action = 'search-products' | 'select-customer' | 'apply-discount' | 'create-product' | 'add-note' | 'add-shipping'
 
 export default function PDVPage() {
-  const [isNewSaleModalOpen, setIsNewSaleModalOpen] = useState(false)
-  const [confirmedSale, setConfirmedSale] = useState<PhysicalSale | null>(null)
-  const [showConfirmation, setShowConfirmation] = useState(false)
+  const [currentView, setCurrentView] = useState<View>('home')
+  const [currentAction, setCurrentAction] = useState<Action | null>(null)
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
+  const [discountModalOpen, setDiscountModalOpen] = useState(false)
+  const [discountCode, setDiscountCode] = useState('')
+  const [discountAmount, setDiscountAmount] = useState<number | null>(null)
 
-  const user = useAuthStore((state) => state.user)
-  const queryClient = useQueryClient()
+  const { data: activeCart, refetch: refetchActiveCart } = useActivePdvCart()
+  const addItem = useAddItemToPdvCart()
+  const associateCustomer = useAssociateCustomer()
+  const applyDiscount = useApplyDiscount()
 
-  // Buscar todas as vendas do vendedor logado (sem filtro de data)
-  const { data: salesData, isLoading: isLoadingSales } = usePhysicalSales({
-    seller_id: user?.id
-  })
+  const handleSelectAction = (action: Action) => {
+    setCurrentAction(action)
 
-  const sales = salesData?.sales || []
-
-  const handleSaleComplete = (sale: PhysicalSale) => {
-    // Invalidar queries para atualizar lista
-    queryClient.invalidateQueries({ queryKey: ['physical-sales'] })
-    // Mostrar confirmação
-    setConfirmedSale(sale)
-    setShowConfirmation(true)
+    switch (action) {
+      case 'search-products':
+        // Se já tem carrinho, mostrar carrinho, senão criar e mostrar
+        if (activeCart) {
+          setCurrentView('cart')
+        } else {
+          // Criar carrinho vazio e mostrar
+          setCurrentView('cart')
+        }
+        break
+      case 'select-customer':
+        // Abrir modal de seleção de cliente
+        setCurrentAction('select-customer')
+        break
+      case 'apply-discount':
+        if (activeCart) {
+          setDiscountModalOpen(true)
+        } else {
+          toast.error('Adicione produtos ao carrinho primeiro')
+        }
+        break
+      default:
+        toast('Funcionalidade em desenvolvimento')
+    }
   }
 
-  const handleCloseConfirmation = () => {
-    setShowConfirmation(false)
-    setConfirmedSale(null)
+  const handleProductSelect = async (product: Product) => {
+    // Se não tem carrinho, criar automaticamente ao adicionar produto
+    addItem.mutate(
+      {
+        cart_id: activeCart?.id || undefined,
+        product_id: product.id,
+        quantity: 1,
+        discount: 0
+      },
+      {
+        onSuccess: () => {
+          toast.success('Produto adicionado ao carrinho')
+          refetchActiveCart()
+          setCurrentView('cart')
+        },
+        onError: (error: any) => {
+          toast.error(error.response?.data?.error || 'Erro ao adicionar produto')
+        }
+      }
+    )
   }
 
-  const formatCurrency = (cents: number) => {
-    if (!cents || isNaN(cents)) return 'R$ 0,00'
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL'
-    }).format(cents / 100)
+  const handleCustomerSelect = (customer: Customer | null) => {
+    setSelectedCustomer(customer)
+
+    if (customer && activeCart?.id) {
+      associateCustomer.mutate(
+        {
+          cart_id: activeCart.id,
+          customer_id: customer.id
+        },
+        {
+          onSuccess: () => {
+            toast.success('Cliente associado ao carrinho')
+            refetchActiveCart()
+          },
+          onError: (error: any) => {
+            toast.error(error.response?.data?.error || 'Erro ao associar cliente')
+          }
+        }
+      )
+    }
   }
 
-  const formatTime = (date: string) => {
-    const d = new Date(date)
-    return d.toLocaleString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
+  const handleGoToPayment = () => {
+    if (!activeCart || activeCart.items.length === 0) {
+      toast.error('Adicione produtos ao carrinho primeiro')
+      return
+    }
+    setCurrentView('payment')
   }
+
+  const handlePaymentComplete = (orderId: string) => {
+    setOrderId(orderId)
+    toast.success('Venda registrada com sucesso!')
+    // Voltar para home após alguns segundos
+    setTimeout(() => {
+      setCurrentView('home')
+      setSelectedCustomer(null)
+      setOrderId(null)
+      refetchActiveCart()
+    }, 3000)
+  }
+
+  // Se tem carrinho com itens, mostrar carrinho por padrão (usando useEffect para evitar render loop)
+  useEffect(() => {
+    if (currentView === 'home' && activeCart && activeCart.items.length > 0) {
+      setCurrentView('cart')
+    }
+  }, [activeCart, currentView])
 
   return (
-    <div className="space-y-8">
-      {/* Header com Botão Nova Venda */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-4xl font-light tracking-tight text-gray-900">PDV</h1>
-          <p className="mt-2 text-sm font-light text-gray-500">
-            Registre vendas físicas da sua loja
-          </p>
-        </div>
-        <Button onClick={() => setIsNewSaleModalOpen(true)} className="gap-2" size="default">
-          <Plus className="h-4 w-4" />
-          Nova Venda
-        </Button>
-      </div>
-
-      {/* Cards de Resumo - EM CIMA */}
-      {sales.length > 0 && (
-        <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400 mb-2">
-              Total Vendas
-            </p>
-            <p className="text-3xl font-bold text-gray-900">{sales.length}</p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400 mb-2">
-              Produtos
-            </p>
-            <p className="text-3xl font-bold text-gray-900">
-              {sales.reduce((sum, sale) => sum + sale.quantity, 0)}
-            </p>
-          </div>
-          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-            <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400 mb-2">
-              Faturamento
-            </p>
-            <p className="text-3xl font-bold text-gray-900">
-              {formatCurrency(
-                sales.reduce((sum, sale) => {
-                  // total pode vir como string ou number do backend
-                  const totalValue = typeof sale.total === 'string' 
-                    ? Number.parseFloat(sale.total) 
-                    : typeof sale.total === 'number' 
-                    ? sale.total 
-                    : 0
-                  return sum + (isNaN(totalValue) ? 0 : totalValue)
-                }, 0)
-              )}
-            </p>
-          </div>
-        </div>
+    <div className="w-full">
+      {/* Modal de Busca de Produtos */}
+      {currentAction === 'search-products' && (
+        <Dialog open={true} onOpenChange={(open) => !open && setCurrentAction(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Buscar Produtos</DialogTitle>
+            </DialogHeader>
+            <ProductSearch onSelect={handleProductSelect} />
+          </DialogContent>
+        </Dialog>
       )}
 
-      {/* Lista de Vendas */}
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
-        <div className="border-b border-gray-200 px-6 py-4">
-          <div className="flex items-center justify-between">
+      {/* Modal de Seleção de Cliente */}
+      {currentAction === 'select-customer' && (
+        <Dialog open={true} onOpenChange={(open) => !open && setCurrentAction(null)}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Selecionar Cliente</DialogTitle>
+            </DialogHeader>
+            <CustomerSearch onSelect={handleCustomerSelect} selectedCustomer={selectedCustomer} />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Modal de Desconto */}
+      <Dialog open={discountModalOpen} onOpenChange={setDiscountModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Aplicar Desconto</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Vendas Realizadas</h2>
-              <p className="mt-1 text-xs text-gray-500">
-                Histórico completo de vendas
-              </p>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Cupom ou valor (R$)
+              </label>
+              <Input
+                type="text"
+                placeholder="Cupom ou valor (R$)"
+                value={discountCode}
+                onChange={(e) => {
+                  const value = e.target.value
+                  setDiscountCode(value)
+                  const numericValue = value.replace(/[^\d,.]/g, '').replace(',', '.')
+                  if (numericValue && !isNaN(parseFloat(numericValue))) {
+                    setDiscountAmount(Math.round(parseFloat(numericValue) * 100))
+                  } else {
+                    setDiscountAmount(null)
+                  }
+                }}
+              />
             </div>
-            <div className="flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2">
-              <Clock className="h-4 w-4 text-white" />
-              <span className="text-sm font-semibold text-white">
-                {sales.length} {sales.length === 1 ? 'venda' : 'vendas'}
-              </span>
-            </div>
+            <Button
+              onClick={async () => {
+                if (!activeCart?.id) {
+                  toast.error('Carrinho não encontrado')
+                  return
+                }
+
+                try {
+                  await applyDiscount.mutateAsync({
+                    cart_id: activeCart.id,
+                    coupon_code: discountCode || null,
+                    discount_amount: discountAmount ?? undefined
+                  })
+                  
+                  toast.success('Desconto aplicado')
+                  setDiscountModalOpen(false)
+                  setDiscountCode('')
+                  setDiscountAmount(null)
+                  refetchActiveCart()
+                } catch (error: any) {
+                  toast.error(error.response?.data?.error || 'Erro ao aplicar desconto')
+                }
+              }}
+              className="w-full"
+              disabled={applyDiscount.isPending}
+            >
+              <Percent className="h-4 w-4 mr-2" />
+              {applyDiscount.isPending ? 'Aplicando...' : 'Aplicar Desconto'}
+            </Button>
           </div>
-        </div>
+        </DialogContent>
+      </Dialog>
 
-        <div className="p-6">
-          {isLoadingSales ? (
-            <div className="py-12 text-center">
-              <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-gray-200 border-t-gray-900"></div>
-              <p className="mt-4 text-sm text-gray-500">Carregando vendas...</p>
-            </div>
-          ) : sales.length === 0 ? (
-            <div className="rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 py-12 text-center">
-              <ShoppingCart className="mx-auto h-12 w-12 text-gray-400" />
-              <p className="mt-4 text-sm font-medium text-gray-500">
-                Nenhuma venda realizada ainda
-              </p>
-              <p className="mt-2 text-xs text-gray-400">
-                Clique em "Nova Venda" para começar
-              </p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {sales.map((sale) => (
-                <div
-                  key={sale.id}
-                  className="rounded-lg border border-gray-200 bg-white p-4 hover:border-gray-300 hover:shadow-sm transition-all"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span className="inline-flex items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-semibold text-green-700">
-                          <Clock className="h-3 w-3" />
-                          {formatTime(sale.created_at)}
-                        </span>
-                      </div>
-                      <h4 className="text-base font-semibold text-gray-900 mb-1.5">
-                        {sale.product.name}
-                      </h4>
-                      <div className="flex items-center gap-3 text-xs text-gray-500">
-                        <span className="font-medium">SKU: {sale.product.sku}</span>
-                        <span className="text-gray-300">•</span>
-                        <span className="font-medium">Quantidade: {sale.quantity}</span>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-xs font-semibold uppercase tracking-[0.35em] text-gray-400 mb-1">
-                        Total
-                      </p>
-                      <p className="text-xl font-bold text-gray-900">
-                        {formatCurrency(
-                          typeof sale.total === 'string' 
-                            ? Number.parseFloat(sale.total) 
-                            : sale.total
-                        )}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Modal Nova Venda */}
-      <NewSaleModal
-        isOpen={isNewSaleModalOpen}
-        onClose={() => setIsNewSaleModalOpen(false)}
-        onSaleComplete={handleSaleComplete}
-      />
-
-      {showConfirmation && confirmedSale && (
-        <SaleConfirmation sale={confirmedSale} onClose={handleCloseConfirmation} />
+      {/* Renderizar view atual */}
+      {currentView === 'home' && <ActionsHome onSelectAction={handleSelectAction} />}
+      {currentView === 'cart' && (
+        <CartView
+          onGoToPayment={handleGoToPayment}
+          onSelectCustomer={() => setCurrentAction('select-customer')}
+        />
+      )}
+      {currentView === 'payment' && (
+        <PaymentView onBack={() => setCurrentView('cart')} onComplete={handlePaymentComplete} />
       )}
     </div>
   )
