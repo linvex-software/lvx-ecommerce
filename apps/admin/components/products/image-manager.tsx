@@ -129,10 +129,10 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
   }
 
   return (
-    <Card className="rounded-2xl border-gray-100 shadow-sm">
+    <Card className="dark:bg-surface-2">
       <CardHeader>
         <div>
-          <CardTitle className="text-xl font-light">Imagens</CardTitle>
+          <CardTitle className="text-xl font-semibold">Imagens</CardTitle>
           <CardDescription>Gerencie as imagens do produto</CardDescription>
         </div>
       </CardHeader>
@@ -145,9 +145,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
       />
       <CardContent>
         {images.length === 0 ? (
-          <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-            <p className="text-sm text-gray-500">Nenhuma imagem adicionada</p>
-            <p className="mt-1 text-xs text-gray-400">
+          <div className="rounded-lg border border-dashed border-border p-8 text-center dark:border-[#2A2A2A]">
+            <p className="text-sm text-text-secondary">Nenhuma imagem adicionada</p>
+            <p className="mt-1 text-xs text-text-tertiary">
               Selecione imagens para o produto
             </p>
             <div className="mt-4">
@@ -162,15 +162,15 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
             {images.map((image, index) => (
               <div
                 key={index}
-                className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+                className="rounded-lg border border-border bg-surface p-4 dark:bg-surface-2 dark:border-[#2A2A2A]"
               >
                 <div className="mb-3 flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-text-primary">
                       Imagem #{index + 1}
                     </span>
                     {image.is_main && (
-                      <span className="rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                      <span className="rounded bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary dark:bg-primary/20">
                         Principal
                       </span>
                     )}
@@ -211,7 +211,7 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                 <div className="space-y-3">
                   {image.image_url ? (
                     <>
-                      <div className="rounded-lg border border-gray-200 bg-white p-2">
+                      <div className="rounded-lg border border-border bg-background p-2 dark:bg-[#050505] dark:border-[#2A2A2A]">
                         <img
                           src={image.image_url}
                           alt={`Preview ${index + 1}`}
@@ -246,8 +246,8 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                       </Button>
                     </>
                   ) : (
-                    <div className="rounded-lg border border-dashed border-gray-300 p-8 text-center">
-                      <p className="mb-4 text-sm text-gray-500">Nenhuma imagem selecionada</p>
+                    <div className="rounded-lg border border-dashed border-border p-8 text-center dark:border-[#2A2A2A]">
+                      <p className="mb-4 text-sm text-text-secondary">Nenhuma imagem selecionada</p>
                       <Button
                         type="button"
                         variant="outline"
@@ -280,9 +280,9 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                       id={`image-main-${index}`}
                       checked={image.is_main || false}
                       onChange={(e) => updateImage(index, 'is_main', e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                      className="h-4 w-4 rounded border-input-border text-primary focus:ring-primary dark:border-[#2A2A2A]"
                     />
-                    <Label htmlFor={`image-main-${index}`} className="cursor-pointer text-sm font-normal">
+                    <Label htmlFor={`image-main-${index}`} className="cursor-pointer text-sm font-normal text-text-primary">
                       Definir como imagem principal
                     </Label>
                   </div>

@@ -6,6 +6,10 @@ import {
 } from '../../../application/users/use-cases/create-user'
 import { listUsersUseCase } from '../../../application/users/use-cases/list-users'
 import { listVendorsUseCase } from '../../../application/users/use-cases/list-vendors'
+import {
+  updateUserPasswordUseCase,
+  updateUserPasswordSchema
+} from '../../../application/users/use-cases/update-user-password'
 import { UserRepository } from '../../../infra/db/repositories/user-repository'
 
 export class UserController {
@@ -115,6 +119,46 @@ export class UserController {
     } catch (error) {
       if (error instanceof Error) {
         await reply.code(500).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async updatePassword(
+    request: FastifyRequest<{
+      Params: { id: string }
+      Body: { new_password: string }
+    }>,
+    reply: FastifyReply
+  ) {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const { id } = request.params
+
+      const dependencies = {
+        userRepository: this.userRepository
+      }
+
+      await updateUserPasswordUseCase(id, storeId, request.body, dependencies)
+
+      await reply.code(204).send()
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode = error.message === 'User not found' ? 404 : 500
+        await reply.code(statusCode).send({ error: error.message })
         return
       }
       await reply.code(500).send({ error: 'Internal server error' })

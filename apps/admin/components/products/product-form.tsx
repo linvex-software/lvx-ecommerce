@@ -9,8 +9,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { Select } from '@/components/ui/select'
 import { Button } from '@white-label/ui'
+import { Checkbox } from '@/components/ui/checkbox'
 import { ImageManager, type ProductImage } from './image-manager'
 import { CategorySelector } from './category-selector'
 import { VariantManager, type ProductVariant } from './variant-manager'
@@ -19,6 +19,13 @@ import { SizeChartForm, type SizeChartData } from './size-chart-form'
 import type { Product } from '@/lib/hooks/use-products'
 import { isClothingProduct, generateDefaultSizeChart } from '@/lib/utils/product-detection'
 import { useCategories } from '@/lib/hooks/use-categories'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 // Função para formatar dígitos para moeda BR (123456 -> "R$ 1.234,56")
 function formatCurrencyFromDigits(digits: string): string {
@@ -51,7 +58,7 @@ function numberToDigits(price: number): string {
 }
 
 const productSchema = z.object({
-  name: z.string().min(1, 'Nome é obrigatório').min(3, 'Nome deve ter pelo menos 3 caracteres'),
+  name: z.string().min(1, 'Informe o nome do produto.').min(3, 'Nome deve ter pelo menos 3 caracteres'),
   slug: z
     .string()
     .optional()
@@ -63,13 +70,13 @@ const productSchema = z.object({
   category_ids: z.array(z.string().uuid()).optional(),
   priceDigits: z
     .string()
-    .min(1, 'Preço é obrigatório')
+    .min(1, 'Informe um preço válido.')
     .refine(
       (digits) => {
         const int = parseInt(digits || '0', 10)
         return int > 0
       },
-      { message: 'Preço deve ser maior que zero' }
+      { message: 'Informe um preço válido.' }
     ),
   sku: z
     .string()
@@ -173,6 +180,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   const [priceDigits, setPriceDigits] = useState<string>(
     product ? numberToDigits(parseFloat(product.base_price.toString())) : ''
   )
+  const [autoGenerateSlug, setAutoGenerateSlug] = useState<boolean>(!product)
 
   const {
     register,
@@ -224,7 +232,6 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     }
   }, [product])
 
-
   const generateSlug = (name: string) => {
     return name
       .toLowerCase()
@@ -237,7 +244,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const name = e.target.value
     setValue('name', name)
-    if (!product) {
+    if (autoGenerateSlug && !product) {
       setValue('slug', generateSlug(name))
 
       // Se for produto novo e for roupa, criar size_chart padrão automaticamente
@@ -303,7 +310,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     const { priceDigits, ...restData } = data as any
     const submitData = {
       ...restData,
-      slug: data.slug || undefined, // Enviar undefined se vazio para o backend gerar
+      slug: autoGenerateSlug ? undefined : (data.slug || undefined), // Enviar undefined se auto-gerar
       sku: data.sku || undefined, // Enviar undefined se vazio para o backend gerar
       base_price: finalPrice,
       variants: validVariants.length > 0 ? validVariants : undefined,
@@ -315,17 +322,21 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     await onSubmit(submitData as any)
   }
 
+  const watchedName = watch('name')
+
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Coluna esquerda: Dados principais */}
-        <div className="lg:col-span-2 space-y-6">
-          <Card className="rounded-2xl border-gray-100 shadow-sm">
+    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
+      {/* Layout responsivo: 2 colunas no desktop, 1 coluna no mobile/tablet */}
+      <div className="grid gap-8 lg:grid-cols-3">
+        {/* Coluna principal (esquerda) - 2/3 da largura no desktop */}
+        <div className="lg:col-span-2 space-y-8">
+          {/* Seção: Informações básicas */}
+          <Card className="dark:bg-surface-2">
             <CardHeader>
-              <CardTitle className="text-xl font-light">Informações básicas</CardTitle>
-              <CardDescription>Dados principais do produto</CardDescription>
+              <CardTitle className="text-xl font-semibold">Informações básicas</CardTitle>
+              <CardDescription>Dados principais que o cliente verá na loja.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-6">
               <div className="space-y-2">
                 <Label htmlFor="name">Nome do produto *</Label>
                 <Input
@@ -333,99 +344,53 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
                   {...register('name')}
                   onChange={handleNameChange}
                   placeholder="Ex: Blazer Essential"
-                  className={errors.name ? 'border-rose-300' : ''}
+                  className={errors.name ? 'border-error' : ''}
                 />
                 {errors.name && (
-                  <p className="text-xs text-rose-600">{errors.name.message}</p>
+                  <p className="text-xs text-error">{errors.name.message}</p>
                 )}
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="slug">Slug</Label>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="auto-slug"
+                    checked={autoGenerateSlug}
+                    onCheckedChange={(checked) => {
+                      setAutoGenerateSlug(checked as boolean)
+                      if (checked && watchedName) {
+                        setValue('slug', generateSlug(watchedName))
+                      }
+                    }}
+                  />
+                  <Label htmlFor="auto-slug" className="font-normal cursor-pointer">
+                    Gerar slug automaticamente a partir do nome
+                  </Label>
+                </div>
                 <Input
                   id="slug"
                   {...register('slug')}
                   placeholder="blazer-essential"
-                  className={errors.slug ? 'border-rose-300' : ''}
+                  disabled={autoGenerateSlug}
+                  className={errors.slug ? 'border-error' : ''}
                 />
                 {errors.slug && (
-                  <p className="text-xs text-rose-600">{errors.slug.message}</p>
+                  <p className="text-xs text-error">{errors.slug.message}</p>
                 )}
-                <p className="text-xs text-gray-500">
-                  Deixe vazio para gerar automaticamente a partir do nome.
-                </p>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição</Label>
+                <Label htmlFor="description">Descrição curta</Label>
                 <Textarea
                   id="description"
                   {...register('description')}
                   placeholder="Descrição curta do produto..."
                   rows={4}
-                  className={errors.description ? 'border-rose-300' : ''}
+                  className={errors.description ? 'border-error' : ''}
                 />
                 {errors.description && (
-                  <p className="text-xs text-rose-600">{errors.description.message}</p>
+                  <p className="text-xs text-error">{errors.description.message}</p>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="rounded-2xl border-gray-100 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-xl font-light">Preço e estoque</CardTitle>
-              <CardDescription>Valores e disponibilidade</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="base_price">Preço base (R$) *</Label>
-                  <div className="relative">
-                    <Input
-                      id="base_price"
-                      type="text"
-                      value={formatCurrencyFromDigits(priceDigits)}
-                      onChange={(e) => {
-                        // Remove tudo que não for dígito
-                        const digits = e.target.value.replace(/\D/g, '')
-                        setPriceDigits(digits)
-                        // Atualizar o valor do form para validação
-                        setValue('priceDigits' as any, digits, { shouldValidate: true })
-                      }}
-                      onBlur={() => {
-                        // Manter formatação ao perder foco
-                        if (priceDigits) {
-                          setValue('priceDigits' as any, priceDigits, { shouldValidate: true })
-                        }
-                      }}
-                      placeholder="R$ 0,00"
-                      className={errors.priceDigits ? 'border-rose-300' : ''}
-                    />
-                  </div>
-                  {errors.priceDigits && (
-                    <p className="text-xs text-rose-600">{errors.priceDigits.message}</p>
-                  )}
-                  <p className="text-xs text-gray-500">
-                    Digite apenas números. O valor será formatado automaticamente.
-                  </p>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="sku">SKU</Label>
-                  <Input
-                    id="sku"
-                    {...register('sku')}
-                    placeholder="SKU-001"
-                    className={errors.sku ? 'border-rose-300' : ''}
-                  />
-                  {errors.sku && (
-                    <p className="text-xs text-rose-600">{errors.sku.message}</p>
-                  )}
-                  <p className="text-xs text-gray-500">
-                    Deixe vazio para gerar automaticamente.
-                  </p>
-                </div>
               </div>
 
               <CategorySelector
@@ -456,93 +421,232 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
             </CardContent>
           </Card>
 
-          <VariantManager
-            variants={variants}
-            onChange={(newVariants) => {
-              setVariants(newVariants)
-              setValue('variants', newVariants as any)
-            }}
-          />
-
-          <SEOForm
-            seo={seo}
-            onChange={(newSEO) => {
-              setSeo(newSEO)
-              setValue('seo', newSEO as any)
-            }}
-          />
-        </div>
-
-        {/* Coluna direita: Status */}
-        <div className="space-y-6">
-
-          <Card className="rounded-2xl border-gray-100 shadow-sm">
+          {/* Seção: Preço e estoque */}
+          <Card className="dark:bg-surface-2">
             <CardHeader>
-              <CardTitle className="text-xl font-light">Status</CardTitle>
-              <CardDescription>Visibilidade do produto</CardDescription>
+              <CardTitle className="text-xl font-semibold">Preço e estoque</CardTitle>
+              <CardDescription>Defina o valor do produto e a quantidade disponível para venda.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                <Label htmlFor="status">Status *</Label>
-                <select
-                  id="status"
-                  {...register('status')}
-                  className="flex h-11 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="draft">Rascunho</option>
-                  <option value="active">Ativo</option>
-                  <option value="inactive">Inativo</option>
-                </select>
-                {errors.status && (
-                  <p className="text-xs text-rose-600">{errors.status.message}</p>
-                )}
-                <p className="mt-2 text-xs text-gray-500">
-                  Rascunho: não aparece na loja | Ativo: visível | Inativo: oculto
-                </p>
+            <CardContent className="space-y-6">
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="base_price">Preço base (R$) *</Label>
+                  <div className="relative">
+                    <Input
+                      id="base_price"
+                      type="text"
+                      value={formatCurrencyFromDigits(priceDigits)}
+                      onChange={(e) => {
+                        // Remove tudo que não for dígito
+                        const digits = e.target.value.replace(/\D/g, '')
+                        setPriceDigits(digits)
+                        // Atualizar o valor do form para validação
+                        setValue('priceDigits' as any, digits, { shouldValidate: true })
+                      }}
+                      onBlur={() => {
+                        // Manter formatação ao perder foco
+                        if (priceDigits) {
+                          setValue('priceDigits' as any, priceDigits, { shouldValidate: true })
+                        }
+                      }}
+                      placeholder="R$ 0,00"
+                      className={errors.priceDigits ? 'border-error' : ''}
+                    />
+                  </div>
+                  {errors.priceDigits && (
+                    <p className="text-xs text-error">{errors.priceDigits.message}</p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="sku">SKU</Label>
+                  <Input
+                    id="sku"
+                    {...register('sku')}
+                    placeholder="SKU-001"
+                    className={errors.sku ? 'border-error' : ''}
+                  />
+                  {errors.sku && (
+                    <p className="text-xs text-error">{errors.sku.message}</p>
+                  )}
+                  <p className="text-xs text-text-secondary">
+                    Deixe vazio para gerar automaticamente.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
 
-          <ImageManager
-            images={images}
-            onChange={(newImages) => {
-              setImages(newImages)
-              setValue('images', newImages as any)
-            }}
-          />
+          {/* Seção: Variações */}
+          <Card className="dark:bg-surface-2">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">Variações</CardTitle>
+              <CardDescription>Use variações para produtos com tamanhos, cores ou outras opções.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {variants.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border p-6 text-center">
+                  <p className="text-sm text-text-secondary mb-2">
+                    Este produto será simples, sem variações.
+                  </p>
+                  <p className="text-xs text-text-tertiary mb-4">
+                    Use variações para tamanhos, cores ou outros atributos.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const newVariant: ProductVariant = {
+                        size: null,
+                        color: null,
+                        sku: null,
+                        barcode: null,
+                        price_override: null,
+                        active: true
+                      }
+                      setVariants([newVariant])
+                      setValue('variants', [newVariant] as any)
+                    }}
+                  >
+                    Adicionar variação
+                  </Button>
+                </div>
+              ) : (
+                <VariantManager
+                  variants={variants}
+                  onChange={(newVariants) => {
+                    setVariants(newVariants)
+                    setValue('variants', newVariants as any)
+                  }}
+                />
+              )}
+            </CardContent>
+          </Card>
 
-          <div className="space-y-2">
-            {autoSizeChartCreated && (
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-sm text-blue-800">
-                <p className="font-medium">✓ Provador Virtual habilitado automaticamente</p>
-                <p className="text-xs text-blue-600 mt-1">
-                  Detectamos que este é um produto de roupa. Uma tabela de medidas padrão foi criada. Você pode editá-la abaixo.
-                </p>
+          {/* Seção: SEO (opcional) */}
+          <Card className="dark:bg-surface-2">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold dark:text-white">SEO (opcional)</CardTitle>
+              <CardDescription className="dark:text-[#B5B5B5]">
+                Ajuda seu produto a aparecer melhor no Google e nas redes sociais.
+                <br />
+                <span className="text-xs">Se você não souber o que preencher aqui, pode deixar em branco.</span>
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <SEOForm
+                seo={seo}
+                onChange={(newSEO) => {
+                  setSeo(newSEO)
+                  setValue('seo', newSEO as any)
+                }}
+              />
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Coluna lateral (direita) - 1/3 da largura no desktop */}
+        <div className="space-y-6">
+          {/* Status do produto */}
+          <Card className="dark:bg-surface-2">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">Status do produto</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="status">Status *</Label>
+                <Select
+                  value={watch('status') || 'draft'}
+                  onValueChange={(value) => setValue('status', value as 'draft' | 'active' | 'inactive')}
+                >
+                  <SelectTrigger id="status" className={errors.status ? 'border-error' : ''}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="draft">Rascunho</SelectItem>
+                    <SelectItem value="active">Ativo</SelectItem>
+                    <SelectItem value="inactive">Inativo</SelectItem>
+                  </SelectContent>
+                </Select>
+                {errors.status && (
+                  <p className="text-xs text-error">{errors.status.message}</p>
+                )}
+                <div className="space-y-1 text-xs text-text-secondary">
+                  <p>• <strong>Rascunho:</strong> Não aparece na loja.</p>
+                  <p>• <strong>Ativo:</strong> Visível na loja.</p>
+                  <p>• <strong>Inativo:</strong> Oculto, não aparece na loja.</p>
+                </div>
               </div>
-            )}
-            <SizeChartForm
-              sizeChart={sizeChart}
-              onChange={(newSizeChart) => {
-                setSizeChart(newSizeChart)
-                setValue('size_chart', newSizeChart as any, { shouldDirty: true })
-                if (newSizeChart) {
-                  setAutoSizeChartCreated(false) // Remove flag quando usuário edita manualmente
-                }
-              }}
-            />
-          </div>
+            </CardContent>
+          </Card>
+
+          {/* Imagens */}
+          <Card className="dark:bg-surface-2">
+            <CardHeader>
+              <CardTitle className="text-xl font-semibold">Imagens do produto</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-text-secondary mb-4">
+                Adicione pelo menos 1 imagem para exibir o produto na loja.
+              </p>
+              <ImageManager
+                images={images}
+                onChange={(newImages) => {
+                  setImages(newImages)
+                  setValue('images', newImages as any)
+                }}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Tabela de tamanhos (se existir) */}
+          {sizeChart && (
+            <Card className="dark:bg-surface-2">
+              <CardHeader>
+                <CardTitle className="text-xl font-semibold">Tabela de tamanhos</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {autoSizeChartCreated && (
+                  <div className="mb-4 rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm text-text-secondary">
+                    <p className="font-medium text-text-primary">✓ Provador Virtual habilitado automaticamente</p>
+                    <p className="text-xs mt-1">
+                      Detectamos que este é um produto de roupa. Uma tabela de medidas padrão foi criada. Você pode editá-la abaixo.
+                    </p>
+                  </div>
+                )}
+                <SizeChartForm
+                  sizeChart={sizeChart}
+                  onChange={(newSizeChart) => {
+                    setSizeChart(newSizeChart)
+                    setValue('size_chart', newSizeChart as any, { shouldDirty: true })
+                    if (newSizeChart) {
+                      setAutoSizeChartCreated(false) // Remove flag quando usuário edita manualmente
+                    }
+                  }}
+                />
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
 
-      <div className="flex justify-end gap-4">
-        <Button type="button" variant="outline" onClick={() => window.history.back()}>
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isLoading}>
-          {isLoading ? 'Salvando...' : product ? 'Atualizar produto' : 'Criar produto'}
-        </Button>
+      {/* Ações do formulário - Footer fixo no mobile */}
+      <div className="sticky bottom-0 left-0 right-0 z-10 border-t border-border bg-background/95 backdrop-blur-sm px-4 py-4 -mx-4 sm:px-6 sm:-mx-6 mt-8 dark:bg-background/95 sm:relative sm:border-t-0 sm:px-0 sm:-mx-0">
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => window.history.back()}
+            className="w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+            {isLoading ? 'Salvando...' : product ? 'Atualizar produto' : 'Criar produto'}
+          </Button>
+        </div>
       </div>
     </form>
   )
 }
-

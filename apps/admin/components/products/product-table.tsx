@@ -83,42 +83,42 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
 
   if (isLoading) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-[#1D1D1D] dark:bg-[#0A0A0A]">
         <Table>
           <TableHeader>
-            <TableRow>
-              <TableHead>Imagem</TableHead>
-              <TableHead>Nome</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Preço</TableHead>
-              <TableHead>Estoque</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
+            <TableRow className="dark:border-[#1D1D1D]">
+              <TableHead className="dark:text-[#E0E0E0]">Imagem</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Nome</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Categoria</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Preço</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Estoque</TableHead>
+              <TableHead className="dark:text-[#E0E0E0]">Status</TableHead>
+              <TableHead className="text-right dark:text-[#E0E0E0]">Ações</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {Array.from({ length: 5 }).map((_, i) => (
-              <TableRow key={i}>
+              <TableRow key={i} className="dark:border-[#1D1D1D]">
                 <TableCell>
-                  <div className="h-12 w-12 animate-pulse rounded-lg bg-gray-200" />
+                  <div className="h-12 w-12 animate-pulse rounded-lg bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-4 w-16 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-16 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell>
-                  <div className="h-6 w-16 animate-pulse rounded-full bg-gray-200" />
+                  <div className="h-6 w-16 animate-pulse rounded-full bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
                 <TableCell className="text-right">
-                  <div className="ml-auto h-8 w-8 animate-pulse rounded bg-gray-200" />
+                  <div className="ml-auto h-8 w-8 animate-pulse rounded bg-gray-200 dark:bg-[#1A1A1A]" />
                 </TableCell>
               </TableRow>
             ))}
@@ -130,9 +130,9 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
 
   if (products.length === 0) {
     return (
-      <div className="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-sm">
-        <p className="text-sm font-medium text-gray-500">Nenhum produto encontrado</p>
-        <p className="mt-1 text-xs text-gray-400">
+      <div className="rounded-xl border border-gray-200 bg-white p-12 text-center shadow-sm dark:border-[#1D1D1D] dark:bg-[#0A0A0A]">
+        <p className="text-sm font-medium text-gray-500 dark:text-[#CCCCCC]">Nenhum produto encontrado</p>
+        <p className="mt-1 text-xs text-gray-400 dark:text-[#B5B5B5]">
           Tente ajustar os filtros ou criar um novo produto
         </p>
       </div>
@@ -140,17 +140,17 @@ export function ProductTable({ products, isLoading = false }: ProductTableProps)
   }
 
   return (
-    <div className="rounded-xl border border-gray-200 bg-white shadow-sm">
+    <div className="rounded-xl border border-gray-200 bg-white shadow-sm dark:border-[#1D1D1D] dark:bg-[#0A0A0A]">
       <Table>
         <TableHeader>
-          <TableRow>
-            <TableHead className="w-20">Imagem</TableHead>
-            <TableHead>Nome</TableHead>
-            <TableHead>Categoria</TableHead>
-            <TableHead>Preço</TableHead>
-            <TableHead>Estoque</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead className="text-right">Ações</TableHead>
+          <TableRow className="dark:border-[#1D1D1D] hover:bg-transparent">
+            <TableHead className="w-20 dark:text-[#E0E0E0]">Imagem</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Nome</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Categoria</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Preço</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Estoque</TableHead>
+            <TableHead className="dark:text-[#E0E0E0]">Status</TableHead>
+            <TableHead className="text-right dark:text-[#E0E0E0]">Ações</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -197,15 +197,15 @@ function ProductTableRow({
     : stockData?.stock?.current_stock ?? 0
 
   return (
-    <TableRow>
+    <TableRow className="dark:border-[#1D1D1D] dark:hover:bg-[#1A1A1A] even:dark:bg-[#111111]/30">
       <TableCell>
         {(() => {
           const mainImage = getMainImage(product)
 
           if (!mainImage) {
             return (
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100">
-                <span className="text-xs font-medium text-gray-400">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gray-100 dark:bg-[#111111]">
+                <span className="text-xs font-medium text-gray-400 dark:text-[#777777]">
                   {product.name.slice(0, 2).toUpperCase()}
                 </span>
               </div>
@@ -231,22 +231,22 @@ function ProductTableRow({
       </TableCell>
       <TableCell>
         <div>
-          <p className="font-medium text-gray-900">{product.name}</p>
+          <p className="font-medium text-gray-900 dark:text-white">{product.name}</p>
           {product.slug && (
-            <p className="text-xs text-gray-500">{product.slug}</p>
+            <p className="text-xs text-gray-500 dark:text-[#B5B5B5]">{product.slug}</p>
           )}
         </div>
       </TableCell>
       <TableCell>
-        <span className="text-sm text-gray-600">{getCategoryLabel(product)}</span>
+        <span className="text-sm text-gray-600 dark:text-[#B5B5B5]">{getCategoryLabel(product)}</span>
       </TableCell>
       <TableCell>
-        <span className="font-medium text-gray-900">
+        <span className="font-medium text-gray-900 dark:text-white">
           {currencyFormatter.format(parseFloat(product.base_price))}
         </span>
       </TableCell>
       <TableCell>
-        <span className="text-sm text-gray-600">{totalStock} unidades</span>
+        <span className="text-sm text-gray-600 dark:text-[#B5B5B5]">{totalStock} unidades</span>
       </TableCell>
       <TableCell>
         <Badge
