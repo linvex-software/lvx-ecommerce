@@ -285,5 +285,139 @@ describe('Physical Sales API Tests', () => {
       expect([401, 400, 404]).toContain(response.status)
     })
   })
+
+  describe('PDV Cart Flow Tests', () => {
+    it('should validate add item to cart endpoint', async () => {
+      const response = await fetch(`${API_BASE_URL}/physical-sales/cart/add-item`, {
+        method: 'POST',
+        headers: {
+          'x-store-id': STORE_ID,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cart_id: '00000000-0000-0000-0000-000000000000',
+          product_id: '00000000-0000-0000-0000-000000000000',
+          quantity: 1
+        })
+      })
+      expect([400, 401, 404]).toContain(response.status)
+    })
+
+    it('should validate remove item from cart endpoint', async () => {
+      const response = await fetch(`${API_BASE_URL}/physical-sales/cart/remove-item`, {
+        method: 'POST',
+        headers: {
+          'x-store-id': STORE_ID,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cart_id: '00000000-0000-0000-0000-000000000000',
+          product_id: '00000000-0000-0000-0000-000000000000'
+        })
+      })
+      expect([400, 401, 404]).toContain(response.status)
+    })
+
+    it('should validate update item quantity endpoint', async () => {
+      const response = await fetch(`${API_BASE_URL}/physical-sales/cart/update-quantity`, {
+        method: 'PUT',
+        headers: {
+          'x-store-id': STORE_ID,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cart_id: '00000000-0000-0000-0000-000000000000',
+          product_id: '00000000-0000-0000-0000-000000000000',
+          quantity: 2
+        })
+      })
+      expect([400, 401, 404]).toContain(response.status)
+    })
+
+    it('should validate apply discount endpoint', async () => {
+      const response = await fetch(`${API_BASE_URL}/physical-sales/cart/apply-discount`, {
+        method: 'POST',
+        headers: {
+          'x-store-id': STORE_ID,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cart_id: '00000000-0000-0000-0000-000000000000',
+          discount_amount: 1000
+        })
+      })
+      expect([400, 401, 404]).toContain(response.status)
+    })
+
+    it('should validate associate customer endpoint', async () => {
+      const response = await fetch(`${API_BASE_URL}/physical-sales/cart/associate-customer`, {
+        method: 'POST',
+        headers: {
+          'x-store-id': STORE_ID,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cart_id: '00000000-0000-0000-0000-000000000000',
+          customer_id: '00000000-0000-0000-0000-000000000000'
+        })
+      })
+      expect([400, 401, 404]).toContain(response.status)
+    })
+
+    it('should validate finalize sale endpoint', async () => {
+      const response = await fetch(`${API_BASE_URL}/physical-sales/finalize`, {
+        method: 'POST',
+        headers: {
+          'x-store-id': STORE_ID,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          cart_id: '00000000-0000-0000-0000-000000000000',
+          origin: 'pdv',
+          commission_rate: 5
+        })
+      })
+      expect([400, 401, 404]).toContain(response.status)
+    })
+
+    it('should validate generate payment link endpoint', async () => {
+      const response = await fetch(`${API_BASE_URL}/physical-sales/generate-payment-link`, {
+        method: 'POST',
+        headers: {
+          'x-store-id': STORE_ID,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          order_id: '00000000-0000-0000-0000-000000000000',
+          payment_method: 'pix'
+        })
+      })
+      expect([400, 401, 404]).toContain(response.status)
+    })
+
+    it('should validate get order status endpoint', async () => {
+      const response = await fetch(
+        `${API_BASE_URL}/physical-sales/order/00000000-0000-0000-0000-000000000000/status`,
+        {
+          headers: {
+            'x-store-id': STORE_ID
+          }
+        }
+      )
+      expect([400, 401, 404]).toContain(response.status)
+    })
+
+    it('should validate get order receipt endpoint', async () => {
+      const response = await fetch(
+        `${API_BASE_URL}/physical-sales/order/00000000-0000-0000-0000-000000000000/receipt`,
+        {
+          headers: {
+            'x-store-id': STORE_ID
+          }
+        }
+      )
+      expect([400, 401, 404]).toContain(response.status)
+    })
+  })
 })
 

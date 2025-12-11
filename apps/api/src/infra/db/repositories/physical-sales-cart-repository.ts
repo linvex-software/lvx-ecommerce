@@ -13,15 +13,25 @@ export class PhysicalSalesCartRepository {
     storeId: string,
     sellerUserId: string
   ): Promise<PhysicalSalesCart> {
+    const subtotal = data.items.reduce((sum, item) => {
+      const itemTotal = item.price * item.quantity
+      const itemDiscount = item.discount ?? 0
+      return sum + itemTotal - itemDiscount
+    }, 0)
+
     const result = await db
       .insert(schema.physicalSalesCarts)
       .values({
         store_id: storeId,
         seller_user_id: sellerUserId,
+        customer_id: data.customer_id ?? null,
         items_json: JSON.stringify(data.items),
-        total: data.items.reduce((sum, item) => sum + item.price * item.quantity, 0).toString(),
+        total: subtotal.toString(),
+        discount_amount: '0',
         coupon_code: data.coupon_code ?? null,
         shipping_address: data.shipping_address ?? null,
+        origin: data.origin ?? null,
+        commission_rate: data.commission_rate ? data.commission_rate.toString() : null,
         status: 'active'
       })
       .returning()
@@ -79,8 +89,13 @@ export class PhysicalSalesCartRepository {
     const updateData: {
       items_json?: string
       total?: string
+      customer_id?: string | null
+      discount_amount?: string
       coupon_code?: string | null
       shipping_address?: string | null
+      origin?: string | null
+      commission_rate?: string | null
+      seller_user_id?: string | null
       last_activity_at?: Date
       updated_at?: Date
     } = {
@@ -90,9 +105,20 @@ export class PhysicalSalesCartRepository {
 
     if (data.items !== undefined) {
       updateData.items_json = JSON.stringify(data.items)
-      updateData.total = data.items
-        .reduce((sum, item) => sum + item.price * item.quantity, 0)
-        .toString()
+      const subtotal = data.items.reduce((sum, item) => {
+        const itemTotal = item.price * item.quantity
+        const itemDiscount = item.discount ?? 0
+        return sum + itemTotal - itemDiscount
+      }, 0)
+      updateData.total = subtotal.toString()
+    }
+
+    if (data.customer_id !== undefined) {
+      updateData.customer_id = data.customer_id
+    }
+
+    if (data.discount_amount !== undefined) {
+      updateData.discount_amount = data.discount_amount.toString()
     }
 
     if (data.coupon_code !== undefined) {
@@ -101,6 +127,18 @@ export class PhysicalSalesCartRepository {
 
     if (data.shipping_address !== undefined) {
       updateData.shipping_address = data.shipping_address
+    }
+
+    if (data.origin !== undefined) {
+      updateData.origin = data.origin
+    }
+
+    if (data.commission_rate !== undefined) {
+      updateData.commission_rate = data.commission_rate ? data.commission_rate.toString() : null
+    }
+
+    if (data.seller_user_id !== undefined) {
+      updateData.seller_user_id = data.seller_user_id
     }
 
     const result = await db
@@ -167,11 +205,15 @@ export class PhysicalSalesCartRepository {
       id: row.id,
       store_id: row.store_id,
       seller_user_id: row.seller_user_id,
+      customer_id: row.customer_id ?? null,
       status: row.status as PhysicalSalesCartStatus,
       items: typeof row.items_json === 'string' ? JSON.parse(row.items_json) : row.items_json,
       total: row.total,
+      discount_amount: row.discount_amount ?? '0',
       coupon_code: row.coupon_code,
       shipping_address: row.shipping_address,
+      origin: row.origin ?? null,
+      commission_rate: row.commission_rate ?? null,
       last_activity_at: row.last_activity_at,
       created_at: row.created_at,
       updated_at: row.updated_at

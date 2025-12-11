@@ -11,13 +11,17 @@
   "dependencies": {
     "@white-label/ui": "workspace:*",
     "@white-label/types": "workspace:*",
+    "@radix-ui/react-dialog": "^1.1.15",
     "next": "latest",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "zustand": "^5.0.0",
     "@tanstack/react-query": "^5.0.0",
     "axios": "^1.7.0",
-    "lucide-react": "^0.454.0"
+    "lucide-react": "^0.454.0",
+    "react-hot-toast": "^2.6.0",
+    "clsx": "^2.1.1",
+    "tailwind-merge": "^2.6.0"
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
