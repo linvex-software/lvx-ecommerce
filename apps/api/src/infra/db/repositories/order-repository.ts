@@ -60,6 +60,7 @@ export class OrderRepository {
           shipping_cost: (orderData.shipping_cost / 100).toFixed(2), // Converter centavos para reais
           delivery_type: orderData.delivery_type ?? null,
           delivery_option_id: orderData.delivery_option_id ?? null,
+          shipping_address: orderData.shipping_address ?? null, // JSONB: Drizzle faz stringify automaticamente
           shipping_label_url: null,
           tracking_code: null
         })
@@ -121,6 +122,16 @@ export class OrderRepository {
       shipping_cost: number // em centavos
       delivery_type?: 'shipping' | 'pickup_point' | null
       delivery_option_id?: string | null
+      shipping_address?: {
+        zip_code: string
+        street?: string
+        number?: string
+        complement?: string
+        neighborhood?: string
+        city?: string
+        state?: string
+        country?: string
+      } | null
     },
     items: Array<{
       product_id: string
@@ -153,6 +164,7 @@ export class OrderRepository {
           shipping_cost: (orderData.shipping_cost / 100).toFixed(2), // Converter centavos para reais
           delivery_type: orderData.delivery_type ?? null,
           delivery_option_id: orderData.delivery_option_id ?? null,
+          shipping_address: orderData.shipping_address ?? null, // JSONB: Drizzle faz stringify automaticamente
           shipping_label_url: null,
           tracking_code: null
         })
@@ -405,9 +417,8 @@ export class OrderRepository {
       product_name: item.product_name || null
     }))
 
-    // TODO: Buscar endereço de customer_addresses se necessário
-    // Por enquanto retorna null
-    const shippingAddress = null
+    // JSONB: Drizzle faz parse automaticamente, retorna objeto direto
+    const shippingAddress = row.shipping_address ?? null
 
     return {
       id: row.id,

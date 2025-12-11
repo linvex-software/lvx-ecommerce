@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { ArrowLeft, Package, Download, ExternalLink, User, Printer } from 'lucide-react'
+import { ArrowLeft, Package, Download, ExternalLink, User, Printer, MapPin, Copy, Check } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@white-label/ui'
 import { Card } from '@/components/ui/card'
@@ -87,6 +87,7 @@ const getPaymentStatusLabel = (status: Order['payment_status']) => {
 export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: OrderDetailsProps) {
   const { data: customers } = useCustomers()
   const updateOrderMutation = useUpdateOrder()
+  const [copiedAddress, setCopiedAddress] = useState(false)
   
   const customer = useMemo(() => {
     if (!order.customer_id || !customers) return null
@@ -119,6 +120,24 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
       orderId: order.id,
       data: { payment_status: newPaymentStatus }
     })
+  }
+
+  const handleCopyAddress = () => {
+    if (!order.shipping_address) return
+    
+    const address = [
+      order.shipping_address.street,
+      order.shipping_address.number,
+      order.shipping_address.complement,
+      order.shipping_address.neighborhood,
+      order.shipping_address.city,
+      order.shipping_address.state,
+      order.shipping_address.zip_code,
+    ].filter(Boolean).join(', ')
+
+    navigator.clipboard.writeText(address)
+    setCopiedAddress(true)
+    setTimeout(() => setCopiedAddress(false), 2000)
   }
 
   const handlePrint = () => {
@@ -251,7 +270,56 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
             </Card>
           )}
 
-          {/* TODO: Implementar exibição de endereço via customer_addresses */}
+          {/* Endereço de entrega */}
+          {order.shipping_address && (
+            <Card className="rounded-2xl border-gray-100 p-6 shadow-sm print:shadow-none">
+              <div className="mb-4 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-5 w-5 text-gray-400" />
+                  <h2 className="text-lg font-semibold text-gray-900">Endereço de Entrega</h2>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCopyAddress}
+                  className="gap-2 print:hidden"
+                >
+                  {copiedAddress ? (
+                    <>
+                      <Check className="h-4 w-4 text-green-600" />
+                      Copiado
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="h-4 w-4" />
+                      Copiar
+                    </>
+                  )}
+                </Button>
+              </div>
+              <div className="space-y-2 text-sm text-gray-600">
+                {order.shipping_address.street && (
+                  <p>
+                    {order.shipping_address.street}
+                    {order.shipping_address.number && `, ${order.shipping_address.number}`}
+                    {order.shipping_address.complement && ` - ${order.shipping_address.complement}`}
+                  </p>
+                )}
+                {order.shipping_address.neighborhood && (
+                  <p>{order.shipping_address.neighborhood}</p>
+                )}
+                {(order.shipping_address.city || order.shipping_address.state) && (
+                  <p>
+                    {order.shipping_address.city}
+                    {order.shipping_address.state && `, ${order.shipping_address.state}`}
+                  </p>
+                )}
+                {order.shipping_address.zip_code && (
+                  <p className="font-medium">CEP: {order.shipping_address.zip_code.replace(/^(\d{5})(\d{3})$/, '$1-$2')}</p>
+                )}
+              </div>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar - Frete e etiqueta */}
