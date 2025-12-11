@@ -5,7 +5,8 @@ import {
   timestamp,
   numeric,
   integer,
-  index
+  index,
+  jsonb
 } from 'drizzle-orm/pg-core'
 import { stores } from './core'
 import { customers } from './customers'
@@ -31,6 +32,7 @@ export const orders = pgTable(
       .default('0'),
     delivery_type: text('delivery_type'), // 'shipping' | 'pickup_point'
     delivery_option_id: text('delivery_option_id'), // ID da opção escolhida (quote.id ou pickup_point.id)
+    shipping_address: jsonb('shipping_address'), // JSONB com snapshot do endereço de entrega
     shipping_label_url: text('shipping_label_url'),
     tracking_code: text('tracking_code'),
     created_at: timestamp('created_at', { withTimezone: true })
