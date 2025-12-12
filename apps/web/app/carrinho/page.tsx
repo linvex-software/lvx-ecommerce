@@ -1,22 +1,19 @@
 'use client'
 
 import { useMemo, useState } from 'react'
-import { useRouter } from '@/i18n/routing'
+import { useRouter } from 'next/navigation'
 import { Plus, Minus, X, ShoppingBag, ArrowLeft } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { useCartStore } from '@/lib/store/useCartStore'
 import { ShippingCalculator } from '@/components/shipping/ShippingCalculator'
 import Navbar from '@/components/Navbar'
-import { Link } from '@/i18n/routing'
-import { useTranslations } from 'next-intl'
+import Link from 'next/link'
 import type { ShippingQuote } from '@/lib/types/shipping'
 
 export default function CarrinhoPage() {
   const { items, removeItem, updateQuantity, openCart } = useCartStore()
   const router = useRouter()
   const [selectedShipping, setSelectedShipping] = useState<ShippingQuote | null>(null)
-  const t = useTranslations('cart')
-  const tButtons = useTranslations('buttons')
 
   const subtotal = useMemo(() => {
     return items.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -56,14 +53,14 @@ export default function CarrinhoPage() {
         <main className="container mx-auto px-4 py-12">
           <div className="max-w-2xl mx-auto text-center">
             <ShoppingBag className="h-24 w-24 mx-auto text-muted-foreground mb-6" />
-            <h1 className="text-3xl font-bold mb-4">{t('emptyTitle')}</h1>
+            <h1 className="text-3xl font-bold mb-4">Seu carrinho está vazio</h1>
             <p className="text-muted-foreground mb-8">
-              {t('emptyDescription')}
+              Adicione produtos ao carrinho para começar suas compras
             </p>
             <Button asChild size="lg">
               <Link href="/">
                 <ArrowLeft className="h-4 w-4 mr-2" />
-                {t('continueShopping')}
+                Continuar Comprando
               </Link>
             </Button>
           </div>
@@ -78,9 +75,9 @@ export default function CarrinhoPage() {
       <main className="container mx-auto px-4 py-8 md:py-12">
         <div className="max-w-6xl mx-auto">
           <div className="mb-6">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">{t('cartTitle')}</h1>
+            <h1 className="text-3xl md:text-4xl font-bold mb-2">Carrinho de Compras</h1>
             <p className="text-muted-foreground">
-              {totalItems} {totalItems === 1 ? t('items') : t('itemsPlural')} {t('inCart')}
+              {totalItems} {totalItems === 1 ? 'item' : 'itens'} no seu carrinho
             </p>
           </div>
 
@@ -110,7 +107,7 @@ export default function CarrinhoPage() {
                         size="icon"
                         className="h-8 w-8 shrink-0"
                         onClick={() => removeItem(item.id)}
-                        title={tButtons('remove')}
+                        title="Remover item"
                       >
                         <X className="h-4 w-4" />
                       </Button>
@@ -141,7 +138,7 @@ export default function CarrinhoPage() {
                       </div>
 
                       <div className="text-right">
-                        <p className="text-sm text-muted-foreground">{t('subtotal')}</p>
+                        <p className="text-sm text-muted-foreground">Subtotal</p>
                         <p className="text-xl font-bold">R$ {(item.price * item.quantity).toFixed(2)}</p>
                       </div>
                     </div>
@@ -153,24 +150,24 @@ export default function CarrinhoPage() {
             <div className="lg:col-span-1">
               <div className="sticky top-24 space-y-6">
                 <div className="bg-card border border-border rounded-lg p-6 space-y-6">
-                  <h2 className="text-2xl font-bold">{t('orderSummary')}</h2>
+                  <h2 className="text-2xl font-bold">Resumo do Pedido</h2>
 
                   <div className="space-y-3">
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{t('subtotal')}</span>
+                      <span className="text-muted-foreground">Subtotal</span>
                       <span className="font-medium">R$ {subtotal.toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">{t('shipping')}</span>
+                      <span className="text-muted-foreground">Frete</span>
                       <span className="font-medium">
-                        {shippingCost === 0 ? t('free') : `R$ ${shippingCost.toFixed(2)}`}
+                        {shippingCost === 0 ? 'Grátis' : `R$ ${shippingCost.toFixed(2)}`}
                       </span>
                     </div>
                   </div>
 
                   <div className="border-t border-border pt-4">
                     <div className="flex justify-between text-lg font-bold mb-6">
-                      <span>{t('total')}</span>
+                      <span>Total</span>
                       <span>R$ {total.toFixed(2)}</span>
                     </div>
 
@@ -179,7 +176,7 @@ export default function CarrinhoPage() {
                       size="lg"
                       onClick={handleCheckout}
                     >
-                      {t('checkout')}
+                      Finalizar Compra
                     </Button>
 
                     <Button
@@ -188,7 +185,7 @@ export default function CarrinhoPage() {
                       onClick={handleContinueShopping}
                     >
                       <ArrowLeft className="h-4 w-4 mr-2" />
-                      {t('continueShopping')}
+                      Continuar Comprando
                     </Button>
                   </div>
                 </div>
