@@ -373,6 +373,74 @@ export class OrderRepository {
     }
   }
 
+  async findOrderItemById(orderItemId: string, storeId: string, customerId?: string): Promise<{ order: Order; orderItem: OrderItem } | null> {
+    // Buscar order_item e order
+    const result = await db
+      .select({
+        order_item_id: schema.orderItems.id,
+        order_item_order_id: schema.orderItems.order_id,
+        order_item_product_id: schema.orderItems.product_id,
+        order_item_variant_id: schema.orderItems.variant_id,
+        order_item_quantity: schema.orderItems.quantity,
+        order_item_price: schema.orderItems.price,
+        order_id: schema.orders.id,
+        order_store_id: schema.orders.store_id,
+        order_customer_id: schema.orders.customer_id,
+        order_total: schema.orders.total,
+        order_status: schema.orders.status,
+        order_payment_status: schema.orders.payment_status,
+        order_shipping_cost: schema.orders.shipping_cost,
+        order_shipping_label_url: schema.orders.shipping_label_url,
+        order_tracking_code: schema.orders.tracking_code,
+        order_delivery_type: schema.orders.delivery_type,
+        order_delivery_option_id: schema.orders.delivery_option_id,
+        order_created_at: schema.orders.created_at
+      })
+      .from(schema.orderItems)
+      .innerJoin(schema.orders, eq(schema.orderItems.order_id, schema.orders.id))
+      .where(
+        and(
+          eq(schema.orderItems.id, orderItemId),
+          eq(schema.orders.store_id, storeId),
+          customerId ? eq(schema.orders.customer_id, customerId) : undefined
+        )
+      )
+      .limit(1)
+
+    if (result.length === 0) {
+      return null
+    }
+
+    const row = result[0]
+
+    const order: Order = {
+      id: row.order_id,
+      store_id: row.order_store_id,
+      customer_id: row.order_customer_id,
+      total: row.order_total,
+      status: row.order_status as Order['status'],
+      payment_status: row.order_payment_status as Order['payment_status'],
+      shipping_cost: row.order_shipping_cost,
+      shipping_label_url: row.order_shipping_label_url,
+      tracking_code: row.order_tracking_code,
+      delivery_type: row.order_delivery_type as Order['delivery_type'],
+      delivery_option_id: row.order_delivery_option_id,
+      created_at: row.order_created_at
+    }
+
+    const orderItem: OrderItem = {
+      id: row.order_item_id,
+      order_id: row.order_item_order_id,
+      product_id: row.order_item_product_id,
+      variant_id: row.order_item_variant_id,
+      quantity: row.order_item_quantity,
+      price: row.order_item_price,
+      product_name: null
+    }
+
+    return { order, orderItem }
+  }
+
   async findByIdWithItems(id: string, storeId: string): Promise<OrderWithItems | null> {
     // Buscar pedido completo incluindo shipping_address
     const result = await db

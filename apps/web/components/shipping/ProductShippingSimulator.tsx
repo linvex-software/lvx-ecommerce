@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,8 @@ const DEFAULT_DIMENSIONS = {
   weight: 0.3
 }
 
+const ZIPCODE_STORAGE_KEY = 'shipping_zipcode'
+
 export function ProductShippingSimulator({
   productId,
   quantity = 1,
@@ -37,27 +39,42 @@ export function ProductShippingSimulator({
   const [zipCode, setZipCode] = useState('')
   const [selectedQuote, setSelectedQuote] = useState<ShippingQuote | null>(null)
 
+  // Carregar CEP do localStorage ao montar componente
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const savedZipCode = localStorage.getItem(ZIPCODE_STORAGE_KEY)
+      if (savedZipCode) {
+        setZipCode(savedZipCode)
+      }
+    }
+  }, [])
+
   const handleZipCodeChange = useCallback((value: string) => {
     // Remove caracteres não numéricos
     const cleanValue = value.replace(/\D/g, '')
-    
+
     // Limita a 8 dígitos
     const limitedValue = cleanValue.slice(0, 8)
-    
+
     // Formata com hífen (12345-678)
     let formattedValue = limitedValue
     if (limitedValue.length > 5) {
       formattedValue = `${limitedValue.slice(0, 5)}-${limitedValue.slice(5)}`
     }
-    
+
     setZipCode(formattedValue)
   }, [])
 
   const handleCalculate = useCallback(() => {
     const cleanZipCode = zipCode.replace(/\D/g, '')
-    
+
     if (cleanZipCode.length !== 8) {
       return
+    }
+
+    // Persistir CEP no localStorage
+    if (typeof window !== 'undefined') {
+      localStorage.setItem(ZIPCODE_STORAGE_KEY, zipCode)
     }
 
     calculateShipping({
@@ -97,7 +114,7 @@ export function ProductShippingSimulator({
       }
       return `${min} a ${max} dias úteis`
     }
-    
+
     // Fallback para custom_delivery_range
     if (quote.custom_delivery_range?.min !== undefined && quote.custom_delivery_range?.max !== undefined) {
       const min = quote.custom_delivery_range.min
@@ -107,13 +124,13 @@ export function ProductShippingSimulator({
       }
       return `${min} a ${max} dias úteis`
     }
-    
+
     // Fallback para delivery_time ou custom_delivery_time
     const deliveryTime = quote.custom_delivery_time || quote.delivery_time
     if (deliveryTime !== undefined) {
       return `${deliveryTime} ${deliveryTime === 1 ? 'dia útil' : 'dias úteis'}`
     }
-    
+
     // Último fallback
     return 'Prazo a consultar'
   }
