@@ -1,15 +1,42 @@
 'use client'
 
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import { toast } from 'sonner'
+import { useState } from 'react'
 import { useOrder, useDownloadShippingLabel } from '@/lib/hooks/use-orders'
+import { useCancelOrder } from '@/lib/hooks/use-cancel-order'
 import { OrderDetails } from '@/components/orders/order-details'
 
 export default function OrderDetailPage() {
   const params = useParams()
+  const router = useRouter()
   const orderId = params.id as string
   const { data: order, isLoading } = useOrder(orderId)
   const downloadLabel = useDownloadShippingLabel()
+  const cancelOrder = useCancelOrder()
+  const [showCancelDialog, setShowCancelDialog] = useState(false)
+  const [cancelReason, setCancelReason] = useState('')
+
+  const handleCancelOrder = async () => {
+    try {
+      const result = await cancelOrder.mutateAsync({ 
+        orderId, 
+        reason: cancelReason || null 
+      })
+      
+      toast.success('Pedido cancelado!', {
+        description: result.message
+      })
+      
+      setShowCancelDialog(false)
+      setCancelReason('')
+    } catch (error: any) {
+      console.error('Erro ao cancelar pedido:', error)
+      toast.error('Erro ao cancelar pedido', {
+        description: error.response?.data?.error || 'Não foi possível cancelar o pedido.'
+      })
+    }
+  }
 
   const handleDownloadLabel = async () => {
     if (!order?.shipping_label_url) return
@@ -57,6 +84,19 @@ export default function OrderDetailPage() {
     )
   }
 
-  return <OrderDetails order={order} onDownloadLabel={handleDownloadLabel} isDownloading={downloadLabel.isPending} />
+  return (
+    <OrderDetails 
+      order={order} 
+      onDownloadLabel={handleDownloadLabel} 
+      isDownloading={downloadLabel.isPending}
+      onCancelOrder={() => setShowCancelDialog(true)}
+      isCancelling={cancelOrder.isPending}
+      showCancelDialog={showCancelDialog}
+      onCloseCancelDialog={() => setShowCancelDialog(false)}
+      onConfirmCancel={handleCancelOrder}
+      cancelReason={cancelReason}
+      onCancelReasonChange={setCancelReason}
+    />
+  )
 }
 

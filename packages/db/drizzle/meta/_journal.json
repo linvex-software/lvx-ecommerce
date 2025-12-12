@@ -155,6 +155,34 @@
       "when": 1765484316908,
       "tag": "0021_make_cpf_nullable",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1765500000000,
+      "tag": "0022_add_store_general_settings",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1765510000000,
+      "tag": "0023_add_shipping_address_to_orders",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1765520000000,
+      "tag": "0024_add_subtotal_discount_physical_sales",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1765530000000,
+      "tag": "0025_fix_physical_sales_centavos_to_reais",
+      "breakpoints": true
     }
   ]
 }

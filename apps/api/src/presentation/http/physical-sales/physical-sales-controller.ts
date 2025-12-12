@@ -667,6 +667,7 @@ export class PhysicalSalesController {
 
       const order = await finalizePdvSaleUseCase(validated, storeId, userId, {
         physicalSalesCartRepository: this.physicalSalesCartRepository,
+        physicalSaleRepository: this.physicalSaleRepository,
         orderRepository,
         productRepository: this.productRepository,
         stockMovementRepository: this.stockMovementRepository,

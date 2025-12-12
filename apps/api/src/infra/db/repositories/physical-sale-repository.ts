@@ -12,6 +12,8 @@ import type {
 export class PhysicalSaleRepository {
   async create(
     data: CreatePhysicalSaleInput & {
+      subtotal?: number
+      discount_amount?: number
       coupon_id?: string | null
       shipping_cost?: number
       commission_amount?: number | null
@@ -21,17 +23,24 @@ export class PhysicalSaleRepository {
     storeId: string,
     sellerUserId: string
   ): Promise<PhysicalSale> {
+    // Converter de centavos para reais antes de salvar
+    const subtotalInReais = (data.subtotal ?? data.total) / 100
+    const discountInReais = (data.discount_amount ?? 0) / 100
+    const totalInReais = data.total / 100
+    
     const result = await db
       .insert(schema.physicalSales)
       .values({
         store_id: storeId,
         product_id: data.product_id,
         quantity: data.quantity,
-        total: data.total.toString(),
+        subtotal: subtotalInReais.toFixed(2),
+        discount_amount: discountInReais.toFixed(2),
+        total: totalInReais.toFixed(2),
         seller_user_id: sellerUserId,
         coupon_id: data.coupon_id ?? null,
-        shipping_cost: (data.shipping_cost ?? 0).toString(),
-        commission_amount: data.commission_amount ? data.commission_amount.toString() : null,
+        shipping_cost: ((data.shipping_cost ?? 0) / 100).toFixed(2),
+        commission_amount: data.commission_amount ? (data.commission_amount / 100).toFixed(2) : null,
         cart_id: data.cart_id ?? null,
         status: data.status ?? 'completed'
       })
@@ -73,6 +82,11 @@ export class PhysicalSaleRepository {
 
     const sale = this.mapRowToPhysicalSale(row.sale)
 
+    // Converter valores de REAIS para CENTAVOS (para manter padrão do sistema)
+    const subtotal = Math.round(parseFloat(sale.subtotal) * 100)
+    const discount = Math.round(parseFloat(sale.discount_amount) * 100)
+    const total = Math.round(parseFloat(sale.total) * 100)
+
     // Buscar comissão se solicitado
     let commission = null
     if (includeCommission && sale.commission_amount) {
@@ -91,6 +105,7 @@ export class PhysicalSaleRepository {
 
     return {
       ...sale,
+      total: total.toString(), // Substituir o total em reais por centavos
       product: {
         id: row.product.id,
         name: row.product.name,
@@ -105,7 +120,9 @@ export class PhysicalSaleRepository {
             email: row.seller.email
           }
         : null,
-      shipping_cost_amount: Math.round(parseFloat(sale.shipping_cost)),
+      subtotal,
+      discount,
+      shipping_cost_amount: Math.round(parseFloat(sale.shipping_cost) * 100),
       commission
     }
   }
@@ -161,23 +178,34 @@ export class PhysicalSaleRepository {
 
     const sales: PhysicalSaleWithRelations[] = salesResult
       .filter((row) => row.product !== null)
-      .map((row) => ({
-        ...this.mapRowToPhysicalSale(row.sale),
-        product: {
-          id: row.product!.id,
-          name: row.product!.name,
-          slug: row.product!.slug,
-          base_price: row.product!.base_price,
-          sku: row.product!.sku
-        },
-        seller: row.seller
-          ? {
-              id: row.seller.id,
-              name: row.seller.name,
-              email: row.seller.email
-            }
-          : null
-      }))
+      .map((row) => {
+        const sale = this.mapRowToPhysicalSale(row.sale)
+        // Converter valores de REAIS para CENTAVOS 
+        const subtotal = Math.round(parseFloat(sale.subtotal) * 100)
+        const discount = Math.round(parseFloat(sale.discount_amount) * 100)
+        const total = Math.round(parseFloat(sale.total) * 100)
+        
+        return {
+          ...sale,
+          total: total.toString(), // Substituir o total em reais por centavos
+          product: {
+            id: row.product!.id,
+            name: row.product!.name,
+            slug: row.product!.slug,
+            base_price: row.product!.base_price,
+            sku: row.product!.sku
+          },
+          seller: row.seller
+            ? {
+                id: row.seller.id,
+                name: row.seller.name,
+                email: row.seller.email
+              }
+            : null,
+          subtotal,
+          discount
+        }
+      })
 
     return {
       sales,
@@ -240,7 +268,7 @@ export class PhysicalSaleRepository {
       product_id: row.product_id,
       product_name: row.product_name,
       total_quantity: row.total_quantity,
-      total_amount: Math.round(parseFloat(row.total_amount))
+      total_amount: Math.round(parseFloat(row.total_amount) * 100) // Converter REAIS → CENTAVOS
     }))
   }
 
@@ -250,6 +278,8 @@ export class PhysicalSaleRepository {
       store_id: row.store_id,
       product_id: row.product_id,
       quantity: row.quantity,
+      subtotal: row.subtotal,
+      discount_amount: row.discount_amount,
       total: row.total,
       seller_user_id: row.seller_user_id,
       coupon_id: row.coupon_id ?? null,

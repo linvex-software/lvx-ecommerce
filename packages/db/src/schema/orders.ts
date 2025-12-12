@@ -83,6 +83,8 @@ export const physicalSales = pgTable(
       .notNull()
       .references(() => products.id, { onDelete: 'restrict' }),
     quantity: integer('quantity').notNull(),
+    subtotal: numeric('subtotal', { precision: 12, scale: 2 }).notNull().default('0'),
+    discount_amount: numeric('discount_amount', { precision: 12, scale: 2 }).notNull().default('0'),
     total: numeric('total', { precision: 12, scale: 2 }).notNull(),
     seller_user_id: uuid('seller_user_id').references(() => users.id, {
       onDelete: 'set null'
