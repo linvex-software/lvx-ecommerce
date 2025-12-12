@@ -6,7 +6,9 @@ import { Input } from "@/components/ui/input";
 import { useStoreTheme } from "@/lib/hooks/use-store-theme";
 import { useAuthStore } from "@/lib/store/useAuthStore";
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
+import { Link } from '@/i18n/routing';
+import { useTranslations } from 'next-intl';
+import { LocaleSwitcher } from '@/components/LocaleSwitcher';
 
 interface NavbarProps {
     cartCount: number;
@@ -20,6 +22,7 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
     const { data: theme } = useStoreTheme();
     const { accessToken, customer } = useAuthStore();
     const isAuthenticated = !!(accessToken && customer);
+    const t = useTranslations('common');
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     const closeMenu = () => setIsMenuOpen(false);
@@ -60,7 +63,7 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                             <div className="flex-1 max-w-md hidden md:block">
                                 <div className="relative">
                                     <Input
-                                        placeholder="O que você está buscando?"
+                                        placeholder={t('searchPlaceholder')}
                                         className="rounded-full pl-4 pr-10 border-foreground/20 focus-visible:ring-2 focus-visible:ring-foreground/20"
                                         onChange={(e) => onSearch?.(e.target.value)}
                                     />
@@ -70,11 +73,14 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
 
                             {/* Icons - Right */}
                             <div className="flex items-center justify-end gap-3 md:gap-6 md:flex-1">
+                                {/* Locale Switcher */}
+                                <LocaleSwitcher />
+
                                 {/* Search Icon - Mobile Only */}
                                 <button
                                     onClick={() => setIsSearchOpen(!isSearchOpen)}
                                     className="md:hidden p-2 hover:bg-muted rounded-full transition-colors"
-                                    aria-label="Buscar"
+                                    aria-label={t('search')}
                                 >
                                     <Search className="h-5 w-5" />
                                 </button>
@@ -85,7 +91,7 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                                     className="hidden md:flex flex-col items-center cursor-pointer hover:text-muted-foreground transition-colors"
                                 >
                                     <User className="h-5 w-5" />
-                                    <span className="text-[10px] mt-1">Minha Conta</span>
+                                    <span className="text-[10px] mt-1">{t('account')}</span>
                                 </Link>
 
                                 {/* Cart Icon */}
@@ -113,7 +119,7 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                                             )}
                                         </AnimatePresence>
                                     </motion.div>
-                                    <span className="text-[10px] mt-1 hidden md:block">Carrinho</span>
+                                    <span className="text-[10px] mt-1 hidden md:block">{t('cart')}</span>
                                 </div>
 
                                 {/* Hamburger Menu - Mobile Only */}
@@ -132,7 +138,7 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                             <div className="mt-3 md:hidden">
                                 <div className="relative">
                                     <Input
-                                        placeholder="O que você está buscando?"
+                                        placeholder={t('searchPlaceholder')}
                                         className="rounded-full pl-4 pr-10 border-foreground/20"
                                         onChange={(e) => onSearch?.(e.target.value)}
                                         autoFocus
@@ -180,11 +186,11 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
             >
                 {/* Menu Header */}
                 <div className="flex items-center justify-between p-4 border-b border-border">
-                    <h2 className="text-lg font-bold">Menu</h2>
+                    <h2 className="text-lg font-bold">{t('menu')}</h2>
                     <button
                         onClick={closeMenu}
                         className="p-2 hover:bg-muted rounded-full transition-colors"
-                        aria-label="Fechar menu"
+                        aria-label={t('closeMenu')}
                     >
                         <X className="h-6 w-6" />
                     </button>
@@ -223,7 +229,7 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                         onClick={closeMenu}
                     >
                         <User className="h-5 w-5" />
-                        <span className="text-sm font-medium">Minha Conta</span>
+                        <span className="text-sm font-medium">{t('account')}</span>
                     </Link>
                 </div>
             </div>

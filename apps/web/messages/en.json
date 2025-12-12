@@ -1,0 +1,35 @@
+{
+  "common": {
+    "home": "Home",
+    "products": "Products",
+    "cart": "Cart",
+    "search": "Search",
+    "account": "My Account",
+    "language": "Language",
+    "searchPlaceholder": "What are you looking for?",
+    "menu": "Menu",
+    "closeMenu": "Close menu"
+  },
+  "cart": {
+    "emptyTitle": "Your cart is empty",
+    "emptyDescription": "Add products to cart to continue",
+    "checkout": "Checkout",
+    "continueShopping": "Continue Shopping",
+    "cartTitle": "Shopping Cart",
+    "items": "item",
+    "itemsPlural": "items",
+    "inCart": "in your cart",
+    "subtotal": "Subtotal",
+    "shipping": "Shipping",
+    "free": "Free",
+    "total": "Total",
+    "orderSummary": "Order Summary"
+  },
+  "buttons": {
+    "buy": "Buy",
+    "continue": "Continue",
+    "finish": "Finish",
+    "remove": "Remove item"
+  }
+}
+

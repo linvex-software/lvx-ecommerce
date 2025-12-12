@@ -14,3 +14,4 @@ export default function HomePage() {
   // O template é carregado via TemplateProvider no layout
   return <FlorDeMeninaTemplate />
 }
+

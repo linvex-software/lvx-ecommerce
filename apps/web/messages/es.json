@@ -1,0 +1,35 @@
+{
+  "common": {
+    "home": "Inicio",
+    "products": "Productos",
+    "cart": "Carrito",
+    "search": "Buscar",
+    "account": "Mi Cuenta",
+    "language": "Idioma",
+    "searchPlaceholder": "¿Qué estás buscando?",
+    "menu": "Menú",
+    "closeMenu": "Cerrar menú"
+  },
+  "cart": {
+    "emptyTitle": "Tu carrito está vacío",
+    "emptyDescription": "Agrega productos al carrito para continuar",
+    "checkout": "Finalizar Compra",
+    "continueShopping": "Continuar Comprando",
+    "cartTitle": "Carrito de Compras",
+    "items": "artículo",
+    "itemsPlural": "artículos",
+    "inCart": "en tu carrito",
+    "subtotal": "Subtotal",
+    "shipping": "Envío",
+    "free": "Gratis",
+    "total": "Total",
+    "orderSummary": "Resumen del Pedido"
+  },
+  "buttons": {
+    "buy": "Comprar",
+    "continue": "Continuar",
+    "finish": "Finalizar",
+    "remove": "Eliminar artículo"
+  }
+}
+
