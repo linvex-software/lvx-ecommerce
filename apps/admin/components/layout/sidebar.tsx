@@ -2,9 +2,24 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
- 
-import { LayoutDashboard, Package, Ticket, Settings, Tags, ShoppingCart, Warehouse, Store, Building2, Users, ChevronLeft, ChevronRight, Palette } from 'lucide-react'
- 
+
+import {
+  LayoutDashboard,
+  Package,
+  Ticket,
+  Settings,
+  Tags,
+  ShoppingCart,
+  Warehouse,
+  Store,
+  Building2,
+  Users,
+  ChevronLeft,
+  ChevronRight,
+  Palette,
+  HelpCircle,
+} from 'lucide-react'
+
 import { cn } from '@white-label/ui'
 import { useSidebar } from './sidebar-context'
 
@@ -18,104 +33,141 @@ const navItems: NavItem[] = [
   {
     title: 'Dashboard',
     href: '/dashboard',
-    icon: LayoutDashboard
+    icon: LayoutDashboard,
   },
   {
     title: 'Produtos',
     href: '/products',
-    icon: Package
+    icon: Package,
   },
   {
     title: 'Categorias',
     href: '/categories',
-    icon: Tags
+    icon: Tags,
   },
   {
     title: 'Estoque',
     href: '/stock',
-    icon: Warehouse
+    icon: Warehouse,
   },
   {
     title: 'Pedidos',
     href: '/orders',
-    icon: ShoppingCart
+    icon: ShoppingCart,
   },
   {
     title: 'Vendas Físicas',
     href: '/physical-sales',
-    icon: Store
+    icon: Store,
   },
   {
     title: 'Equipe',
     href: '/users',
-    icon: Users
+    icon: Users,
   },
   {
     title: 'Loja',
     href: '/store',
-    icon: Building2
+    icon: Building2,
   },
   {
     title: 'Editor',
     href: '/editor',
-    icon: Palette
+    icon: Palette,
   },
   {
     title: 'Cupons',
     href: '/cupons',
-    icon: Ticket
+    icon: Ticket,
   },
   {
     title: 'Configurações',
     href: '/settings',
-    icon: Settings
-  }
+    icon: Settings,
+  },
+  {
+    title: 'Como usar',
+    href: '/guide',
+    icon: HelpCircle,
+  },
 ]
 
 export function Sidebar() {
   const pathname = usePathname()
-  const { isCollapsed, toggleSidebar } = useSidebar()
+  const { isCollapsed, toggleSidebar, isMobileOpen, setIsMobileOpen } = useSidebar()
 
   return (
-    <aside
-      className={cn(
-        'relative flex min-h-screen flex-col border-r border-gray-200/70 bg-[#f6f4f2] py-8 transition-[width,padding] duration-200 ease-out',
-        isCollapsed ? 'w-20 px-4' : 'w-72 px-6'
+    <>
+      {/* Overlay para mobile */}
+      {isMobileOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={() => setIsMobileOpen(false)}
+        />
       )}
-      style={{ 
-        contain: 'layout style paint',
-        willChange: isCollapsed ? 'width' : 'width'
-      }}
-    >
-      {/* Botão toggle */}
+
+      <aside
+        className={cn(
+          'fixed left-0 top-0 z-50 flex h-screen flex-col border-r border-border bg-background py-4 transition-all duration-200 ease-out lg:relative lg:z-auto',
+          // Mobile: drawer que desliza
+          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0',
+          // Desktop: collapse normal
+          isCollapsed ? 'w-20 px-2' : 'w-72 px-4'
+        )}
+        style={{
+          contain: 'layout style paint',
+          willChange: isCollapsed ? 'width' : 'width',
+        }}
+      >
+      {/* Botão toggle - apenas desktop */}
       <button
         onClick={toggleSidebar}
-        className="absolute -right-3 top-8 z-10 flex h-6 w-6 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm transition-transform duration-150 hover:bg-gray-50 active:scale-95"
+        className="absolute -right-3 top-4 z-10 hidden h-6 w-6 items-center justify-center rounded-full border border-border bg-surface shadow-sm transition-all duration-200 hover:bg-hover active:scale-95 dark:bg-surface-2 lg:flex"
         aria-label={isCollapsed ? 'Expandir menu' : 'Recolher menu'}
       >
         {isCollapsed ? (
-          <ChevronRight className="h-4 w-4 text-gray-600" />
+          <ChevronRight className="h-4 w-4 text-text-secondary" />
         ) : (
-          <ChevronLeft className="h-4 w-4 text-gray-600" />
+          <ChevronLeft className="h-4 w-4 text-text-secondary" />
         )}
       </button>
 
+      {/* Botão fechar - apenas mobile */}
+      <button
+        onClick={() => setIsMobileOpen(false)}
+        className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-lg border border-border bg-surface transition-all duration-200 hover:bg-hover active:scale-95 dark:bg-surface-2 lg:hidden"
+        aria-label="Fechar menu"
+      >
+        <ChevronLeft className="h-4 w-4 text-text-secondary" />
+      </button>
+
       {/* Header */}
-      <div 
+      <div
         className={cn(
-          'space-y-1 overflow-hidden transition-all duration-200 ease-out',
-          isCollapsed ? 'max-h-0 opacity-0' : 'max-h-20 opacity-100'
+          'space-y-2 overflow-hidden transition-all duration-200 ease-out',
+          isCollapsed ? 'max-h-0 opacity-0' : 'max-h-24 opacity-100'
         )}
       >
-        <p className="text-[0.65rem] font-semibold uppercase tracking-[0.55em] text-gray-400">
-          White Label
-        </p>
-        <h2 className="text-2xl font-semibold tracking-tight text-gray-900">Admin</h2>
-        <p className="text-sm font-light text-gray-500">E-commerce</p>
+        <div className="flex items-center gap-3">
+          {/* Logo LVX Commerce */}
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/20 flex-shrink-0">
+            <span className="text-lg font-bold text-primary dark:text-primary">LVX</span>
+          </div>
+          {!isCollapsed && (
+            <div className="flex-1 min-w-0">
+              <h2 className="text-title-l font-bold tracking-tight text-text-primary dark:text-white truncate">
+                LVX Commerce
+              </h2>
+              <p className="text-small font-normal text-text-secondary dark:text-[#B5B5B5]">
+                Área do administrador
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Navigation */}
-      <nav className={cn('flex flex-1 flex-col gap-2', isCollapsed ? 'mt-1' : 'mt-10')}>
+      <nav className={cn('flex flex-1 flex-col gap-1', isCollapsed ? 'mt-1' : 'mt-6')}>
         {navItems.map((item) => {
           const Icon = item.icon
           const isActive = pathname === item.href || pathname?.startsWith(`${item.href}/`)
@@ -125,16 +177,21 @@ export function Sidebar() {
               key={item.href}
               href={item.href}
               className={cn(
-                'flex items-center rounded-2xl py-3 text-sm font-medium tracking-wide transition-colors duration-150',
-                isCollapsed ? 'justify-center px-4' : 'gap-3 px-4',
+                'flex items-center rounded-base py-2.5 text-body font-medium transition-all duration-200',
+                isCollapsed ? 'justify-center px-2' : 'gap-3 px-3',
                 isActive
-                  ? 'bg-gray-900 text-white shadow-[0_15px_35px_rgba(15,23,42,0.15)]'
-                  : 'text-gray-600 hover:bg-white hover:text-gray-900'
+                  ? 'bg-primary text-white shadow-sm'
+                  : 'text-text-secondary hover:bg-hover hover:text-text-primary'
               )}
               title={isCollapsed ? item.title : undefined}
             >
-              <Icon className={cn('h-5 w-5 flex-shrink-0', isActive ? 'text-white' : 'text-gray-400')} />
-              <span 
+              <Icon
+                className={cn(
+                  'h-5 w-5 flex-shrink-0',
+                  isActive ? 'text-white' : 'text-text-tertiary'
+                )}
+              />
+              <span
                 className={cn(
                   'truncate whitespace-nowrap transition-all duration-200 ease-out',
                   isCollapsed ? 'max-w-0 opacity-0 overflow-hidden' : 'max-w-[200px] opacity-100'
@@ -148,19 +205,19 @@ export function Sidebar() {
       </nav>
 
       {/* Footer */}
-      <div 
+      <div
         className={cn(
-          'mt-auto rounded-2xl border border-gray-200/70 bg-white/70 p-4 text-xs text-gray-500 transition-all duration-200 ease-out overflow-hidden',
+          'mt-auto rounded-base border border-border bg-surface p-4 text-small text-text-secondary transition-all duration-200 ease-out overflow-hidden dark:bg-surface-2',
           isCollapsed ? 'max-h-0 opacity-0 p-0 border-0' : 'max-h-40 opacity-100'
         )}
       >
-          <p className="font-medium text-gray-900">Suporte exclusivo</p>
-          <p className="mt-1 text-gray-500">support@white-label.io</p>
-          <p className="mt-2 text-[0.65rem] uppercase tracking-[0.35em] text-gray-400">
-            © {new Date().getFullYear()} White Label
-          </p>
+        <p className="font-semibold text-text-primary">Suporte exclusivo</p>
+        <p className="mt-1 text-text-secondary">linvex.software@gmail.com</p>
+        <p className="mt-2 text-small uppercase tracking-wider text-text-tertiary">
+          © {new Date().getFullYear()} Linvex
+        </p>
       </div>
     </aside>
+    </>
   )
 }
- 

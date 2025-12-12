@@ -3,20 +3,27 @@ import { cva, type VariantProps } from 'class-variance-authority'
 import { cn } from '@white-label/ui'
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-gray-950 focus:ring-offset-2',
+  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-small font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-gray-900 text-white shadow hover:bg-gray-800',
-        secondary: 'border-transparent bg-gray-100 text-gray-900 hover:bg-gray-200',
-        outline: 'text-gray-950 border-gray-200',
-        success: 'border-transparent bg-emerald-100 text-emerald-700',
-        destructive: 'border-transparent bg-rose-100 text-rose-700'
-      }
+        default:
+          'border-transparent bg-primary text-white',
+        secondary:
+          'border-transparent bg-surface text-text-primary dark:bg-surface-2',
+        outline:
+          'text-text-primary border-border bg-transparent hover:bg-hover',
+        success:
+          'border-transparent bg-success-light text-success dark:bg-success/20 dark:text-success',
+        error:
+          'border-transparent bg-error-light text-error dark:bg-error/20 dark:text-error',
+        warning:
+          'border-transparent bg-warning-light text-warning dark:bg-warning/20 dark:text-warning',
+      },
     },
     defaultVariants: {
-      variant: 'default'
-    }
+      variant: 'default',
+    },
   }
 )
 
@@ -29,4 +36,3 @@ function Badge({ className, variant, ...props }: BadgeProps) {
 }
 
 export { Badge, badgeVariants }
-

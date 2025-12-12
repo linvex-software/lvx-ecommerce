@@ -27,29 +27,29 @@ export function SummaryCards({ cards, isLoading = false }: SummaryCardsProps) {
       {cards.map((card) => {
         const Icon = card.icon
         return (
-          <Card key={card.id} className="flex-1 min-w-[200px] rounded-2xl border-gray-100 shadow-sm">
+          <Card key={card.id} className="flex-1 min-w-[200px] dark:bg-surface-2 dark:border-[#1D1D1D]">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-xs font-semibold uppercase tracking-[0.3em] text-gray-400">
+              <CardTitle className="text-xs font-semibold uppercase tracking-[0.3em] text-text-tertiary">
                 {card.label}
               </CardTitle>
-              <Icon className="h-5 w-5 text-gray-300" />
+              <Icon className="h-5 w-5 text-text-tertiary dark:text-white/80" />
             </CardHeader>
             <CardContent className="space-y-3">
-              <p className="text-3xl font-light tracking-tight text-gray-900">
+              <p className="text-3xl font-semibold tracking-tight text-text-primary dark:text-white">
                 {isLoading ? (
-                  <span className="inline-flex h-8 w-24 animate-pulse rounded bg-gray-200/80" />
+                  <span className="inline-flex h-8 w-24 animate-pulse rounded bg-gray-200/80 dark:bg-[#111111]" />
                 ) : (
                   card.value
                 )}
               </p>
-              <div className="flex items-center justify-between text-sm text-gray-500">
+              <div className="flex items-center justify-between text-sm text-text-secondary dark:text-[#B5B5B5]">
                 <span>{card.hint}</span>
                 {!isLoading && card.change ? (
                   <span
                     className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
                       card.change.trend === 'up'
-                        ? 'bg-emerald-50 text-emerald-700'
-                        : 'bg-rose-50 text-rose-700'
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+                        : 'bg-rose-50 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
                     }`}
                   >
                     {card.change.trend === 'up' ? (

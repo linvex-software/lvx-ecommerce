@@ -5,6 +5,8 @@ import { createContext, useContext, useState, useEffect } from 'react'
 interface SidebarContextType {
   isCollapsed: boolean
   toggleSidebar: () => void
+  isMobileOpen: boolean
+  setIsMobileOpen: (open: boolean) => void
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
@@ -13,6 +15,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
   // Inicializar com false para garantir que server e client renderizem igual
   // O valor correto será carregado no useEffect no client-side após hidratação
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
   const [hasMounted, setHasMounted] = useState(false)
 
   // Carregar preferência do localStorage após montagem do componente (client-side apenas)
@@ -24,6 +27,17 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
+  // Fechar mobile drawer quando redimensionar para desktop
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setIsMobileOpen(false)
+      }
+    }
+    window.addEventListener('resize', handleResize)
+    return () => window.removeEventListener('resize', handleResize)
+  }, [])
+
   // Expor hasMounted para componentes filhos se necessário (para evitar hydration issues)
   const value = {
     isCollapsed: hasMounted ? isCollapsed : false,
@@ -33,7 +47,9 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
         localStorage.setItem('sidebar-collapsed', String(newValue))
         return newValue
       })
-    }
+    },
+    isMobileOpen,
+    setIsMobileOpen
   }
 
   return (
