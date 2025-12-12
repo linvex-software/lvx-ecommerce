@@ -122,6 +122,60 @@ export default function ProductDetailPage() {
     }
   }, [data?.product, selectedColor, selectedSize])
 
+  // Atualizar variant_id quando size ou color mudar
+  // Este hook DEVE ser chamado antes de qualquer early return
+  useEffect(() => {
+    if (!data?.product) return
+
+    const findVariant = (size: string | null, color: string | null): ProductVariant | null => {
+      if (!data.product.variants || data.product.variants.length === 0) return null
+
+      return data.product.variants.find(v =>
+        v.active &&
+        (size ? v.size === size : !v.size) &&
+        (color ? v.color === color : !v.color)
+      ) || null
+    }
+
+    const variant = findVariant(selectedSize || null, selectedColor || null)
+    setSelectedVariantId(variant?.id || null)
+  }, [data?.product, selectedSize, selectedColor])
+
+  // Buscar estoque da variante selecionada ou do produto base
+  // Este hook DEVE ser chamado antes de qualquer early return
+  const { data: variantStockData } = useQuery<{ stock: { current_stock: number } }>({
+    queryKey: ['product-stock', data?.product?.id, selectedVariantId],
+    queryFn: async () => {
+      if (!data?.product) {
+        return { stock: { current_stock: 0 } }
+      }
+
+      // Se não há variante selecionada, buscar estoque do produto base
+      if (!selectedVariantId) {
+        try {
+          const url = `/products/${data.product.id}/stock`
+          const response = await fetchAPI(url)
+          return response
+        } catch (error) {
+          // Fallback para estoque do produto retornado na busca inicial
+          return { stock: { current_stock: data.product.stock?.current_stock ?? 0 } }
+        }
+      }
+      // Buscar estoque da variante específica via endpoint público
+      try {
+        const url = `/products/${data.product.id}/stock?variant_id=${selectedVariantId}`
+        const response = await fetchAPI(url)
+        return response
+      } catch (error) {
+        // Se falhar, usar estoque do produto base como fallback
+        console.warn('Não foi possível buscar estoque da variante, usando estoque do produto base')
+        return { stock: { current_stock: data.product.stock?.current_stock ?? 0 } }
+      }
+    },
+    enabled: !!data?.product?.id,
+    retry: 1,
+  })
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -198,44 +252,6 @@ export default function ProductDetailPage() {
       (color ? v.color === color : !v.color)
     ) || null
   }
-
-  // Atualizar variant_id quando size ou color mudar
-  useEffect(() => {
-    if (!data?.product) return
-
-    const variant = findVariant(selectedSize || null, selectedColor || null)
-    setSelectedVariantId(variant?.id || null)
-  }, [data?.product, selectedSize, selectedColor])
-
-  // Buscar estoque da variante selecionada ou do produto base
-  const { data: variantStockData } = useQuery<{ stock: { current_stock: number } }>({
-    queryKey: ['product-stock', product.id, selectedVariantId],
-    queryFn: async () => {
-      // Se não há variante selecionada, buscar estoque do produto base
-      if (!selectedVariantId) {
-        try {
-          const url = `/products/${product.id}/stock`
-          const response = await fetchAPI(url)
-          return response
-        } catch (error) {
-          // Fallback para estoque do produto retornado na busca inicial
-          return { stock: { current_stock: product.stock?.current_stock ?? 0 } }
-        }
-      }
-      // Buscar estoque da variante específica via endpoint público
-      try {
-        const url = `/products/${product.id}/stock?variant_id=${selectedVariantId}`
-        const response = await fetchAPI(url)
-        return response
-      } catch (error) {
-        // Se falhar, usar estoque do produto base como fallback
-        console.warn('Não foi possível buscar estoque da variante, usando estoque do produto base')
-        return { stock: { current_stock: product.stock?.current_stock ?? 0 } }
-      }
-    },
-    enabled: !!product.id,
-    retry: 1,
-  })
 
   // Calcular preço: usar price_override da variante se existir, senão usar base_price
   const selectedVariant = findVariant(selectedSize || null, selectedColor || null)
