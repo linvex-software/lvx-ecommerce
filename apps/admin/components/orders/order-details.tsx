@@ -88,7 +88,7 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
   const { data: customers } = useCustomers()
   const updateOrderMutation = useUpdateOrder()
   const [copiedAddress, setCopiedAddress] = useState(false)
-  
+
   const customer = useMemo(() => {
     if (!order.customer_id || !customers) return null
     return customers.find((c) => c.id === order.customer_id) || null
@@ -124,7 +124,7 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
 
   const handleCopyAddress = () => {
     if (!order.shipping_address) return
-    
+
     const address = [
       order.shipping_address.street,
       order.shipping_address.number,
@@ -155,10 +155,10 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
             </Button>
           </Link>
           <div>
-            <h1 className="text-4xl font-light tracking-tight text-gray-900">
+            <h1 className="text-4xl font-light tracking-tight text-foreground">
               Pedido #{order.id.slice(0, 8).toUpperCase()}
             </h1>
-            <p className="mt-2 text-sm font-light text-gray-500">
+            <p className="mt-2 text-sm font-light text-muted-foreground">
               Criado em {dateFormatter.format(new Date(order.created_at))}
             </p>
           </div>
@@ -180,17 +180,17 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
         <div className="lg:col-span-2 space-y-6">
           {/* Informações do cliente */}
           {customer && (
-            <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
+            <Card className="rounded-2xl border-border p-6 shadow-sm">
               <div className="mb-4 flex items-center gap-2">
-                <User className="h-5 w-5 text-gray-400" />
-                <h2 className="text-lg font-semibold text-gray-900">Cliente</h2>
+                <User className="h-5 w-5 text-muted-foreground" />
+                <h2 className="text-lg font-semibold text-foreground">Cliente</h2>
               </div>
               <div className="space-y-2 text-sm">
-                <p className="font-medium text-gray-900">{customer.name}</p>
-                {customer.email && <p className="text-gray-600">{customer.email}</p>}
-                {customer.phone && <p className="text-gray-600">{customer.phone}</p>}
+                <p className="font-medium text-foreground">{customer.name}</p>
+                {customer.email && <p className="text-muted-foreground">{customer.email}</p>}
+                {customer.phone && <p className="text-muted-foreground">{customer.phone}</p>}
                 {customer.cpf && (
-                  <p className="text-gray-500">
+                  <p className="text-muted-foreground">
                     CPF: {customer.cpf.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4')}
                   </p>
                 )}
@@ -199,13 +199,13 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
           )}
 
           {/* Status e pagamento */}
-          <Card className="rounded-2xl border-gray-100 p-6 shadow-sm print:shadow-none">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Status do Pedido</h2>
+          <Card className="rounded-2xl border-border p-6 shadow-sm print:shadow-none">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">Status do Pedido</h2>
             <div className="space-y-4">
               <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-gray-600">Status:</span>
-                <Select 
-                  value={order.status} 
+                <span className="text-sm text-muted-foreground">Status:</span>
+                <Select
+                  value={order.status}
                   onValueChange={handleStatusChange}
                   disabled={updateOrderMutation.isPending}
                 >
@@ -222,9 +222,9 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
                 </Select>
               </div>
               <div className="flex items-center justify-between gap-4">
-                <span className="text-sm text-gray-600">Pagamento:</span>
-                <Select 
-                  value={order.payment_status} 
+                <span className="text-sm text-muted-foreground">Pagamento:</span>
+                <Select
+                  value={order.payment_status}
                   onValueChange={handlePaymentStatusChange}
                   disabled={updateOrderMutation.isPending}
                 >
@@ -240,8 +240,8 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
                 </Select>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Tipo de Entrega:</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm text-muted-foreground">Tipo de Entrega:</span>
+                <span className="text-sm font-medium text-foreground">
                   {getDeliveryTypeLabel(order.delivery_type)}
                 </span>
               </div>
@@ -250,18 +250,18 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
 
           {/* Itens do pedido */}
           {order.items && order.items.length > 0 && (
-            <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
-              <h2 className="mb-4 text-lg font-semibold text-gray-900">Itens do Pedido</h2>
+            <Card className="rounded-2xl border-border p-6 shadow-sm">
+              <h2 className="mb-4 text-lg font-semibold text-foreground">Itens do Pedido</h2>
               <div className="space-y-4">
                 {order.items.map((item) => (
-                  <div key={item.id} className="flex items-center justify-between border-b border-gray-100 pb-4 last:border-0 last:pb-0">
+                  <div key={item.id} className="flex items-center justify-between border-b border-border pb-4 last:border-0 last:pb-0">
                     <div>
-                      <p className="text-sm font-medium text-gray-900">
+                      <p className="text-sm font-medium text-foreground">
                         {item.product_name || `Produto ${item.product_id.slice(0, 8)}`}
                       </p>
-                      <p className="text-xs text-gray-500">Quantidade: {item.quantity}</p>
+                      <p className="text-xs text-muted-foreground">Quantidade: {item.quantity}</p>
                     </div>
-                    <p className="text-sm font-medium text-gray-900">
+                    <p className="text-sm font-medium text-foreground">
                       {currencyFormatter.format(parseFloat(item.price))}
                     </p>
                   </div>
@@ -272,11 +272,11 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
 
           {/* Endereço de entrega */}
           {order.shipping_address && (
-            <Card className="rounded-2xl border-gray-100 p-6 shadow-sm print:shadow-none">
+            <Card className="rounded-2xl border-border p-6 shadow-sm print:shadow-none">
               <div className="mb-4 flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5 text-gray-400" />
-                  <h2 className="text-lg font-semibold text-gray-900">Endereço de Entrega</h2>
+                  <MapPin className="h-5 w-5 text-muted-foreground" />
+                  <h2 className="text-lg font-semibold text-foreground">Endereço de Entrega</h2>
                 </div>
                 <Button
                   variant="outline"
@@ -286,7 +286,7 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
                 >
                   {copiedAddress ? (
                     <>
-                      <Check className="h-4 w-4 text-green-600" />
+                      <Check className="h-4 w-4 text-success" />
                       Copiado
                     </>
                   ) : (
@@ -297,7 +297,7 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
                   )}
                 </Button>
               </div>
-              <div className="space-y-2 text-sm text-gray-600">
+              <div className="space-y-2 text-sm text-muted-foreground">
                 {order.shipping_address.street && (
                   <p>
                     {order.shipping_address.street}
@@ -325,25 +325,25 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
         {/* Sidebar - Frete e etiqueta */}
         <div className="space-y-6">
           {/* Resumo financeiro */}
-          <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Resumo</h2>
+          <Card className="rounded-2xl border-border p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">Resumo</h2>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Subtotal:</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm text-muted-foreground">Subtotal:</span>
+                <span className="text-sm font-medium text-foreground">
                   {currencyFormatter.format(parseFloat(order.total) - parseFloat(order.shipping_cost))}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-600">Frete:</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm text-muted-foreground">Frete:</span>
+                <span className="text-sm font-medium text-foreground">
                   {currencyFormatter.format(parseFloat(order.shipping_cost))}
                 </span>
               </div>
-              <div className="border-t border-gray-200 pt-3">
+              <div className="border-t border-border pt-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-base font-semibold text-gray-900">Total:</span>
-                  <span className="text-base font-semibold text-gray-900">
+                  <span className="text-base font-semibold text-foreground">Total:</span>
+                  <span className="text-base font-semibold text-foreground">
                     {currencyFormatter.format(parseFloat(order.total))}
                   </span>
                 </div>
@@ -352,25 +352,25 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
           </Card>
 
           {/* Informações de frete */}
-          <Card className="rounded-2xl border-gray-100 p-6 shadow-sm">
-            <h2 className="mb-4 text-lg font-semibold text-gray-900">Entrega</h2>
+          <Card className="rounded-2xl border-border p-6 shadow-sm">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">Entrega</h2>
             <div className="space-y-4">
               {order.tracking_code ? (
                 <div>
-                  <p className="mb-2 text-sm font-medium text-gray-900">Código de Rastreio</p>
-                  <p className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-mono text-sm text-gray-900">
+                  <p className="mb-2 text-sm font-medium text-foreground">Código de Rastreio</p>
+                  <p className="rounded-lg border border-border bg-surface-2 px-3 py-2 font-mono text-sm text-foreground">
                     {order.tracking_code}
                   </p>
                 </div>
               ) : (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center text-sm text-gray-500">
+                <div className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-center text-sm text-muted-foreground">
                   Sem código de rastreio
                 </div>
               )}
 
               {hasShippingLabel && (
                 <div className="space-y-2">
-                  <p className="text-sm font-medium text-gray-900">Etiqueta de Frete</p>
+                  <p className="text-sm font-medium text-foreground">Etiqueta de Frete</p>
                   <div className="flex gap-2">
                     {isExternalUrl ? (
                       <Button
@@ -408,7 +408,7 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
               )}
 
               {!hasShippingLabel && (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-center text-sm text-gray-500">
+                <div className="rounded-lg border border-border bg-surface-2 px-3 py-2 text-center text-sm text-muted-foreground">
                   Etiqueta não disponível
                 </div>
               )}
@@ -419,4 +419,3 @@ export function OrderDetails({ order, onDownloadLabel, isDownloading = false }: 
     </div>
   )
 }
- 
