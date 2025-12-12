@@ -10,6 +10,8 @@ import { Button } from '@/components/template/flor-de-menina/components/ui/butto
 import { useCart } from '@/components/template/flor-de-menina/components/contexts/CartContext'
 import { ProductShowcase } from '@/components/template/flor-de-menina/components/home/ProductShowcase'
 import { Header } from '@/components/template/flor-de-menina/components/layout/Header'
+import { ProductShippingSimulator } from '@/components/shipping/ProductShippingSimulator'
+import { ProductReviews } from '@/components/reviews/ProductReviews'
 import { cn } from '@/lib/utils'
 
 // Types baseados na resposta da API
@@ -309,9 +311,9 @@ export default function ProductDetailPage() {
 
     // Passar variant_id correto para o carrinho
     addItem(
-      productToAdd, 
-      selectedSize || '', 
-      selectedColor || '', 
+      productToAdd,
+      selectedSize || '',
+      selectedColor || '',
       quantity,
       selectedVariantId || null
     )
@@ -425,14 +427,6 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            {product.description && (
-              <div className="prose prose-sm max-w-none">
-                <p className="text-muted-foreground font-body leading-relaxed">
-                  {product.description}
-                </p>
-              </div>
-            )}
-
             {/* Size Selection */}
             {availableSizes.length > 0 && (
               <div>
@@ -538,6 +532,12 @@ export default function ProductDetailPage() {
               </Button>
             </div>
 
+            {/* Simulador de Frete */}
+            <ProductShippingSimulator
+              productId={product.id}
+              quantity={quantity}
+            />
+
             {/* Features */}
             <div className="grid grid-cols-3 gap-4 pt-6 border-t">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -555,6 +555,21 @@ export default function ProductDetailPage() {
             </div>
           </div>
         </div>
+
+        {/* Descrição do Produto */}
+        {product.description && (
+          <div className="mt-12 mb-16">
+            <h2 className="text-2xl font-semibold mb-4">Descrição</h2>
+            <div className="prose prose-lg max-w-none text-muted-foreground">
+              <p className="font-body leading-relaxed whitespace-pre-line">
+                {product.description}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Avaliações */}
+        <ProductReviews productId={product.id} />
 
         {/* Related Products */}
         <div className="mt-16">
