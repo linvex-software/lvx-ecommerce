@@ -2,8 +2,11 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 import { listOrdersUseCase } from '../../../application/orders/use-cases/list-orders'
 import { getOrderUseCase } from '../../../application/orders/use-cases/get-order'
 import { updateOrderUseCase } from '../../../application/orders/use-cases/update-order'
+import { cancelOrderUseCase } from '../../../application/orders/use-cases/cancel-order'
 import { OrderRepository } from '../../../infra/db/repositories/order-repository'
+import { StockMovementRepository } from '../../../infra/db/repositories/stock-movement-repository'
 import type { ListOrdersFilters, UpdateOrderInput } from '../../../domain/orders/order-types'
+import { ZodError } from 'zod'
 
 export class OrderController {
   constructor(private readonly orderRepository: OrderRepository) {}
@@ -152,6 +155,65 @@ export class OrderController {
     } catch (error) {
       if (error instanceof Error) {
         await reply.code(500).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async cancel(
+    request: FastifyRequest<{ 
+      Params: { id: string }
+      Body: { reason?: string | null }
+    }>, 
+    reply: FastifyReply
+  ) {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const userId = request.user?.id || null
+      const { id } = request.params
+      const body = request.body || {}
+
+      const stockMovementRepository = new StockMovementRepository()
+
+      const order = await cancelOrderUseCase(
+        {
+          orderId: id,
+          reason: body.reason || null
+        },
+        storeId,
+        userId,
+        {
+          orderRepository: this.orderRepository,
+          stockMovementRepository
+        }
+      )
+
+      await reply.send({ 
+        order,
+        message: 'Pedido cancelado com sucesso. Estoque estornado automaticamente.' 
+      })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Erro de validação',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode = 
+          error.message.includes('não encontrado') ? 404 :
+          error.message.includes('já está cancelado') ||
+          error.message.includes('já entregue') ||
+          error.message.includes('não é possível') ? 400 :
+          500
+        await reply.code(statusCode).send({ error: error.message })
         return
       }
       await reply.code(500).send({ error: 'Internal server error' })

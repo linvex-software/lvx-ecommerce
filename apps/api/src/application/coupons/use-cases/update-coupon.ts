@@ -8,7 +8,7 @@ const updateCouponSchema = z.object({
   value: z.number().positive().optional(),
   min_value: z.number().positive().optional().nullable(),
   max_uses: z.number().int().positive().optional().nullable(),
-  expires_at: z.date().optional().nullable(),
+  expires_at: z.coerce.date().optional().nullable(), // Aceita string ISO e converte para Date
   active: z.boolean().optional()
 })
 

@@ -64,5 +64,17 @@ export async function registerAdminOrderRoutes(app: FastifyInstance): Promise<vo
       await orderController.downloadShippingLabel(request, reply)
     }
   )
+
+  // POST /admin/orders/:id/cancel - Cancela pedido com estorno de estoque (apenas admin)
+  app.post<{ Params: { id: string } }>(
+    '/admin/orders/:id/cancel',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin'])]
+    },
+    async (request, reply) => {
+      await orderController.cancel(request, reply)
+    }
+  )
 }
 

@@ -77,7 +77,7 @@ const navItems: NavItem[] = [
   },
   {
     title: 'Cupons',
-    href: '/coupons',
+    href: '/cupons',
     icon: Ticket,
   },
   {
