@@ -69,7 +69,7 @@ export default function OrderDetailPage() {
   if (isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
-        <div className="text-sm font-light text-gray-500 tracking-wide">Carregando...</div>
+        <div className="text-sm font-light text-muted-foreground tracking-wide">Carregando...</div>
       </div>
     )
   }
@@ -78,7 +78,7 @@ export default function OrderDetailPage() {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
-          <p className="text-sm font-medium text-gray-900">Pedido não encontrado</p>
+          <p className="text-sm font-medium text-foreground">Pedido não encontrado</p>
         </div>
       </div>
     )

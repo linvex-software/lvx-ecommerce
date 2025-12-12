@@ -71,3 +71,31 @@ export function useDeleteUser() {
   })
 }
 
+export interface UpdateUserPasswordInput {
+  new_password: string
+}
+
+export function useUpdateUserPassword() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      await apiClient.put(`/admin/users/${userId}/password`, {
+        new_password: password
+      })
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: USERS_QUERY_KEY })
+      toast.success('Senha atualizada com sucesso', {
+        description: 'Compartilhe a nova senha com o usuário.'
+      })
+    },
+    onError: (error: any) => {
+      const errorMessage = error.response?.data?.error || 'Erro ao atualizar senha'
+      toast.error('Erro ao atualizar senha', {
+        description: errorMessage
+      })
+    }
+  })
+}
+

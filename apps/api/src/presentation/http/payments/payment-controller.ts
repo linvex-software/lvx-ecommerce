@@ -44,13 +44,23 @@ export class PaymentController {
         null
 
       if (!publicKey) {
+        console.error('[PaymentController] Chave pública não encontrada no config_json')
+        console.error('[PaymentController] Config keys disponíveis:', config ? Object.keys(config) : 'config é null')
         await reply.code(404).send({ 
           error: 'Mercado Pago public key not configured',
+          message: 'A chave pública não foi encontrada na configuração. Configure no painel administrativo.',
           publicKey: null
         })
         return
       }
 
+      // Validar formato básico da chave pública
+      if (!publicKey.startsWith('APP_USR-') && !publicKey.startsWith('TEST-')) {
+        console.warn('[PaymentController] Formato de chave pública pode estar incorreto:', publicKey.substring(0, 20) + '...')
+        // Não bloquear, apenas avisar - o Mercado Pago vai validar
+      }
+
+      console.log('[PaymentController] Chave pública encontrada:', publicKey.substring(0, 20) + '...')
       await reply.status(200).send({ publicKey })
     } catch (error) {
       console.error('[PaymentController] Erro ao buscar chave pública:', error)

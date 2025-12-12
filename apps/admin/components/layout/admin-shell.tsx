@@ -14,16 +14,14 @@ function AdminShellContent({ children }: AdminShellContentProps) {
   const { isCollapsed } = useSidebar()
 
   return (
-    <div className="flex min-h-screen w-full bg-gray-50 text-gray-900">
+    <div className="flex min-h-screen w-full bg-background text-text-primary transition-colors duration-200">
       <Sidebar />
 
-      <div className="flex flex-1 flex-col overflow-hidden bg-white">
+      <div className="flex flex-1 flex-col overflow-hidden bg-background lg:ml-0">
         <Header />
 
         <main className="flex-1 overflow-y-auto">
-          <div className="w-full px-10 py-8">
-            {children}
-          </div>
+          <div className="w-full px-4 py-4 sm:px-6 sm:py-6">{children}</div>
         </main>
       </div>
     </div>
@@ -41,4 +39,3 @@ export function AdminShell({ children }: AdminShellProps) {
     </SidebarProvider>
   )
 }
-

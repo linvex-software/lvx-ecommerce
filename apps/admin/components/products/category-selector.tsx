@@ -34,28 +34,28 @@ export function CategorySelector({ value, onChange, error }: CategorySelectorPro
   return (
     <div className="space-y-2">
       <Label>Categorias</Label>
-      <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-gray-200 bg-white p-3">
+      <div className="max-h-48 space-y-2 overflow-y-auto rounded-lg border border-border bg-background p-3 dark:bg-[#101010] dark:border-[#2A2A2A]">
         {categories.length === 0 ? (
-          <p className="text-sm text-gray-500">Nenhuma categoria disponível</p>
+          <p className="text-sm text-text-secondary">Nenhuma categoria disponível</p>
         ) : (
           categories.map((category) => (
             <label
               key={category.id}
-              className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-gray-50"
+              className="flex cursor-pointer items-center gap-2 rounded p-2 hover:bg-hover transition-colors"
             >
               <input
                 type="checkbox"
                 checked={value.includes(category.id)}
                 onChange={() => handleToggleCategory(category.id)}
-                className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900"
+                className="h-4 w-4 rounded border-input-border text-primary focus:ring-primary dark:border-[#2A2A2A]"
               />
-              <span className="text-sm">{category.name}</span>
+              <span className="text-sm text-text-primary">{category.name}</span>
             </label>
           ))
         )}
       </div>
-      {error && <p className="text-xs text-rose-600">{error}</p>}
-      <p className="text-xs text-gray-500">
+      {error && <p className="text-xs text-error">{error}</p>}
+      <p className="text-xs text-text-secondary">
         Selecione uma ou mais categorias para este produto
       </p>
     </div>
