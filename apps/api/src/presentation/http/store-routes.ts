@@ -10,6 +10,8 @@ import { updateStorePreferencesUseCase } from '../../application/stores/use-case
 import { randomUUID } from 'crypto'
 import { UserRepository } from '../../infra/db/repositories/user-repository'
 import { AuthSessionRepository } from '../../infra/db/repositories/auth-session-repository'
+import { getStoreGeneralSettingsUseCase } from '../../application/stores/use-cases/get-store-general-settings'
+import { updateStoreGeneralSettingsUseCase } from '../../application/stores/use-cases/update-store-general-settings'
 
 export async function registerStoreRoutes(app: FastifyInstance): Promise<void> {
   const userRepository = new UserRepository()
@@ -322,28 +324,28 @@ export async function registerStoreRoutes(app: FastifyInstance): Promise<void> {
   )
 
   // Endpoint para atualizar preferências da loja
-  app.put<{ 
-    Body: { 
+  app.put<{
+    Body: {
       logo_url?: string | null
       primary_color?: string | null
       secondary_color?: string | null
       text_color?: string | null
       icon_color?: string | null
-    } 
+    }
   }>(
     '/stores/preferences',
     {
       onRequest: [requireAuth, tenantMiddleware]
     },
     async (
-      request: FastifyRequest<{ 
-        Body: { 
+      request: FastifyRequest<{
+        Body: {
           logo_url?: string | null
           primary_color?: string | null
           secondary_color?: string | null
           text_color?: string | null
           icon_color?: string | null
-        } 
+        }
       }>,
       reply: FastifyReply
     ) => {
@@ -449,6 +451,136 @@ export async function registerStoreRoutes(app: FastifyInstance): Promise<void> {
           await reply.code(statusCode).send({ error: error.message })
           return
         }
+        request.log.error(error)
+        await reply.code(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  // Endpoint para buscar configurações gerais da loja (Admin)
+  app.get(
+    '/stores/settings',
+    {
+      onRequest: [requireAuth, tenantMiddleware]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const storeId = (request as any).storeId as string | undefined
+
+        if (!storeId) {
+          await reply.code(400).send({ error: 'Store ID is required' })
+          return
+        }
+
+        const settings = await getStoreGeneralSettingsUseCase(storeId)
+
+        if (!settings) {
+          await reply.code(404).send({ error: 'Store settings not found' })
+          return
+        }
+
+        await reply.send(settings)
+      } catch (error) {
+        request.log.error(error)
+        await reply.code(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  // Endpoint para atualizar configurações gerais da loja (Admin)
+  app.put<{
+    Body: {
+      cnpj_cpf?: string | null
+      whatsapp?: string | null
+      email?: string | null
+      address?: string | null
+      social_media?: {
+        facebook?: string
+        instagram?: string
+        twitter?: string
+        linkedin?: string
+        youtube?: string
+        tiktok?: string
+        whatsapp_link?: string
+      } | null
+      favicon_url?: string | null
+    }
+  }>(
+    '/stores/settings',
+    {
+      onRequest: [requireAuth, tenantMiddleware]
+    },
+    async (
+      request: FastifyRequest<{
+        Body: {
+          cnpj_cpf?: string | null
+          whatsapp?: string | null
+          email?: string | null
+          address?: string | null
+          social_media?: {
+            facebook?: string
+            instagram?: string
+            twitter?: string
+            linkedin?: string
+            youtube?: string
+            tiktok?: string
+            whatsapp_link?: string
+          } | null
+          favicon_url?: string | null
+        }
+      }>,
+      reply: FastifyReply
+    ) => {
+      try {
+        const storeId = (request as any).storeId as string | undefined
+
+        if (!storeId) {
+          await reply.code(400).send({ error: 'Store ID is required' })
+          return
+        }
+
+        await updateStoreGeneralSettingsUseCase({
+          storeId,
+          ...request.body
+        })
+
+        await reply.send({ success: true })
+      } catch (error) {
+        if (error instanceof Error) {
+          const statusCode = error.message === 'Store not found' ? 404 : 500
+          await reply.code(statusCode).send({ error: error.message })
+          return
+        }
+        request.log.error(error)
+        await reply.code(500).send({ error: 'Internal server error' })
+      }
+    }
+  )
+
+  // Endpoint público para buscar configurações gerais da loja
+  app.get(
+    '/stores/settings/public',
+    {
+      onRequest: [tenantMiddleware]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      try {
+        const storeId = (request as any).storeId as string | undefined
+
+        if (!storeId) {
+          await reply.code(400).send({ error: 'Store ID is required' })
+          return
+        }
+
+        const settings = await getStoreGeneralSettingsUseCase(storeId)
+
+        if (!settings) {
+          await reply.code(404).send({ error: 'Store settings not found' })
+          return
+        }
+
+        await reply.send(settings)
+      } catch (error) {
         request.log.error(error)
         await reply.code(500).send({ error: 'Internal server error' })
       }

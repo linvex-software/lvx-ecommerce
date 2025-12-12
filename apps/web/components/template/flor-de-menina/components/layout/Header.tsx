@@ -11,6 +11,7 @@ import { EditableText } from "../common/editable-text";
 import { Element, useEditor } from '@craftjs/core';
 import { useStoreTheme } from '@/lib/hooks/use-store-theme';
 import { useQuery } from '@tanstack/react-query';
+import { useStoreSettings } from '@/lib/hooks/use-store-settings';
 import React from 'react';
 
 interface Category {
@@ -24,13 +25,13 @@ interface CategoriesResponse {
 }
 
 // Componente helper para renderizar texto editável ou texto simples
-function EditableTextOrPlain({ 
-  id, 
-  content, 
-  tag = 'span', 
+function EditableTextOrPlain({
+  id,
+  content,
+  tag = 'span',
   className = '',
   isInCraftContext = false
-}: { 
+}: {
   id: string
   content: string
   tag?: 'span' | 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6'
@@ -61,6 +62,7 @@ export function Header() {
   const { itemCount, setIsOpen } = useCart();
   const { connectors: { connect }, isInEditor } = useSafeNode();
   const { data: theme } = useStoreTheme();
+  const { data: settings } = useStoreSettings();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(true);
 
@@ -73,7 +75,7 @@ export function Header() {
     }
 
     const isWebContext = !window.location.pathname.includes('/editor');
-    
+
     if (!isWebContext) {
       // No admin, não tentar carregar autenticação de cliente
       return;
@@ -90,20 +92,20 @@ export function Header() {
         // O Next.js não consegue resolver caminhos relativos dinâmicos no build time
         // @ts-expect-error - Este módulo só existe no contexto web, não no admin
         const authStoreModule = await import('../../../../lib/store/useAuthStore');
-        
+
         // Criar uma função que verifica o estado atual
         const checkAuth = () => {
           const authState = authStoreModule.useAuthStore.getState();
           setIsAuthenticated(!!(authState.accessToken && authState.customer));
           setHasHydrated(authState._hasHydrated);
         };
-        
+
         // Verificar inicialmente
         checkAuth();
-        
+
         // Subscrever a mudanças no store
         const unsubscribe = authStoreModule.useAuthStore.subscribe(checkAuth);
-        
+
         // Retornar função de cleanup
         return () => unsubscribe();
       } catch (error) {
@@ -113,7 +115,7 @@ export function Header() {
       }
     })();
   }, []);
-  
+
   // Verificar se está no contexto do Craft.js uma vez
   let isInCraftContext = false;
   try {
@@ -122,26 +124,26 @@ export function Header() {
   } catch {
     isInCraftContext = false;
   }
-  
+
   // Função helper para buscar categorias (funciona em web e admin)
   const fetchCategories = async (): Promise<CategoriesResponse> => {
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'
     const storeId = process.env.NEXT_PUBLIC_STORE_ID
-    
+
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
     }
-    
+
     if (storeId) {
       headers['x-store-id'] = storeId
     }
-    
+
     const response = await fetch(`${API_URL}/categories`, { headers })
-    
+
     if (!response.ok) {
       throw new Error(`API Error: ${response.statusText}`)
     }
-    
+
     return response.json()
   }
 
@@ -156,22 +158,22 @@ export function Header() {
     const staticLinks = [
       { name: "Novidades", href: "/produtos?filter=new", id: "node_header_nav_1" },
     ]
-    
+
     // Adicionar categorias da API (máximo 5 para não sobrecarregar o menu)
     const categoryLinks = (categoriesData?.categories || []).slice(0, 5).map((cat, index) => ({
       name: cat.name,
       href: `/produtos?category_id=${cat.id}`,
       id: `node_header_nav_category_${cat.id}`, // Usar ID da categoria para garantir unicidade
     }))
-    
+
     // Adicionar link estático no final
     const finalLinks = [
       { name: "Natal & Festas", href: "/produtos?filter=featured", id: "node_header_nav_featured" },
     ]
-    
+
     return [...staticLinks, ...categoryLinks, ...finalLinks]
   }, [categoriesData])
-  
+
   // Verificar se está no contexto do Craft.js
   let craftContextAvailable = false;
   try {
@@ -182,8 +184,8 @@ export function Header() {
   }
 
   return (
-    <header 
-      ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }} 
+    <header
+      ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }}
       className={`${isInEditor ? '' : 'sticky top-0'} bg-background/95 backdrop-blur-md border-b border-border`}
       style={{
         zIndex: isInEditor ? 1 : 9999,
@@ -214,13 +216,7 @@ export function Header() {
               />
             ) : (
               <h1 className="font-display text-2xl xl:text-3xl font-semibold text-foreground tracking-wide">
-                <EditableTextOrPlain
-                  id="node_header_logo"
-                  content="Flor de Menina"
-                  tag="span"
-                  className=""
-                  isInCraftContext={isInCraftContext}
-                />
+                {settings?.name || "Minha Loja"}
               </h1>
             )}
           </Link>
@@ -304,7 +300,7 @@ export function Header() {
               />
             </Link>
           ))}
-          
+
           {/* Mobile Actions - com separadores iguais aos outros itens */}
           <button
             onClick={() => {
