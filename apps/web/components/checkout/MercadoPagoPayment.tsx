@@ -58,6 +58,7 @@ export function MercadoPagoPayment({
   const [cardForm, setCardForm] = useState<any>(null)
   const [isCardFormMounted, setIsCardFormMounted] = useState(false)
   const [publicKey, setPublicKey] = useState<string | null>(null)
+  const cardFormRef = useRef<any>(null) // Ref para manter referência estável do CardForm
   const [identificationTypes, setIdentificationTypes] = useState<Array<{ id: string; name: string }>>([])
   const [installments, setInstallments] = useState<Array<{ installments: number; recommended_message: string }>>([])
   const [issuers, setIssuers] = useState<Array<{ id: string; name: string }>>([])
@@ -118,12 +119,20 @@ export function MercadoPagoPayment({
     script.onload = () => {
       if (publicKey && window.MercadoPago) {
         try {
-          const mpInstance = new window.MercadoPago(publicKey)
+          // Validar formato básico da chave pública antes de criar instância
+          if (!publicKey.startsWith('APP_USR-') && !publicKey.startsWith('TEST-')) {
+            console.warn('[MercadoPago] Formato de chave pública pode estar incorreto:', publicKey.substring(0, 20) + '...')
+          }
+
+          const mpInstance = new window.MercadoPago(publicKey, {
+            locale: 'pt-BR'
+          })
           setMp(mpInstance)
           console.log('[MercadoPago] SDK carregado com sucesso, instância criada')
-        } catch (error) {
+        } catch (error: any) {
           console.error('[MercadoPago] Erro ao criar instância:', error)
-          onPaymentError('Erro ao inicializar Mercado Pago. Verifique a chave pública.')
+          const errorMessage = error?.message || 'Erro desconhecido ao inicializar Mercado Pago'
+          onPaymentError(`Erro ao inicializar Mercado Pago: ${errorMessage}. Verifique se a chave pública está correta.`)
         }
       } else {
         console.error('[MercadoPago] SDK não carregado corretamente', { publicKey: !!publicKey, MercadoPago: !!window.MercadoPago })
@@ -144,24 +153,76 @@ export function MercadoPagoPayment({
     }
   }, [publicKey])
 
-  // Carregar tipos de documento
+  // Carregar tipos de documento com retry logic
   useEffect(() => {
     if (!mp) return
 
-    mp.getIdentificationTypes()
-      .then((types: Array<{ id: string; name: string }>) => {
+    let retryCount = 0
+    const maxRetries = 3
+    const retryDelay = 1000 // 1 segundo
+
+    const fetchIdentificationTypes = async (): Promise<void> => {
+      try {
+        console.log('[MercadoPagoPayment] Buscando tipos de identificação... (tentativa', retryCount + 1, ')')
+        const types = await mp.getIdentificationTypes()
+        console.log('[MercadoPagoPayment] Tipos de identificação obtidos:', types.length, 'tipos')
         setIdentificationTypes(types)
-      })
-      .catch((error: Error) => {
-        console.error('Error getting identification types:', error)
-      })
-  }, [mp])
+      } catch (error: any) {
+        console.error('[MercadoPagoPayment] Erro ao obter tipos de identificação:', error)
+        
+        // Se for erro relacionado à chave pública, não tentar novamente
+        if (error?.message?.includes('public key') || error?.status === 500) {
+          console.error('[MercadoPagoPayment] Erro relacionado à chave pública. Verifique se a chave está correta.')
+          onPaymentError('Erro na configuração da chave pública do Mercado Pago. Verifique as configurações no painel administrativo.')
+          return
+        }
+
+        // Tentar novamente se ainda houver tentativas
+        if (retryCount < maxRetries) {
+          retryCount++
+          console.log(`[MercadoPagoPayment] Tentando novamente em ${retryDelay}ms...`)
+          setTimeout(() => fetchIdentificationTypes(), retryDelay)
+        } else {
+          console.warn('[MercadoPagoPayment] Não foi possível obter tipos de identificação após', maxRetries, 'tentativas. Continuando sem eles.')
+          // Não bloquear o fluxo se não conseguir obter os tipos
+        }
+      }
+    }
+
+    fetchIdentificationTypes()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mp]) // onPaymentError não precisa estar nas dependências para evitar re-renders desnecessários
 
   // Inicializar CardForm quando mp estiver disponível e método for cartão
   useEffect(() => {
+    console.log('[MercadoPagoPayment] useEffect CardForm - Verificando condições:', {
+      mp: !!mp,
+      paymentMethod,
+      publicKey: !!publicKey,
+      isCard: paymentMethod === 'card',
+      hasCardForm: !!cardFormRef.current
+    })
+    
     if (!mp || paymentMethod !== 'card') {
+      console.log('[MercadoPagoPayment] Condições não atendidas, limpando CardForm')
       setIsCardFormMounted(false)
       setCardForm(null)
+      cardFormRef.current = null
+      return
+    }
+    
+    if (!publicKey) {
+      console.warn('[MercadoPagoPayment] Chave pública não disponível, aguardando...')
+      return
+    }
+    
+    // Se já temos um CardForm válido e apenas amount ou publicKey mudaram, não recriar
+    if (cardFormRef.current && typeof cardFormRef.current.getCardFormData === 'function') {
+      console.log('[MercadoPagoPayment] CardForm já existe e é válido, mantendo (apenas amount ou publicKey mudaram)')
+      // Apenas atualizar o state se necessário
+      if (!cardForm) {
+        setCardForm(cardFormRef.current)
+      }
       return
     }
 
@@ -250,15 +311,23 @@ export function MercadoPagoPayment({
       }
 
       // Limpar CardForm anterior se existir
-      if (cardForm) {
+      const previousCardForm = cardForm || cardFormRef.current
+      if (previousCardForm) {
         try {
+          // Limpar timeout se existir
+          if ((previousCardForm as any)._mountTimeout) {
+            clearTimeout((previousCardForm as any)._mountTimeout)
+            delete (previousCardForm as any)._mountTimeout
+          }
+          
           // Tentar limpar o CardForm anterior se tiver método de limpeza
-          if (typeof cardForm.unmount === 'function') {
-            cardForm.unmount()
+          if (typeof previousCardForm.unmount === 'function') {
+            previousCardForm.unmount()
           }
         } catch (e) {
           console.warn('[MercadoPagoPayment] Erro ao limpar CardForm anterior:', e)
         }
+        cardFormRef.current = null
         setCardForm(null)
       }
 
@@ -292,6 +361,15 @@ export function MercadoPagoPayment({
         await new Promise(resolve => setTimeout(resolve, 50))
         
         console.log('[MercadoPagoPayment] Inicializando CardForm com chave pública já configurada')
+        console.log('[MercadoPagoPayment] Public key prefix:', publicKey?.substring(0, 10) + '...')
+        
+        // Validar que temos uma chave pública válida antes de inicializar
+        if (!publicKey) {
+          throw new Error('Chave pública não está disponível. Recarregue a página.')
+        }
+
+        // Criar referência para o cardFormInstance que será usado nos callbacks
+        let cardFormInstanceRef: any = null
         
         const cardFormInstance = mp.cardForm({
           amount: (amount / 100).toFixed(2),
@@ -339,16 +417,57 @@ export function MercadoPagoPayment({
             onFormMounted: (error: Error | null) => {
               console.log('[MercadoPagoPayment] onFormMounted chamado, error:', error)
               
+              // Limpar timeouts de segurança se existirem
+              if (cardFormInstanceRef) {
+                if ((cardFormInstanceRef as any)._mountTimeout) {
+                  clearTimeout((cardFormInstanceRef as any)._mountTimeout)
+                  delete (cardFormInstanceRef as any)._mountTimeout
+                }
+                if ((cardFormInstanceRef as any)._validationTimeout) {
+                  clearTimeout((cardFormInstanceRef as any)._validationTimeout)
+                  delete (cardFormInstanceRef as any)._validationTimeout
+                }
+              }
+              
               if (error) {
                 console.error('[MercadoPagoPayment] Erro ao montar CardForm:', error)
                 console.error('[MercadoPagoPayment] Error name:', error.name)
                 console.error('[MercadoPagoPayment] Error message:', error.message)
                 console.error('[MercadoPagoPayment] Stack:', error.stack)
+                
+                // Não limpar o cardForm aqui, apenas marcar como não montado
+                // O CardForm pode ainda ser válido mesmo com erro inicial
                 setIsCardFormMounted(false)
-                onPaymentError(`Erro ao montar o formulário de cartão: ${error.message}. Tente recarregar a página.`)
+                
+                // Verificar se é erro relacionado à chave pública
+                const isPublicKeyError = error.message?.includes('public key') || 
+                                        error.message?.includes('chave pública') ||
+                                        error.message?.includes('error searching public key')
+                
+                if (isPublicKeyError) {
+                  onPaymentError('Erro na configuração da chave pública do Mercado Pago. Verifique as configurações no painel administrativo.')
+                } else {
+                  onPaymentError(`Erro ao montar o formulário de cartão: ${error.message}. Tente recarregar a página.`)
+                }
                 return
               }
+              
               console.log('[MercadoPagoPayment] CardForm montado com sucesso!')
+              
+              // Garantir que a ref está atualizada primeiro
+              if (cardFormInstanceRef) {
+                cardFormRef.current = cardFormInstanceRef
+              }
+              
+              // Garantir que o cardForm state está definido
+              setCardForm((prev) => {
+                if (!prev && cardFormInstanceRef) {
+                  console.warn('[MercadoPagoPayment] CardForm foi limpo antes de onFormMounted, restaurando...')
+                  return cardFormInstanceRef
+                }
+                return prev || cardFormInstanceRef
+              })
+              
               setIsCardFormMounted(true)
             },
             onFetching: (resource: string) => {
@@ -356,13 +475,52 @@ export function MercadoPagoPayment({
             },
             onError: (error: any) => {
               console.error('[MercadoPagoPayment] CardForm error callback:', error)
-              if (mountTimeoutId) {
-                clearTimeout(mountTimeoutId)
-                mountTimeoutId = null
+              console.error('[MercadoPagoPayment] Error details:', {
+                message: error?.message,
+                status: error?.status,
+                code: error?.code,
+                name: error?.name,
+                stack: error?.stack
+              })
+
+              // Não limpar o cardForm em erros não críticos
+              // Apenas marcar como não montado se for erro crítico
+              const isCriticalError = error?.status === 500 || 
+                                     error?.message?.includes('public key') ||
+                                     error?.message?.includes('chave pública') ||
+                                     error?.message?.includes('error searching public key')
+              
+              if (isCriticalError) {
+                setIsCardFormMounted(false)
+                // Não limpar cardForm aqui, pode ser um erro temporário
               }
-              setIsCardFormMounted(false)
-              const errorMessage = error?.message || error?.toString() || 'Erro desconhecido no formulário'
-              onPaymentError(`Erro no formulário de cartão: ${errorMessage}`)
+
+              // Tratar erros específicos
+              let errorMessage = 'Erro desconhecido no formulário'
+              
+              if (error?.message) {
+                errorMessage = error.message
+              } else if (error?.status === 500) {
+                errorMessage = 'Erro ao validar chave pública do Mercado Pago. Verifique se a chave está correta e corresponde ao ambiente correto (teste/produção).'
+              } else if (error?.code === 500) {
+                errorMessage = 'Erro interno do Mercado Pago. Tente novamente em alguns instantes.'
+              } else if (typeof error === 'string') {
+                errorMessage = error
+              } else if (error?.toString) {
+                errorMessage = error.toString()
+              }
+
+              // Se for erro relacionado à chave pública, dar mensagem mais específica
+              if (errorMessage.includes('public key') || errorMessage.includes('chave pública') || error?.status === 500) {
+                errorMessage = 'Erro na configuração da chave pública do Mercado Pago. Verifique as configurações no painel administrativo e certifique-se de que a chave corresponde ao ambiente correto (teste ou produção).'
+              }
+
+              // Só mostrar erro se for crítico, erros menores podem ser ignorados
+              if (isCriticalError) {
+                onPaymentError(`Erro no formulário de cartão: ${errorMessage}`)
+              } else {
+                console.warn('[MercadoPagoPayment] Erro não crítico no CardForm, continuando:', errorMessage)
+              }
             },
             onSubmit: async (event: Event) => {
               console.log('[MercadoPagoPayment] onSubmit chamado')
@@ -377,9 +535,72 @@ export function MercadoPagoPayment({
           }
         })
 
+        // Armazenar referência
+        cardFormInstanceRef = cardFormInstance
+        
         console.log('[MercadoPagoPayment] CardForm instance criada:', cardFormInstance)
+        console.log('[MercadoPagoPayment] CardForm instance type:', typeof cardFormInstance)
+        console.log('[MercadoPagoPayment] CardForm methods:', {
+          getCardFormData: typeof cardFormInstance?.getCardFormData,
+          unmount: typeof cardFormInstance?.unmount
+        })
+        
+        // Definir o CardForm imediatamente após criação
+        cardFormRef.current = cardFormInstance // Atualizar ref também
         setCardForm(cardFormInstance)
         setIsCardFormMounted(false) // Reset inicial, será setado para true no onFormMounted
+        
+        // Timeout de segurança: se onFormMounted não for chamado em 5 segundos, considerar como montado
+        const mountTimeout = setTimeout(() => {
+          setCardForm((current) => {
+            // Se o CardForm foi limpo, restaurar
+            if (!current && cardFormInstanceRef) {
+              console.warn('[MercadoPagoPayment] CardForm foi limpo, restaurando após timeout')
+              cardFormRef.current = cardFormInstanceRef // Atualizar ref também
+              return cardFormInstanceRef
+            }
+            return current
+          })
+          
+          setIsCardFormMounted((current) => {
+            if (!current) {
+              console.warn('[MercadoPagoPayment] onFormMounted não foi chamado em 5s, assumindo que está montado')
+              return true
+            }
+            return current
+          })
+        }, 5000)
+        
+        // Armazenar timeout para limpeza
+        ;(cardFormInstance as any)._mountTimeout = mountTimeout
+        
+        // Verificação adicional: se após 1 segundo o CardForm ainda não foi montado mas está fazendo requests,
+        // considerar como válido (isso acontece quando onFormMounted não é chamado mas o CardForm funciona)
+        const validationTimeout = setTimeout(() => {
+          // Verificar se o CardForm ainda existe e se há elementos sendo preenchidos
+          const cardNumberElement = document.getElementById('form-checkout__cardNumber')
+          const hasIframes = cardNumberElement && cardNumberElement.querySelector('iframe')
+          
+          if (hasIframes && cardFormRef.current) {
+            setIsCardFormMounted((current) => {
+              if (!current) {
+                console.log('[MercadoPagoPayment] CardForm parece estar funcionando (iframes detectados), marcando como montado')
+                return true
+              }
+              return current
+            })
+            
+            // Garantir que o state está sincronizado
+            setCardForm((current) => {
+              if (!current && cardFormRef.current) {
+                return cardFormRef.current
+              }
+              return current
+            })
+          }
+        }, 1000)
+        
+        ;(cardFormInstance as any)._validationTimeout = validationTimeout
       } catch (error) {
         console.error('[MercadoPagoPayment] Erro ao criar CardForm:', error)
         console.error('[MercadoPagoPayment] Stack:', error instanceof Error ? error.stack : 'N/A')
@@ -399,45 +620,114 @@ export function MercadoPagoPayment({
     }, 200)
 
     return () => {
+      console.log('[MercadoPagoPayment] Cleanup do useEffect CardForm')
       clearTimeout(timeoutId)
-      setIsCardFormMounted(false)
-      // Limpar CardForm ao desmontar
-      if (cardForm) {
-        try {
-          if (typeof cardForm.unmount === 'function') {
-            cardForm.unmount()
-          }
-        } catch (e) {
-          // Ignorar erros de limpeza
+      
+      // Limpar timeouts se existirem
+      const currentCardForm = cardFormRef.current
+      if (currentCardForm) {
+        if ((currentCardForm as any)._mountTimeout) {
+          clearTimeout((currentCardForm as any)._mountTimeout)
+          delete (currentCardForm as any)._mountTimeout
+        }
+        if ((currentCardForm as any)._validationTimeout) {
+          clearTimeout((currentCardForm as any)._validationTimeout)
+          delete (currentCardForm as any)._validationTimeout
         }
       }
-      setCardForm(null)
+      
+      // Só limpar CardForm se realmente precisar (mudança de método de pagamento ou mp)
+      // Não limpar se apenas amount ou publicKey mudaram (isso não requer recriar o CardForm)
+      const shouldCleanup = !mp || paymentMethod !== 'card'
+      
+      if (shouldCleanup) {
+        console.log('[MercadoPagoPayment] Limpando CardForm no cleanup (condições mudaram)')
+        setIsCardFormMounted(false)
+        
+        // Limpar CardForm ao desmontar
+        if (currentCardForm) {
+          try {
+            if (typeof currentCardForm.unmount === 'function') {
+              currentCardForm.unmount()
+            }
+          } catch (e) {
+            console.warn('[MercadoPagoPayment] Erro ao fazer unmount do CardForm:', e)
+          }
+        }
+        cardFormRef.current = null
+        setCardForm(null)
+      } else {
+        console.log('[MercadoPagoPayment] Mantendo CardForm (apenas amount ou publicKey mudaram)')
+      }
     }
-  }, [mp, paymentMethod, amount])
+  }, [mp, paymentMethod, amount, publicKey]) // Adicionar publicKey como dependência
 
   const handleCardSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!cardForm || isProcessing || isCreatingOrder) {
+    
+    // Usar ref como fallback se cardForm state estiver null
+    let currentCardForm = cardForm || cardFormRef.current
+    
+    // Se ainda não temos CardForm, tentar aguardar um pouco (pode estar sendo criado)
+    if (!currentCardForm) {
+      console.warn('[MercadoPagoPayment] CardForm não encontrado imediatamente, aguardando...')
+      
+      // Aguardar até 2 segundos para o CardForm ser criado
+      for (let i = 0; i < 20; i++) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+        currentCardForm = cardForm || cardFormRef.current
+        if (currentCardForm) {
+          console.log('[MercadoPagoPayment] CardForm encontrado após aguardar')
+          break
+        }
+      }
+    }
+    
+    // Verificar se cardForm existe
+    if (!currentCardForm) {
+      console.error('[MercadoPagoPayment] CardForm não está disponível após aguardar')
+      console.error('[MercadoPagoPayment] Estado atual:', {
+        cardForm: cardForm,
+        cardFormRef: cardFormRef.current,
+        mp: !!mp,
+        publicKey: !!publicKey,
+        paymentMethod,
+        isCardFormMounted
+      })
+      onPaymentError('Formulário não está pronto. Aguarde alguns instantes e tente novamente. Se o problema persistir, recarregue a página.')
+      return
+    }
+    
+    // Se cardForm state está null mas ref tem valor, restaurar
+    if (!cardForm && cardFormRef.current) {
+      console.warn('[MercadoPagoPayment] Restaurando CardForm do ref')
+      setCardForm(cardFormRef.current)
+    }
+    
+    if (isProcessing || isCreatingOrder) {
       console.warn('[MercadoPagoPayment] CardForm submission blocked:', { 
-        cardForm: !!cardForm, 
         isProcessing, 
         isCreatingOrder 
       })
-      if (!cardForm) {
-        onPaymentError('Formulário não está pronto. Aguarde alguns instantes e tente novamente.')
-      }
       return
     }
 
     setIsProcessing(true)
 
     try {
+      // Usar o CardForm atual (state ou ref)
+      const formToUse = cardForm || cardFormRef.current
+      
+      if (!formToUse) {
+        throw new Error('CardForm não está disponível. Recarregue a página e tente novamente.')
+      }
+      
       // Verificar se o CardForm ainda está válido antes de obter os dados
-      if (typeof cardForm.getCardFormData !== 'function') {
+      if (typeof formToUse.getCardFormData !== 'function') {
         throw new Error('CardForm não está mais válido. Recarregue a página e tente novamente.')
       }
 
-      const cardFormData = cardForm.getCardFormData()
+      const cardFormData = formToUse.getCardFormData()
 
       if (!cardFormData.token) {
         throw new Error('Token do cartão não foi gerado. Verifique os dados do cartão.')
@@ -478,6 +768,17 @@ export function MercadoPagoPayment({
           paymentMethodId: cardFormData.paymentMethodId
         })
       })
+
+      // Verificar se o pagamento foi rejeitado
+      if (result.status === 'rejected' || result.paymentResult?.status === 'rejected') {
+        // Importar função de mensagens de erro
+        const { getMercadoPagoErrorMessage } = await import('@/lib/mercado-pago-error-messages')
+        const errorMessage = getMercadoPagoErrorMessage(
+          result.paymentResult?.statusDetail || 'rejected'
+        )
+        onPaymentError(errorMessage)
+        return
+      }
 
       onPaymentSuccess(result)
     } catch (error) {
