@@ -183,6 +183,13 @@
       "when": 1765530000000,
       "tag": "0025_fix_physical_sales_centavos_to_reais",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1765577461915,
+      "tag": "0026_freezing_marvel_boy",
+      "breakpoints": true
     }
   ]
 }

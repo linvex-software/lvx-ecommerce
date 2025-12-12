@@ -1,18 +1,20 @@
 'use client'
 
 import Link from 'next/link'
-import { 
-  ShoppingCart, 
-  Search, 
-  CalendarPlus, 
-  ArrowLeftRight, 
-  Heart, 
-  User, 
-  MapPin, 
-  Lock, 
+import {
+  ShoppingCart,
+  Search,
+  CalendarPlus,
+  ArrowLeftRight,
+  Heart,
+  User,
+  MapPin,
+  Lock,
   Mail,
+  ArrowLeft,
 } from 'lucide-react'
 import { useAuthStore } from '@/lib/store/useAuthStore'
+import { Button } from '@/components/ui/button'
 
 export default function MinhaContaPage() {
   const { customer, clearAuth } = useAuthStore()
@@ -90,13 +92,23 @@ export default function MinhaContaPage() {
 
   return (
     <div className="w-full">
+      {/* Botão Voltar para a Loja */}
+      <div className="mb-6">
+        <Button asChild variant="ghost" className="gap-2 text-muted-foreground hover:text-foreground">
+          <Link href="/">
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para a loja
+          </Link>
+        </Button>
+      </div>
+
       {/* Header Centralizado */}
       <div className="text-center mb-12">
         <h1 className="text-4xl font-bold text-gray-900 mb-3">Área do Cliente</h1>
         <p className="text-lg text-gray-600 mb-6">
           Tenha controle total da sua conta com segurança e praticidade
         </p>
-        
+
         {/* Nome e Sair */}
         {customer && (
           <div className="flex items-center justify-center gap-2 text-base">
@@ -125,8 +137,8 @@ export default function MinhaContaPage() {
               href={card.href}
               className={`
                 bg-white rounded-lg border border-gray-200 p-6 transition-all
-                ${isDisabled 
-                  ? 'cursor-not-allowed opacity-60' 
+                ${isDisabled
+                  ? 'cursor-not-allowed opacity-60'
                   : 'hover:shadow-lg hover:border-gray-300 cursor-pointer'
                 }
               `}
