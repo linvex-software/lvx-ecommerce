@@ -16,6 +16,9 @@ import { PixQrCode } from '@/components/checkout/PixQrCode'
 import { useIsAuthenticated, useHasHydrated, useAuthStore } from '@/lib/store/useAuthStore'
 import { useCustomerProfile } from '@/lib/hooks/use-customer-profile'
 import { useAddresses } from '@/lib/hooks/use-addresses'
+import { Alert, AlertDescription, AlertTitle } from '@/components/template/flor-de-menina/components/ui/alert'
+import { AlertCircle, X } from 'lucide-react'
+import { getMercadoPagoErrorMessage } from '@/lib/mercado-pago-error-messages'
 
 type Step = 'personal' | 'address' | 'shipping' | 'payment' | 'review'
 
@@ -67,6 +70,7 @@ export default function CheckoutPage() {
   const [paymentResult, setPaymentResult] = useState<any>(null)
   const [isProcessingPayment, setIsProcessingPayment] = useState(false)
   const [hasInitializedForm, setHasInitializedForm] = useState(false)
+  const [paymentError, setPaymentError] = useState<string | null>(null)
 
   // Verificar autenticação e redirecionar se necessário
   useEffect(() => {
@@ -260,13 +264,24 @@ export default function CheckoutPage() {
   const handlePaymentSuccess = (result: any) => {
     setPaymentResult(result)
     setIsProcessingPayment(false)
+    setPaymentError(null) // Limpar erro anterior
+    
+    // Verificar se o pagamento foi rejeitado
+    if (result.status === 'rejected' || result.paymentResult?.status === 'rejected') {
+      // Tratar como erro para mostrar mensagem ao usuário
+      const errorMessage = getMercadoPagoErrorMessage(
+        result.paymentResult?.statusDetail || 'rejected'
+      )
+      handlePaymentError(errorMessage)
+      return
+    }
     
     // Se for PIX, mostrar QR Code
     if (result.paymentResult.qrCode) {
       // Já está no estado paymentResult, será exibido abaixo
     } else if (result.status === 'approved') {
       // Pagamento aprovado, redirecionar
-            clearCart()
+      clearCart()
       if (createdOrder?.id) {
         router.push(`/minha-conta/pedidos/${createdOrder.id}`)
       }
@@ -274,8 +289,11 @@ export default function CheckoutPage() {
   }
 
   const handlePaymentError = (error: string) => {
-    alert(error)
+    setPaymentError(error)
     setIsProcessingPayment(false)
+    
+    // Scroll para o topo para mostrar o erro
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
 
@@ -329,6 +347,26 @@ export default function CheckoutPage() {
       
       <div className="container mx-auto px-4 py-4">
         <Breadcrumbs items={[{ label: 'Sacola', href: '/carrinho' }, { label: 'Checkout' }]} />
+        
+        {/* Exibir erro de pagamento se houver */}
+        {paymentError && (
+          <div className="mt-4">
+            <Alert variant="destructive" className="relative">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Erro no Pagamento</AlertTitle>
+              <AlertDescription className="mt-2">
+                {paymentError}
+              </AlertDescription>
+              <button
+                onClick={() => setPaymentError(null)}
+                className="absolute right-2 top-2 rounded-md p-1 text-destructive/50 opacity-70 hover:opacity-100 transition-opacity"
+                aria-label="Fechar"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </Alert>
+          </div>
+        )}
       </div>
 
       <div className="container mx-auto px-4 pb-16">
