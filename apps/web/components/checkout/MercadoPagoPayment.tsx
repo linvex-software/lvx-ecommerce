@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { CreditCard, QrCode, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { fetchAPI } from '@/lib/api'
+import { getMercadoPagoErrorMessage } from '@/lib/mercado-pago-error-messages'
 
 declare global {
   interface Window {
@@ -53,189 +53,226 @@ export function MercadoPagoPayment({
   isCreatingOrder = false
 }: MercadoPagoPaymentProps) {
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'pix'>('card')
+  const [cardType, setCardType] = useState<'credit' | 'debit'>('credit')
+  const cardTypeRef = useRef<'credit' | 'debit'>('credit')
   const [isProcessing, setIsProcessing] = useState(false)
+  const [isFormValid, setIsFormValid] = useState(false)
   const [mp, setMp] = useState<any>(null)
   const [cardForm, setCardForm] = useState<any>(null)
-  const [isCardFormMounted, setIsCardFormMounted] = useState(false)
   const [publicKey, setPublicKey] = useState<string | null>(null)
-  const cardFormRef = useRef<any>(null) // Ref para manter referência estável do CardForm
-  const [identificationTypes, setIdentificationTypes] = useState<Array<{ id: string; name: string }>>([])
-  const [installments, setInstallments] = useState<Array<{ installments: number; recommended_message: string }>>([])
-  const [issuers, setIssuers] = useState<Array<{ id: string; name: string }>>([])
+  const [isSDKLoaded, setIsSDKLoaded] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+  const cardFormRef = useRef<any>(null)
 
   // Buscar chave pública do banco de dados
   useEffect(() => {
     const fetchPublicKey = async () => {
       try {
-        console.log('[MercadoPagoPayment] Buscando chave pública do banco de dados...')
         const response = await fetchAPI('/payments/public-key', { method: 'GET' })
         
         if (response?.publicKey) {
-          const dbPublicKey = response.publicKey as string
-          console.log('[MercadoPagoPayment] Chave pública obtida do banco de dados:', dbPublicKey.substring(0, 20) + '...')
-          setPublicKey(dbPublicKey)
-          return dbPublicKey
+          setPublicKey(response.publicKey as string)
         } else {
-          console.warn('[MercadoPagoPayment] Chave pública não encontrada no banco de dados')
+          // Fallback para variáveis de ambiente
+          const envPublicKey =
+            process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY ||
+            process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ||
+            ''
+          
+          if (envPublicKey) {
+            setPublicKey(envPublicKey)
+          } else {
+            onPaymentError('Chave pública do Mercado Pago não configurada. Configure no painel administrativo.')
+          }
         }
       } catch (error) {
-        console.warn('[MercadoPagoPayment] Erro ao buscar chave pública do banco:', error)
+        console.error('[MercadoPagoPayment] Erro ao buscar chave pública:', error)
+        onPaymentError('Erro ao buscar configurações do Mercado Pago.')
       }
-      
-      // Fallback para variáveis de ambiente
-      const envPublicKey =
-        process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY ||
-        process.env.NEXT_PUBLIC_MP_PUBLIC_KEY ||
-        process.env.MP_PUBLIC_KEY ||
-        ''
-      
-      if (envPublicKey) {
-        console.log('[MercadoPagoPayment] Usando chave pública das variáveis de ambiente')
-        setPublicKey(envPublicKey)
-        return envPublicKey
-      }
-      
-      console.error('[MercadoPagoPayment] Chave pública não encontrada em nenhum lugar')
-      onPaymentError('Chave pública do Mercado Pago não configurada. Configure no painel administrativo ou nas variáveis de ambiente.')
-      return null
     }
 
     fetchPublicKey()
-  }, [])
+  }, [onPaymentError])
 
-  // Carregar MercadoPago.js quando a chave pública estiver disponível
-  useEffect(() => {
-    if (!publicKey) {
-      console.log('[MercadoPago] Aguardando chave pública...')
-      return
+  // Função para validar todos os campos obrigatórios
+  const validateForm = (): boolean => {
+    if (!formRef.current || !cardFormRef.current) {
+      setIsFormValid(false)
+      return false
     }
 
-    console.log('[MercadoPago] Chave pública disponível, carregando SDK...', publicKey.substring(0, 20) + '...')
+    try {
+      // Verificar campos HTML diretamente (não usamos getCardFormData pois ele só retorna token após submit)
+      const cardholderName = (document.getElementById('form-checkout__cardholderName') as HTMLInputElement)?.value?.trim()
+      const issuer = (document.getElementById('form-checkout__issuer') as HTMLSelectElement)?.value?.trim()
+      const identificationType = (document.getElementById('form-checkout__identificationType') as HTMLSelectElement)?.value?.trim()
+      const identificationNumber = (document.getElementById('form-checkout__identificationNumber') as HTMLInputElement)?.value?.trim()
+      const cardholderEmail = (document.getElementById('form-checkout__cardholderEmail') as HTMLInputElement)?.value?.trim()
 
+      // Validar nome do titular
+      if (!cardholderName || cardholderName.length < 3) {
+        setIsFormValid(false)
+        return false
+      }
+
+      // Validar banco emissor
+      if (!issuer) {
+        setIsFormValid(false)
+        return false
+      }
+
+      // Parcelas obrigatório apenas para crédito
+      if (cardType === 'credit') {
+        const installments = (document.getElementById('form-checkout__installments') as HTMLSelectElement)?.value?.trim()
+        if (!installments) {
+          setIsFormValid(false)
+          return false
+        }
+      }
+
+      // Validar tipo de documento
+      if (!identificationType) {
+        setIsFormValid(false)
+        return false
+      }
+
+      // Validar número do documento
+      if (!identificationNumber || identificationNumber.length < 8) {
+        setIsFormValid(false)
+        return false
+      }
+
+      // Validar e-mail
+      if (!cardholderEmail || !cardholderEmail.includes('@') || !cardholderEmail.includes('.')) {
+        setIsFormValid(false)
+        return false
+      }
+
+      // Verificar se os iframes do CardForm têm conteúdo (número, validade, CVV)
+      // Não conseguimos acessar o conteúdo dos iframes por segurança, então assumimos válido se existirem
+      const cardNumberIframe = document.querySelector('#form-checkout__cardNumber iframe')
+      const expirationDateIframe = document.querySelector('#form-checkout__expirationDate iframe')
+      const securityCodeIframe = document.querySelector('#form-checkout__securityCode iframe')
+
+      if (!cardNumberIframe || !expirationDateIframe || !securityCodeIframe) {
+        setIsFormValid(false)
+        return false
+      }
+
+      console.log('[MercadoPagoPayment] Formulário válido!', { cardType: cardTypeRef.current })
+      setIsFormValid(true)
+      return true
+    } catch (error) {
+      console.warn('[MercadoPagoPayment] Erro ao validar formulário:', error)
+      setIsFormValid(false)
+      return false
+    }
+  }
+
+  // Sincronizar ref com estado
+  useEffect(() => {
+    cardTypeRef.current = cardType
+    // Revalidar quando tipo de cartão mudar
+    if (cardFormRef.current) {
+      setTimeout(() => validateForm(), 100)
+    }
+  }, [cardType])
+
+  // Validar formulário quando campos mudarem
+  useEffect(() => {
+    if (!formRef.current || !cardFormRef.current) return
+
+    const handleInputChange = () => {
+      validateForm()
+    }
+
+    // Adicionar listeners para campos HTML
+    const cardholderName = document.getElementById('form-checkout__cardholderName')
+    const issuer = document.getElementById('form-checkout__issuer')
+    const installments = document.getElementById('form-checkout__installments')
+    const identificationType = document.getElementById('form-checkout__identificationType')
+    const identificationNumber = document.getElementById('form-checkout__identificationNumber')
+    const cardholderEmail = document.getElementById('form-checkout__cardholderEmail')
+
+    cardholderName?.addEventListener('input', handleInputChange)
+    cardholderName?.addEventListener('blur', handleInputChange)
+    issuer?.addEventListener('change', handleInputChange)
+    installments?.addEventListener('change', handleInputChange)
+    identificationType?.addEventListener('change', handleInputChange)
+    identificationNumber?.addEventListener('input', handleInputChange)
+    identificationNumber?.addEventListener('blur', handleInputChange)
+    cardholderEmail?.addEventListener('input', handleInputChange)
+    cardholderEmail?.addEventListener('blur', handleInputChange)
+
+    return () => {
+      cardholderName?.removeEventListener('input', handleInputChange)
+      cardholderName?.removeEventListener('blur', handleInputChange)
+      issuer?.removeEventListener('change', handleInputChange)
+      installments?.removeEventListener('change', handleInputChange)
+      identificationType?.removeEventListener('change', handleInputChange)
+      identificationNumber?.removeEventListener('input', handleInputChange)
+      identificationNumber?.removeEventListener('blur', handleInputChange)
+      cardholderEmail?.removeEventListener('input', handleInputChange)
+      cardholderEmail?.removeEventListener('blur', handleInputChange)
+    }
+  }, [cardType, cardForm])
+
+  // Carregar MercadoPago.js
+  useEffect(() => {
+    if (!publicKey || isSDKLoaded) return
+
+    // Verificar se já está carregado
+    if (window.MercadoPago) {
+      try {
+        const mpInstance = new window.MercadoPago(publicKey, { locale: 'pt-BR' })
+        setMp(mpInstance)
+        setIsSDKLoaded(true)
+        return
+      } catch (error) {
+        console.error('[MercadoPagoPayment] Erro ao criar instância:', error)
+        onPaymentError('Erro ao inicializar Mercado Pago.')
+        return
+      }
+    }
+
+    // Carregar script
     const script = document.createElement('script')
     script.src = 'https://sdk.mercadopago.com/js/v2'
     script.async = true
     script.onload = () => {
-      if (publicKey && window.MercadoPago) {
+      if (window.MercadoPago && publicKey) {
         try {
-          // Validar formato básico da chave pública antes de criar instância
-          if (!publicKey.startsWith('APP_USR-') && !publicKey.startsWith('TEST-')) {
-            console.warn('[MercadoPago] Formato de chave pública pode estar incorreto:', publicKey.substring(0, 20) + '...')
-          }
-
-          const mpInstance = new window.MercadoPago(publicKey, {
-            locale: 'pt-BR'
-          })
+          const mpInstance = new window.MercadoPago(publicKey, { locale: 'pt-BR' })
           setMp(mpInstance)
-          console.log('[MercadoPago] SDK carregado com sucesso, instância criada')
-        } catch (error: any) {
-          console.error('[MercadoPago] Erro ao criar instância:', error)
-          const errorMessage = error?.message || 'Erro desconhecido ao inicializar Mercado Pago'
-          onPaymentError(`Erro ao inicializar Mercado Pago: ${errorMessage}. Verifique se a chave pública está correta.`)
+          setIsSDKLoaded(true)
+        } catch (error) {
+          console.error('[MercadoPagoPayment] Erro ao criar instância:', error)
+          onPaymentError('Erro ao inicializar Mercado Pago.')
         }
-      } else {
-        console.error('[MercadoPago] SDK não carregado corretamente', { publicKey: !!publicKey, MercadoPago: !!window.MercadoPago })
-        onPaymentError('Erro ao carregar SDK do Mercado Pago. Recarregue a página.')
       }
     }
     script.onerror = () => {
-      console.error('[MercadoPago] Erro ao carregar SDK do Mercado Pago')
-      onPaymentError('Erro ao carregar SDK do Mercado Pago. Verifique sua conexão.')
+      onPaymentError('Erro ao carregar SDK do Mercado Pago.')
     }
     document.body.appendChild(script)
 
     return () => {
-      // Verificar se o script ainda está no DOM antes de remover
       if (script.parentNode) {
         document.body.removeChild(script)
       }
     }
-  }, [publicKey])
+  }, [publicKey, isSDKLoaded, onPaymentError])
 
-  // Carregar tipos de documento com retry logic
+  // Inicializar CardForm seguindo documentação oficial
   useEffect(() => {
-    if (!mp) return
+    if (!mp || paymentMethod !== 'card' || !publicKey || !formRef.current) return
 
-    let retryCount = 0
-    const maxRetries = 3
-    const retryDelay = 1000 // 1 segundo
-
-    const fetchIdentificationTypes = async (): Promise<void> => {
-      try {
-        console.log('[MercadoPagoPayment] Buscando tipos de identificação... (tentativa', retryCount + 1, ')')
-        const types = await mp.getIdentificationTypes()
-        console.log('[MercadoPagoPayment] Tipos de identificação obtidos:', types.length, 'tipos')
-        setIdentificationTypes(types)
-      } catch (error: any) {
-        console.error('[MercadoPagoPayment] Erro ao obter tipos de identificação:', error)
-        
-        // Se for erro relacionado à chave pública, não tentar novamente
-        if (error?.message?.includes('public key') || error?.status === 500) {
-          console.error('[MercadoPagoPayment] Erro relacionado à chave pública. Verifique se a chave está correta.')
-          onPaymentError('Erro na configuração da chave pública do Mercado Pago. Verifique as configurações no painel administrativo.')
-          return
-        }
-
-        // Tentar novamente se ainda houver tentativas
-        if (retryCount < maxRetries) {
-          retryCount++
-          console.log(`[MercadoPagoPayment] Tentando novamente em ${retryDelay}ms...`)
-          setTimeout(() => fetchIdentificationTypes(), retryDelay)
-        } else {
-          console.warn('[MercadoPagoPayment] Não foi possível obter tipos de identificação após', maxRetries, 'tentativas. Continuando sem eles.')
-          // Não bloquear o fluxo se não conseguir obter os tipos
-        }
-      }
-    }
-
-    fetchIdentificationTypes()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mp]) // onPaymentError não precisa estar nas dependências para evitar re-renders desnecessários
-
-  // Inicializar CardForm quando mp estiver disponível e método for cartão
-  useEffect(() => {
-    console.log('[MercadoPagoPayment] useEffect CardForm - Verificando condições:', {
-      mp: !!mp,
-      paymentMethod,
-      publicKey: !!publicKey,
-      isCard: paymentMethod === 'card',
-      hasCardForm: !!cardFormRef.current
-    })
-    
-    if (!mp || paymentMethod !== 'card') {
-      console.log('[MercadoPagoPayment] Condições não atendidas, limpando CardForm')
-      setIsCardFormMounted(false)
-      setCardForm(null)
-      cardFormRef.current = null
-      return
-    }
-    
-    if (!publicKey) {
-      console.warn('[MercadoPagoPayment] Chave pública não disponível, aguardando...')
-      return
-    }
-    
-    // Se já temos um CardForm válido e apenas amount ou publicKey mudaram, não recriar
-    if (cardFormRef.current && typeof cardFormRef.current.getCardFormData === 'function') {
-      console.log('[MercadoPagoPayment] CardForm já existe e é válido, mantendo (apenas amount ou publicKey mudaram)')
-      // Apenas atualizar o state se necessário
-      if (!cardForm) {
-        setCardForm(cardFormRef.current)
-      }
-      return
-    }
-
-    let attempts = 0
-    const maxAttempts = 20 // Máximo de 2 segundos (20 * 100ms)
-
-    // Aguardar o DOM estar pronto e os elementos existirem
-    const initializeCardForm = async () => {
-      attempts++
+    // Aguardar um pouco para garantir que o DOM está pronto (especialmente o campo de parcelas)
+    const timeoutId = setTimeout(() => {
+      if (!formRef.current) return
 
       // Verificar se todos os elementos necessários existem no DOM
       const requiredElements = [
-        'form-checkout',
         'form-checkout__cardNumber',
         'form-checkout__expirationDate',
         'form-checkout__securityCode',
@@ -247,550 +284,203 @@ export function MercadoPagoPayment({
         'form-checkout__cardholderEmail'
       ]
 
-      const missingElements: string[] = []
-      const allElementsExist = requiredElements.every(id => {
-        const element = document.getElementById(id)
-        const exists = element !== null
-        
-        if (!exists) {
-          missingElements.push(id)
-          return false
-        }
-        
-        // Para elementos que serão preenchidos por iframes (divs), verificar se estão vazios
-        const isIframeElement = ['form-checkout__cardNumber', 'form-checkout__expirationDate', 'form-checkout__securityCode'].includes(id)
-        
-        if (isIframeElement) {
-          // Verificar se o elemento está vazio (sem filhos ou apenas espaços em branco)
-          const isEmpty = element.children.length === 0 && (!element.textContent || element.textContent.trim() === '')
-          if (!isEmpty) {
-            console.warn(`[MercadoPagoPayment] Elemento ${id} não está vazio, limpando...`)
-            element.innerHTML = '' // Limpar o elemento
-          }
-          return true // Elemento existe e está pronto para receber iframe
-        }
-        
-        // Para outros elementos, verificar se estão visíveis
-        const isVisible = element.offsetParent !== null
-        if (!isVisible) {
-          missingElements.push(id)
-        }
-        return isVisible
-      })
-
-      if (!allElementsExist) {
-        if (attempts < maxAttempts) {
-          console.log(`[MercadoPagoPayment] Aguardando elementos do formulário... (tentativa ${attempts}/${maxAttempts})`)
-          if (missingElements.length > 0) {
-            console.log(`[MercadoPagoPayment] Elementos faltando:`, missingElements)
-          }
-          setTimeout(() => initializeCardForm(), 100)
-          return
-        } else {
-          console.error('[MercadoPagoPayment] Timeout aguardando elementos do formulário')
-          console.error('[MercadoPagoPayment] Elementos que não foram encontrados:', missingElements)
-          setIsCardFormMounted(false)
-          onPaymentError('Erro ao carregar formulário de cartão. Recarregue a página e tente novamente.')
-          return
-        }
-      }
-
-      // Verificar se o formulário principal existe (não precisa estar visível, apenas no DOM)
-      const formElement = document.getElementById('form-checkout')
-      if (!formElement) {
-        if (attempts < maxAttempts) {
-          console.log(`[MercadoPagoPayment] Formulário não encontrado, aguardando... (tentativa ${attempts}/${maxAttempts})`)
-          setTimeout(() => initializeCardForm(), 100)
-          return
-        } else {
-          console.error('[MercadoPagoPayment] Timeout aguardando formulário')
-          setIsCardFormMounted(false)
-          onPaymentError('Erro ao carregar formulário de cartão. Recarregue a página e tente novamente.')
-          return
-        }
-      }
-
-      // Limpar CardForm anterior se existir
-      const previousCardForm = cardForm || cardFormRef.current
-      if (previousCardForm) {
-        try {
-          // Limpar timeout se existir
-          if ((previousCardForm as any)._mountTimeout) {
-            clearTimeout((previousCardForm as any)._mountTimeout)
-            delete (previousCardForm as any)._mountTimeout
-          }
-          
-          // Tentar limpar o CardForm anterior se tiver método de limpeza
-          if (typeof previousCardForm.unmount === 'function') {
-            previousCardForm.unmount()
-          }
-        } catch (e) {
-          console.warn('[MercadoPagoPayment] Erro ao limpar CardForm anterior:', e)
-        }
-        cardFormRef.current = null
-        setCardForm(null)
-      }
-
-      try {
-        console.log('[MercadoPagoPayment] Todos os elementos encontrados, inicializando CardForm...')
-        console.log('[MercadoPagoPayment] Amount:', (amount / 100).toFixed(2))
-        console.log('[MercadoPagoPayment] MP instance:', mp)
-        
-        // Verificar se mp.cardForm existe
-        if (typeof mp.cardForm !== 'function') {
-          throw new Error('mp.cardForm não é uma função. Verifique se o SDK do MercadoPago foi carregado corretamente.')
-        }
-        
-        // Garantir que os elementos div estejam completamente vazios e prontos
-        const iframeElements = ['form-checkout__cardNumber', 'form-checkout__expirationDate', 'form-checkout__securityCode']
-        iframeElements.forEach(id => {
-          const element = document.getElementById(id)
-          if (element) {
-            // Limpar completamente o elemento
-            element.innerHTML = ''
-            // Remover qualquer atributo que possa interferir
-            element.removeAttribute('style')
-            // Garantir que o elemento tenha pelo menos uma altura mínima
-            if (!element.style.minHeight) {
-              element.style.minHeight = '40px'
-            }
-          }
-        })
-        
-        // Aguardar um frame adicional para garantir que o DOM foi atualizado
-        await new Promise(resolve => setTimeout(resolve, 50))
-        
-        console.log('[MercadoPagoPayment] Inicializando CardForm com chave pública já configurada')
-        console.log('[MercadoPagoPayment] Public key prefix:', publicKey?.substring(0, 10) + '...')
-        
-        // Validar que temos uma chave pública válida antes de inicializar
-        if (!publicKey) {
-          throw new Error('Chave pública não está disponível. Recarregue a página.')
-        }
-
-        // Criar referência para o cardFormInstance que será usado nos callbacks
-        let cardFormInstanceRef: any = null
-        
-        const cardFormInstance = mp.cardForm({
-          amount: (amount / 100).toFixed(2),
-          iframe: true,
-          form: {
-            id: 'form-checkout',
-            cardNumber: {
-              id: 'form-checkout__cardNumber',
-              placeholder: 'Número do cartão'
-            },
-            expirationDate: {
-              id: 'form-checkout__expirationDate',
-              placeholder: 'MM/YY'
-            },
-            securityCode: {
-              id: 'form-checkout__securityCode',
-              placeholder: 'Código de segurança'
-            },
-            cardholderName: {
-              id: 'form-checkout__cardholderName',
-              placeholder: 'Titular do cartão'
-            },
-            issuer: {
-              id: 'form-checkout__issuer',
-              placeholder: 'Banco emissor'
-            },
-            installments: {
-              id: 'form-checkout__installments',
-              placeholder: 'Parcelas'
-            },
-            identificationType: {
-              id: 'form-checkout__identificationType',
-              placeholder: 'Tipo de documento'
-            },
-            identificationNumber: {
-              id: 'form-checkout__identificationNumber',
-              placeholder: 'Número do documento'
-            },
-            cardholderEmail: {
-              id: 'form-checkout__cardholderEmail',
-              placeholder: 'E-mail'
-            }
-          },
-          callbacks: {
-            onFormMounted: (error: Error | null) => {
-              console.log('[MercadoPagoPayment] onFormMounted chamado, error:', error)
-              
-              // Limpar timeouts de segurança se existirem
-              if (cardFormInstanceRef) {
-                if ((cardFormInstanceRef as any)._mountTimeout) {
-                  clearTimeout((cardFormInstanceRef as any)._mountTimeout)
-                  delete (cardFormInstanceRef as any)._mountTimeout
-                }
-                if ((cardFormInstanceRef as any)._validationTimeout) {
-                  clearTimeout((cardFormInstanceRef as any)._validationTimeout)
-                  delete (cardFormInstanceRef as any)._validationTimeout
-                }
-              }
-              
-              if (error) {
-                console.error('[MercadoPagoPayment] Erro ao montar CardForm:', error)
-                console.error('[MercadoPagoPayment] Error name:', error.name)
-                console.error('[MercadoPagoPayment] Error message:', error.message)
-                console.error('[MercadoPagoPayment] Stack:', error.stack)
-                
-                // Não limpar o cardForm aqui, apenas marcar como não montado
-                // O CardForm pode ainda ser válido mesmo com erro inicial
-                setIsCardFormMounted(false)
-                
-                // Verificar se é erro relacionado à chave pública
-                const isPublicKeyError = error.message?.includes('public key') || 
-                                        error.message?.includes('chave pública') ||
-                                        error.message?.includes('error searching public key')
-                
-                if (isPublicKeyError) {
-                  onPaymentError('Erro na configuração da chave pública do Mercado Pago. Verifique as configurações no painel administrativo.')
-                } else {
-                  onPaymentError(`Erro ao montar o formulário de cartão: ${error.message}. Tente recarregar a página.`)
-                }
-                return
-              }
-              
-              console.log('[MercadoPagoPayment] CardForm montado com sucesso!')
-              
-              // Garantir que a ref está atualizada primeiro
-              if (cardFormInstanceRef) {
-                cardFormRef.current = cardFormInstanceRef
-              }
-              
-              // Garantir que o cardForm state está definido
-              setCardForm((prev) => {
-                if (!prev && cardFormInstanceRef) {
-                  console.warn('[MercadoPagoPayment] CardForm foi limpo antes de onFormMounted, restaurando...')
-                  return cardFormInstanceRef
-                }
-                return prev || cardFormInstanceRef
-              })
-              
-              setIsCardFormMounted(true)
-            },
-            onFetching: (resource: string) => {
-              console.log('[MercadoPagoPayment] Fetching resource:', resource)
-            },
-            onError: (error: any) => {
-              console.error('[MercadoPagoPayment] CardForm error callback:', error)
-              console.error('[MercadoPagoPayment] Error details:', {
-                message: error?.message,
-                status: error?.status,
-                code: error?.code,
-                name: error?.name,
-                stack: error?.stack
-              })
-
-              // Não limpar o cardForm em erros não críticos
-              // Apenas marcar como não montado se for erro crítico
-              const isCriticalError = error?.status === 500 || 
-                                     error?.message?.includes('public key') ||
-                                     error?.message?.includes('chave pública') ||
-                                     error?.message?.includes('error searching public key')
-              
-              if (isCriticalError) {
-                setIsCardFormMounted(false)
-                // Não limpar cardForm aqui, pode ser um erro temporário
-              }
-
-              // Tratar erros específicos
-              let errorMessage = 'Erro desconhecido no formulário'
-              
-              if (error?.message) {
-                errorMessage = error.message
-              } else if (error?.status === 500) {
-                errorMessage = 'Erro ao validar chave pública do Mercado Pago. Verifique se a chave está correta e corresponde ao ambiente correto (teste/produção).'
-              } else if (error?.code === 500) {
-                errorMessage = 'Erro interno do Mercado Pago. Tente novamente em alguns instantes.'
-              } else if (typeof error === 'string') {
-                errorMessage = error
-              } else if (error?.toString) {
-                errorMessage = error.toString()
-              }
-
-              // Se for erro relacionado à chave pública, dar mensagem mais específica
-              if (errorMessage.includes('public key') || errorMessage.includes('chave pública') || error?.status === 500) {
-                errorMessage = 'Erro na configuração da chave pública do Mercado Pago. Verifique as configurações no painel administrativo e certifique-se de que a chave corresponde ao ambiente correto (teste ou produção).'
-              }
-
-              // Só mostrar erro se for crítico, erros menores podem ser ignorados
-              if (isCriticalError) {
-                onPaymentError(`Erro no formulário de cartão: ${errorMessage}`)
-              } else {
-                console.warn('[MercadoPagoPayment] Erro não crítico no CardForm, continuando:', errorMessage)
-              }
-            },
-            onSubmit: async (event: Event) => {
-              console.log('[MercadoPagoPayment] onSubmit chamado')
-              event.preventDefault()
-              if (isProcessing || isCreatingOrder) {
-                console.warn('[MercadoPagoPayment] Form submission blocked:', { isProcessing, isCreatingOrder })
-                return
-              }
-
-              await handleCardSubmit(event as unknown as React.FormEvent)
-            }
-          }
-        })
-
-        // Armazenar referência
-        cardFormInstanceRef = cardFormInstance
-        
-        console.log('[MercadoPagoPayment] CardForm instance criada:', cardFormInstance)
-        console.log('[MercadoPagoPayment] CardForm instance type:', typeof cardFormInstance)
-        console.log('[MercadoPagoPayment] CardForm methods:', {
-          getCardFormData: typeof cardFormInstance?.getCardFormData,
-          unmount: typeof cardFormInstance?.unmount
-        })
-        
-        // Definir o CardForm imediatamente após criação
-        cardFormRef.current = cardFormInstance // Atualizar ref também
-        setCardForm(cardFormInstance)
-        setIsCardFormMounted(false) // Reset inicial, será setado para true no onFormMounted
-        
-        // Timeout de segurança: se onFormMounted não for chamado em 5 segundos, considerar como montado
-        const mountTimeout = setTimeout(() => {
-          setCardForm((current) => {
-            // Se o CardForm foi limpo, restaurar
-            if (!current && cardFormInstanceRef) {
-              console.warn('[MercadoPagoPayment] CardForm foi limpo, restaurando após timeout')
-              cardFormRef.current = cardFormInstanceRef // Atualizar ref também
-              return cardFormInstanceRef
-            }
-            return current
-          })
-          
-          setIsCardFormMounted((current) => {
-            if (!current) {
-              console.warn('[MercadoPagoPayment] onFormMounted não foi chamado em 5s, assumindo que está montado')
-              return true
-            }
-            return current
-          })
-        }, 5000)
-        
-        // Armazenar timeout para limpeza
-        ;(cardFormInstance as any)._mountTimeout = mountTimeout
-        
-        // Verificação adicional: se após 1 segundo o CardForm ainda não foi montado mas está fazendo requests,
-        // considerar como válido (isso acontece quando onFormMounted não é chamado mas o CardForm funciona)
-        const validationTimeout = setTimeout(() => {
-          // Verificar se o CardForm ainda existe e se há elementos sendo preenchidos
-          const cardNumberElement = document.getElementById('form-checkout__cardNumber')
-          const hasIframes = cardNumberElement && cardNumberElement.querySelector('iframe')
-          
-          if (hasIframes && cardFormRef.current) {
-            setIsCardFormMounted((current) => {
-              if (!current) {
-                console.log('[MercadoPagoPayment] CardForm parece estar funcionando (iframes detectados), marcando como montado')
-                return true
-              }
-              return current
-            })
-            
-            // Garantir que o state está sincronizado
-            setCardForm((current) => {
-              if (!current && cardFormRef.current) {
-                return cardFormRef.current
-              }
-              return current
-            })
-          }
-        }, 1000)
-        
-        ;(cardFormInstance as any)._validationTimeout = validationTimeout
-      } catch (error) {
-        console.error('[MercadoPagoPayment] Erro ao criar CardForm:', error)
-        console.error('[MercadoPagoPayment] Stack:', error instanceof Error ? error.stack : 'N/A')
-        setIsCardFormMounted(false)
-        const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido'
-        onPaymentError(`Erro ao inicializar formulário de cartão: ${errorMessage}. Tente recarregar a página.`)
-      }
-    }
-
-    // Aguardar um pouco mais para garantir que o DOM foi completamente atualizado
-    // Especialmente importante em React onde a renderização pode ser assíncrona
-    const timeoutId = setTimeout(() => {
-      // Usar requestAnimationFrame para garantir que o DOM foi renderizado
-      requestAnimationFrame(() => {
-        setTimeout(() => initializeCardForm(), 100)
-      })
-    }, 200)
-
-    return () => {
-      console.log('[MercadoPagoPayment] Cleanup do useEffect CardForm')
-      clearTimeout(timeoutId)
-      
-      // Limpar timeouts se existirem
-      const currentCardForm = cardFormRef.current
-      if (currentCardForm) {
-        if ((currentCardForm as any)._mountTimeout) {
-          clearTimeout((currentCardForm as any)._mountTimeout)
-          delete (currentCardForm as any)._mountTimeout
-        }
-        if ((currentCardForm as any)._validationTimeout) {
-          clearTimeout((currentCardForm as any)._validationTimeout)
-          delete (currentCardForm as any)._validationTimeout
-        }
-      }
-      
-      // Só limpar CardForm se realmente precisar (mudança de método de pagamento ou mp)
-      // Não limpar se apenas amount ou publicKey mudaram (isso não requer recriar o CardForm)
-      const shouldCleanup = !mp || paymentMethod !== 'card'
-      
-      if (shouldCleanup) {
-        console.log('[MercadoPagoPayment] Limpando CardForm no cleanup (condições mudaram)')
-        setIsCardFormMounted(false)
-        
-        // Limpar CardForm ao desmontar
-        if (currentCardForm) {
-          try {
-            if (typeof currentCardForm.unmount === 'function') {
-              currentCardForm.unmount()
-            }
-          } catch (e) {
-            console.warn('[MercadoPagoPayment] Erro ao fazer unmount do CardForm:', e)
-          }
-        }
-        cardFormRef.current = null
-        setCardForm(null)
-      } else {
-        console.log('[MercadoPagoPayment] Mantendo CardForm (apenas amount ou publicKey mudaram)')
-      }
-    }
-  }, [mp, paymentMethod, amount, publicKey]) // Adicionar publicKey como dependência
-
-  const handleCardSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    
-    // Usar ref como fallback se cardForm state estiver null
-    let currentCardForm = cardForm || cardFormRef.current
-    
-    // Se ainda não temos CardForm, tentar aguardar um pouco (pode estar sendo criado)
-    if (!currentCardForm) {
-      console.warn('[MercadoPagoPayment] CardForm não encontrado imediatamente, aguardando...')
-      
-      // Aguardar até 2 segundos para o CardForm ser criado
-      for (let i = 0; i < 20; i++) {
-        await new Promise(resolve => setTimeout(resolve, 100))
-        currentCardForm = cardForm || cardFormRef.current
-        if (currentCardForm) {
-          console.log('[MercadoPagoPayment] CardForm encontrado após aguardar')
-          break
-        }
-      }
-    }
-    
-    // Verificar se cardForm existe
-    if (!currentCardForm) {
-      console.error('[MercadoPagoPayment] CardForm não está disponível após aguardar')
-      console.error('[MercadoPagoPayment] Estado atual:', {
-        cardForm: cardForm,
-        cardFormRef: cardFormRef.current,
-        mp: !!mp,
-        publicKey: !!publicKey,
-        paymentMethod,
-        isCardFormMounted
-      })
-      onPaymentError('Formulário não está pronto. Aguarde alguns instantes e tente novamente. Se o problema persistir, recarregue a página.')
-      return
-    }
-    
-    // Se cardForm state está null mas ref tem valor, restaurar
-    if (!cardForm && cardFormRef.current) {
-      console.warn('[MercadoPagoPayment] Restaurando CardForm do ref')
-      setCardForm(cardFormRef.current)
-    }
-    
-    if (isProcessing || isCreatingOrder) {
-      console.warn('[MercadoPagoPayment] CardForm submission blocked:', { 
-        isProcessing, 
-        isCreatingOrder 
-      })
-      return
-    }
-
-    setIsProcessing(true)
-
-    try {
-      // Usar o CardForm atual (state ou ref)
-      const formToUse = cardForm || cardFormRef.current
-      
-      if (!formToUse) {
-        throw new Error('CardForm não está disponível. Recarregue a página e tente novamente.')
-      }
-      
-      // Verificar se o CardForm ainda está válido antes de obter os dados
-      if (typeof formToUse.getCardFormData !== 'function') {
-        throw new Error('CardForm não está mais válido. Recarregue a página e tente novamente.')
-      }
-
-      const cardFormData = formToUse.getCardFormData()
-
-      if (!cardFormData.token) {
-        throw new Error('Token do cartão não foi gerado. Verifique os dados do cartão.')
-      }
-
-      // Criar pedido primeiro se não existir
-      let finalOrderId = orderId
-      if (!finalOrderId && onCreateOrder) {
-        const order = await onCreateOrder()
-        if (order && order.id) {
-          finalOrderId = order.id
-        } else {
-          throw new Error('Erro ao criar pedido')
-        }
-      }
-
-      if (!finalOrderId) {
-        throw new Error('Pedido não foi criado. Tente novamente.')
-      }
-
-      const result: PaymentResult = await fetchAPI('/payments/process', {
-        method: 'POST',
-        body: JSON.stringify({
-          orderId: finalOrderId,
-          paymentMethod: 'credit_card',
-          payer: {
-            email: payer.email,
-            firstName: payer.firstName,
-            lastName: payer.lastName,
-            identification: payer.identification || {
-              type: cardFormData.identificationType,
-              number: cardFormData.identificationNumber
-            }
-          },
-          cardToken: cardFormData.token,
-          installments: Number(cardFormData.installments),
-          issuerId: cardFormData.issuerId,
-          paymentMethodId: cardFormData.paymentMethodId
-        })
-      })
-
-      // Verificar se o pagamento foi rejeitado
-      if (result.status === 'rejected' || result.paymentResult?.status === 'rejected') {
-        // Importar função de mensagens de erro
-        const { getMercadoPagoErrorMessage } = await import('@/lib/mercado-pago-error-messages')
-        const errorMessage = getMercadoPagoErrorMessage(
-          result.paymentResult?.statusDetail || 'rejected'
-        )
-        onPaymentError(errorMessage)
+      const missingElements = requiredElements.filter(id => !document.getElementById(id))
+      if (missingElements.length > 0) {
+        console.warn('[MercadoPagoPayment] Elementos não encontrados no DOM:', missingElements)
         return
       }
 
-      onPaymentSuccess(result)
-    } catch (error) {
-      console.error('[MercadoPagoPayment] Erro ao processar pagamento com cartão:', error)
-      const errorMessage = error instanceof Error 
-        ? error.message 
-        : 'Erro ao processar pagamento. Tente novamente.'
-      onPaymentError(errorMessage)
-    } finally {
-      setIsProcessing(false)
+      // Limpar CardForm anterior se existir
+    if (cardFormRef.current) {
+      try {
+        if (typeof cardFormRef.current.unmount === 'function') {
+          cardFormRef.current.unmount()
+        }
+      } catch (error) {
+        console.warn('[MercadoPagoPayment] Erro ao desmontar CardForm anterior:', error)
+      }
+      cardFormRef.current = null
+      setCardForm(null)
     }
-  }
+
+    // Converter amount de centavos para reais (string)
+    const amountInReais = (amount / 100).toFixed(2)
+
+    try {
+      const form = mp.cardForm({
+        amount: amountInReais,
+        iframe: true,
+        form: {
+          id: 'form-checkout',
+          cardNumber: {
+            id: 'form-checkout__cardNumber',
+            placeholder: 'Número do cartão'
+          },
+          expirationDate: {
+            id: 'form-checkout__expirationDate',
+            placeholder: 'MM/YY'
+          },
+          securityCode: {
+            id: 'form-checkout__securityCode',
+            placeholder: 'Código de segurança'
+          },
+          cardholderName: {
+            id: 'form-checkout__cardholderName',
+            placeholder: 'Titular do cartão'
+          },
+          issuer: {
+            id: 'form-checkout__issuer',
+            placeholder: 'Banco emissor'
+          },
+          installments: {
+            id: 'form-checkout__installments',
+            placeholder: 'Parcelas'
+          },
+          identificationType: {
+            id: 'form-checkout__identificationType',
+            placeholder: 'Tipo de documento'
+          },
+          identificationNumber: {
+            id: 'form-checkout__identificationNumber',
+            placeholder: 'Número do documento'
+          },
+          cardholderEmail: {
+            id: 'form-checkout__cardholderEmail',
+            placeholder: 'E-mail'
+          }
+        },
+        callbacks: {
+          onFormMounted: (error: any) => {
+            if (error) {
+              console.error('[MercadoPagoPayment] Erro ao montar formulário:', error)
+              onPaymentError('Erro ao carregar formulário de pagamento. Recarregue a página.')
+              return
+            }
+            console.log('[MercadoPagoPayment] Formulário montado com sucesso')
+            // Validar formulário após montar
+            validateForm()
+          },
+          onValidityChange: (field: string, error: any) => {
+            // Validar formulário quando qualquer campo mudar
+            validateForm()
+          },
+          onSubmit: async (event: Event) => {
+            event.preventDefault()
+            
+            if (isProcessing || isCreatingOrder) {
+              return
+            }
+
+            // Validar novamente antes de enviar
+            if (!validateForm()) {
+              onPaymentError('Por favor, preencha todos os campos obrigatórios.')
+              return
+            }
+
+            setIsProcessing(true)
+
+            try {
+              // Obter dados do formulário
+              const cardFormData = cardFormRef.current.getCardFormData()
+
+              if (!cardFormData.token) {
+                throw new Error('Token do cartão não foi gerado. Verifique os dados do cartão.')
+              }
+
+              // Criar pedido primeiro se não existir
+              let finalOrderId = orderId
+              if (!finalOrderId && onCreateOrder) {
+                const order = await onCreateOrder()
+                if (order && order.id) {
+                  finalOrderId = order.id
+                } else {
+                  throw new Error('Erro ao criar pedido')
+                }
+              }
+
+              if (!finalOrderId) {
+                throw new Error('Pedido não foi criado. Tente novamente.')
+              }
+
+              // Processar pagamento - usar ref para garantir valor atual
+              const currentCardType = cardTypeRef.current
+              console.log('[MercadoPagoPayment] Tipo de cartão selecionado:', currentCardType)
+              const paymentMethodValue = currentCardType === 'credit' ? 'credit_card' : 'debit_card'
+              console.log('[MercadoPagoPayment] Payment method a ser enviado:', paymentMethodValue)
+              
+              const result: PaymentResult = await fetchAPI('/payments/process', {
+                method: 'POST',
+                body: JSON.stringify({
+                  orderId: finalOrderId,
+                  paymentMethod: paymentMethodValue,
+                  payer: {
+                    email: payer.email,
+                    firstName: payer.firstName,
+                    lastName: payer.lastName,
+                    identification: payer.identification || {
+                      type: cardFormData.identificationType,
+                      number: cardFormData.identificationNumber
+                    }
+                  },
+                  cardToken: cardFormData.token,
+                  installments: currentCardType === 'credit' ? Number(cardFormData.installments) : 1,
+                  issuerId: cardFormData.issuerId,
+                  paymentMethodId: cardFormData.paymentMethodId
+                })
+              })
+
+              // Verificar se o pagamento foi rejeitado
+              if (result.status === 'rejected' || result.paymentResult?.status === 'rejected') {
+                const errorMessage = getMercadoPagoErrorMessage(
+                  result.paymentResult?.statusDetail || 'rejected'
+                )
+                onPaymentError(errorMessage)
+                return
+              }
+
+              onPaymentSuccess(result)
+            } catch (error) {
+              console.error('[MercadoPagoPayment] Erro ao processar pagamento:', error)
+              const errorMessage = error instanceof Error 
+                ? error.message 
+                : 'Erro ao processar pagamento. Tente novamente.'
+              onPaymentError(errorMessage)
+            } finally {
+              setIsProcessing(false)
+            }
+          },
+          onFetching: (resource: string) => {
+            console.log('[MercadoPagoPayment] Buscando recurso:', resource)
+          }
+        }
+      })
+
+      cardFormRef.current = form
+      setCardForm(form)
+    } catch (error) {
+      console.error('[MercadoPagoPayment] Erro ao inicializar CardForm:', error)
+      onPaymentError('Erro ao inicializar formulário de pagamento. Recarregue a página.')
+    }
+    }, 100) // Aguardar 100ms para garantir que o DOM está pronto
+
+    return () => {
+      clearTimeout(timeoutId)
+      if (cardFormRef.current) {
+        try {
+          if (typeof cardFormRef.current.unmount === 'function') {
+            cardFormRef.current.unmount()
+          }
+        } catch (error) {
+          // Ignorar erro se CardForm não estiver montado
+          if (!error?.message?.includes('not mounted')) {
+            console.warn('[MercadoPagoPayment] Erro ao desmontar CardForm:', error)
+          }
+        }
+        cardFormRef.current = null
+        setCardForm(null)
+      }
+    }
+  }, [mp, paymentMethod, publicKey, amount, orderId, payer, onCreateOrder, onPaymentSuccess, onPaymentError, isProcessing, isCreatingOrder])
 
   const handlePixSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -840,171 +530,211 @@ export function MercadoPagoPayment({
     }
   }
 
-  if (paymentMethod === 'card') {
-    return (
-      <div className="space-y-6">
-        <div className="grid grid-cols-2 gap-4">
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('card')}
-            className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-all ${
-              paymentMethod === 'card'
-                ? 'border-foreground bg-secondary/50'
-                : 'border-border hover:border-foreground/50'
-            }`}
-          >
-            <CreditCard className="w-8 h-8 mb-2" />
-            <span className="font-medium">Cartão</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => setPaymentMethod('pix')}
-            className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-all ${
-              paymentMethod === 'pix'
-                ? 'border-foreground bg-secondary/50'
-                : 'border-border hover:border-foreground/50'
-            }`}
-          >
-            <QrCode className="w-8 h-8 mb-2" />
-            <span className="font-medium">Pix</span>
-          </button>
-        </div>
-
-        <form 
-          id="form-checkout" 
-          ref={formRef} 
-          onSubmit={(e) => {
-            e.preventDefault()
-            // O CardForm já tem o callback onSubmit configurado
-            // Não precisa fazer nada aqui, o CardForm vai processar
-          }} 
-          className="space-y-4"
-        >
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__cardNumber" className="text-sm font-medium">Número do Cartão</label>
-            <div id="form-checkout__cardNumber" className="h-10 border rounded-md px-3 py-2" />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__expirationDate" className="text-sm font-medium">Validade</label>
-            <div id="form-checkout__expirationDate" className="h-10 border rounded-md px-3 py-2" />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__securityCode" className="text-sm font-medium">CVV</label>
-            <div id="form-checkout__securityCode" className="h-10 border rounded-md px-3 py-2" />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__cardholderName" className="text-sm font-medium">Nome no Cartão</label>
-            <Input
-              id="form-checkout__cardholderName"
-              placeholder="Como está no cartão"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__issuer" className="text-sm font-medium">Banco Emissor</label>
-            <select id="form-checkout__issuer" className="h-10 w-full border rounded-md px-3 py-2 bg-background" />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__installments" className="text-sm font-medium">Parcelas</label>
-            <select id="form-checkout__installments" className="h-10 w-full border rounded-md px-3 py-2 bg-background" />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__identificationType" className="text-sm font-medium">Tipo de Documento</label>
-            <select id="form-checkout__identificationType" className="h-10 w-full border rounded-md px-3 py-2 bg-background" />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__identificationNumber" className="text-sm font-medium">Número do Documento</label>
-            <Input
-              id="form-checkout__identificationNumber"
-              placeholder="00000000000"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__cardholderEmail" className="text-sm font-medium">E-mail</label>
-            <Input
-              id="form-checkout__cardholderEmail"
-              type="email"
-              placeholder="seu@email.com"
-              defaultValue={payer.email}
-              required
-            />
-          </div>
-
-                  <Button 
-                    type="submit" 
-                    disabled={isProcessing || !mp} 
-                    className="w-full"
-                  >
-                    {isProcessing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Processando...
-                      </>
-                    ) : (
-                      'Pagar'
-                    )}
-                  </Button>
-        </form>
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
-        <button
+      {/* Seleção de método de pagamento */}
+      <div className="flex gap-4">
+        <Button
           type="button"
+          variant={paymentMethod === 'card' ? 'default' : 'outline'}
           onClick={() => setPaymentMethod('card')}
-          className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-all ${
-            paymentMethod === 'card'
-              ? 'border-foreground bg-secondary/50'
-              : 'border-border hover:border-foreground/50'
-          }`}
+          className="flex-1"
         >
-          <CreditCard className="w-8 h-8 mb-2" />
-          <span className="font-medium">Cartão</span>
-        </button>
-        <button
+          <CreditCard className="mr-2 h-4 w-4" />
+          Cartão
+        </Button>
+        <Button
           type="button"
+          variant={paymentMethod === 'pix' ? 'default' : 'outline'}
           onClick={() => setPaymentMethod('pix')}
-          className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-all ${
-            paymentMethod === 'pix'
-              ? 'border-foreground bg-secondary/50'
-              : 'border-border hover:border-foreground/50'
-          }`}
+          className="flex-1"
         >
-          <QrCode className="w-8 h-8 mb-2" />
-          <span className="font-medium">Pix</span>
-        </button>
+          <QrCode className="mr-2 h-4 w-4" />
+          PIX
+        </Button>
       </div>
 
-      <form onSubmit={handlePixSubmit} className="space-y-4">
-        <div className="bg-secondary/20 p-4 rounded-lg text-sm text-muted-foreground">
-          <p>O QR Code para pagamento será gerado após a confirmação.</p>
-          <p>Aprovação imediata após o pagamento.</p>
+      {/* Seleção de tipo de cartão (crédito ou débito) */}
+      {paymentMethod === 'card' && (
+        <div className="flex gap-4">
+          <Button
+            type="button"
+            variant={cardType === 'credit' ? 'default' : 'outline'}
+            onClick={() => {
+              console.log('[MercadoPagoPayment] Mudando para crédito')
+              setCardType('credit')
+              cardTypeRef.current = 'credit'
+            }}
+            className="flex-1"
+          >
+            <CreditCard className="mr-2 h-4 w-4" />
+            Crédito
+          </Button>
+          <Button
+            type="button"
+            variant={cardType === 'debit' ? 'default' : 'outline'}
+            onClick={() => {
+              console.log('[MercadoPagoPayment] Mudando para débito')
+              setCardType('debit')
+              cardTypeRef.current = 'debit'
+            }}
+            className="flex-1"
+          >
+            <CreditCard className="mr-2 h-4 w-4" />
+            Débito
+          </Button>
         </div>
+      )}
 
-        <Button type="submit" disabled={isProcessing} className="w-full">
-          {isProcessing ? (
-            <>
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Processando...
-            </>
+      {/* Formulário de cartão */}
+      {paymentMethod === 'card' && (
+        <div>
+          {!isSDKLoaded || !mp ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-6 w-6 animate-spin" />
+              <span className="ml-2">Carregando formulário de pagamento...</span>
+            </div>
           ) : (
-            'Gerar QR Code PIX'
+            <form id="form-checkout" ref={formRef}>
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="form-checkout__cardNumber" className="block text-sm font-medium mb-2">
+                    Número do cartão
+                  </label>
+                  <div id="form-checkout__cardNumber" className="h-10 border rounded-md px-3 py-2" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="form-checkout__expirationDate" className="block text-sm font-medium mb-2">
+                      Validade
+                    </label>
+                    <div id="form-checkout__expirationDate" className="h-10 border rounded-md px-3 py-2" />
+                  </div>
+                  <div>
+                    <label htmlFor="form-checkout__securityCode" className="block text-sm font-medium mb-2">
+                      CVV
+                    </label>
+                    <div id="form-checkout__securityCode" className="h-10 border rounded-md px-3 py-2" />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="form-checkout__cardholderName" className="block text-sm font-medium mb-2">
+                    Nome do titular
+                  </label>
+                  <input
+                    type="text"
+                    id="form-checkout__cardholderName"
+                    className="w-full h-10 border rounded-md px-3 py-2"
+                    defaultValue={payer.firstName && payer.lastName ? `${payer.firstName} ${payer.lastName}` : ''}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="form-checkout__issuer" className="block text-sm font-medium mb-2">
+                    Banco emissor
+                  </label>
+                  <select id="form-checkout__issuer" className="w-full h-10 border rounded-md px-3 py-2">
+                    <option value="">Selecione o banco</option>
+                  </select>
+                </div>
+
+                <div className={cardType === 'debit' ? 'hidden' : ''}>
+                  <label htmlFor="form-checkout__installments" className="block text-sm font-medium mb-2">
+                    Parcelas
+                  </label>
+                  <select id="form-checkout__installments" className="w-full h-10 border rounded-md px-3 py-2">
+                    <option value="">Selecione as parcelas</option>
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label htmlFor="form-checkout__identificationType" className="block text-sm font-medium mb-2">
+                      Tipo de documento
+                    </label>
+                    <select id="form-checkout__identificationType" className="w-full h-10 border rounded-md px-3 py-2">
+                      <option value="">Selecione</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="form-checkout__identificationNumber" className="block text-sm font-medium mb-2">
+                      Número do documento
+                    </label>
+                    <input
+                      type="text"
+                      id="form-checkout__identificationNumber"
+                      className="w-full h-10 border rounded-md px-3 py-2"
+                      defaultValue={payer.identification?.number || ''}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label htmlFor="form-checkout__cardholderEmail" className="block text-sm font-medium mb-2">
+                    E-mail
+                  </label>
+                  <input
+                    type="email"
+                    id="form-checkout__cardholderEmail"
+                    className="w-full h-10 border rounded-md px-3 py-2"
+                    defaultValue={payer.email}
+                  />
+                </div>
+
+                <Button
+                  type="submit"
+                  disabled={isProcessing || isCreatingOrder || !isFormValid}
+                  className="w-full"
+                >
+                  {isProcessing || isCreatingOrder ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processando...
+                    </>
+                  ) : (
+                    'Pagar'
+                  )}
+                </Button>
+                {!isFormValid && (
+                  <p className="text-sm text-muted-foreground text-center mt-2">
+                    Preencha todos os campos obrigatórios para continuar
+                  </p>
+                )}
+              </div>
+            </form>
           )}
-        </Button>
-      </form>
+        </div>
+      )}
+
+      {/* Formulário PIX */}
+      {paymentMethod === 'pix' && (
+        <form onSubmit={handlePixSubmit}>
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Você será redirecionado para gerar o código PIX após confirmar o pagamento.
+            </p>
+            <Button
+              type="submit"
+              disabled={isProcessing || isCreatingOrder}
+              className="w-full"
+            >
+              {isProcessing || isCreatingOrder ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <QrCode className="mr-2 h-4 w-4" />
+                  Gerar código PIX
+                </>
+              )}
+            </Button>
+          </div>
+        </form>
+      )}
     </div>
   )
 }
-
