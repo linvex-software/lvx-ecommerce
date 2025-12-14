@@ -84,12 +84,26 @@ async function buildServer() {
     }
   )
 
+  // CORS: Permitir apenas origens específicas em produção
+  const allowedOrigins = process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(',').map((origin) => origin.trim())
+    : process.env.NODE_ENV === 'production'
+    ? []
+    : true // Em desenvolvimento, permitir todas (não recomendado para produção)
+
   await app.register(cors, {
-    origin: true,
+    origin: allowedOrigins,
     credentials: true
   })
+  const cookieSecret = process.env.COOKIE_SECRET
+  if (!cookieSecret) {
+    throw new Error(
+      'COOKIE_SECRET environment variable is required. ' +
+      'Please set it in your .env file. Generate a secure random string (e.g., openssl rand -hex 32)'
+    )
+  }
   await app.register(cookie, {
-    secret: process.env.COOKIE_SECRET || 'cookie-secret-change-me'
+    secret: cookieSecret
   })
   await app.register(multipart)
   await app.register(swagger, {
