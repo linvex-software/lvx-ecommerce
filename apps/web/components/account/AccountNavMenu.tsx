@@ -44,7 +44,7 @@ const menuItems = [
   {
     icon: Heart,
     title: 'Lista de Desejos',
-    href: '#',
+    href: '/minha-conta/lista-desejos',
   },
   {
     icon: User,
@@ -113,6 +113,9 @@ export function AccountNavMenu() {
     if (href === '#') return false
     if (href === '/minha-conta/pedidos') {
       return pathname?.startsWith('/minha-conta/pedidos')
+    }
+    if (href === '/minha-conta/lista-desejos') {
+      return pathname === '/minha-conta/lista-desejos'
     }
     return pathname === href
   }

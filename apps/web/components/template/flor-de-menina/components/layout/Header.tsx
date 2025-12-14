@@ -65,46 +65,86 @@ export function Header() {
   const { data: settings } = useStoreSettings();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(true);
+  const [favoritesCount, setFavoritesCount] = useState(0);
 
   // Carregar hooks de autenticação apenas no contexto web (runtime)
   useEffect(() => {
     // Verificar se estamos no contexto web (não admin)
-    // No admin, o pathname pode ser /editor ou similar
     if (typeof window === 'undefined') {
       return; // SSR, não fazer nada
     }
 
-    const isWebContext = !window.location.pathname.includes('/editor');
+    const pathname = window.location.pathname;
+    const isWebContext = !pathname.includes('/editor') && !pathname.includes('/admin');
 
     if (!isWebContext) {
-      // No admin, não tentar carregar autenticação de cliente
       return;
     }
 
     // Usar uma função assíncrona para carregar o módulo apenas no runtime
-    // O caminho relativo é calculado a partir da estrutura de diretórios:
-    // Header.tsx está em: components/template/flor-de-menina/components/layout/
-    // useAuthStore.ts está em: lib/store/
-    // Caminho relativo: ../../../../lib/store/useAuthStore
     (async () => {
       try {
-        // Usar caminho relativo que só existe no contexto web
-        // O Next.js não consegue resolver caminhos relativos dinâmicos no build time
         // @ts-expect-error - Este módulo só existe no contexto web, não no admin
         const authStoreModule = await import('../../../../lib/store/useAuthStore');
 
         // Criar uma função que verifica o estado atual
         const checkAuth = () => {
           const authState = authStoreModule.useAuthStore.getState();
-          setIsAuthenticated(!!(authState.accessToken && authState.customer));
+          const authenticated = !!(authState.accessToken && authState.customer);
+          setIsAuthenticated(authenticated);
           setHasHydrated(authState._hasHydrated);
         };
 
         // Verificar inicialmente
         checkAuth();
 
-        // Subscrever a mudanças no store
-        const unsubscribe = authStoreModule.useAuthStore.subscribe(checkAuth);
+        // Função para carregar favoritos
+        const loadFavorites = async () => {
+          try {
+            const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+            const storeId = process.env.NEXT_PUBLIC_STORE_ID;
+            const authState = authStoreModule.useAuthStore.getState();
+            
+            if (authState.accessToken && storeId) {
+              const response = await fetch(`${API_URL}/customers/me/favorites`, {
+                headers: {
+                  'Authorization': `Bearer ${authState.accessToken}`,
+                  'x-store-id': storeId,
+                },
+              });
+              
+              if (response.ok) {
+                const data = await response.json();
+                setFavoritesCount(data.count || 0);
+              }
+            }
+          } catch {
+            // Ignorar erros 
+          }
+        };
+
+        // Subscrever a mudanças no store com throttle para evitar muitas atualizações
+        let timeoutId: NodeJS.Timeout | null = null;
+        const unsubscribe = authStoreModule.useAuthStore.subscribe(() => {
+          // Debounce para evitar muitas atualizações
+          if (timeoutId) clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            checkAuth();
+            // Recarregar favoritos quando autenticação mudar
+            const currentAuthState = authStoreModule.useAuthStore.getState();
+            if (currentAuthState.accessToken && currentAuthState.customer) {
+              loadFavorites();
+            } else {
+              setFavoritesCount(0);
+            }
+          }, 100);
+        });
+
+        // Carregar favoritos inicialmente se estiver autenticado
+        const initialAuthState = authStoreModule.useAuthStore.getState();
+        if (initialAuthState.accessToken && initialAuthState.customer) {
+          loadFavorites();
+        }
 
         // Retornar função de cleanup
         return () => unsubscribe();
@@ -249,8 +289,57 @@ export function Header() {
             <Link href="/minha-conta" className="p-2 hover:text-primary transition-colors">
               <User size={20} />
             </Link>
-            <button className="p-2 hover:text-primary transition-colors">
+            {/* Favoritos - Sempre visível */}
+            <button 
+              type="button"
+              className="p-2 hover:text-primary transition-colors relative z-50"
+              onClick={async (e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                
+                // Verificar autenticação via localStorage primeiro (mais rápido e confiável)
+                let authenticated = false;
+                try {
+                  const authStorage = localStorage.getItem('auth-storage');
+                  if (authStorage) {
+                    const parsed = JSON.parse(authStorage);
+                    authenticated = !!(parsed?.state?.accessToken && parsed?.state?.customer);
+                  }
+                } catch {
+                  // Ignorar erro de parse
+                }
+                
+                // Se não encontrou no localStorage, tentar via store
+                if (!authenticated) {
+                  try {
+                    // @ts-expect-error - Este módulo só existe no contexto web, não no admin
+                    const authStoreModule = await import('../../../../lib/store/useAuthStore');
+                    const authState = authStoreModule.useAuthStore.getState();
+                    authenticated = !!(authState.accessToken && authState.customer);
+                  } catch {
+                    // Ignorar erro
+                  }
+                }
+                
+                if (authenticated) {
+                  // Se autenticado, redirecionar para página de lista de desejos
+                  window.location.href = '/minha-conta/lista-desejos';
+                } else {
+                  // Se não autenticado, redirecionar para login
+                  window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+                }
+              }}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+              }}
+            >
               <Heart size={20} />
+              {isAuthenticated && favoritesCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                  {favoritesCount > 9 ? '9+' : favoritesCount}
+                </span>
+              )}
             </button>
             <button
               onClick={() => setIsOpen(true)}

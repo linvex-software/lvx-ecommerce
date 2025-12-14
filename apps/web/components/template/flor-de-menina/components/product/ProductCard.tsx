@@ -1,9 +1,182 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Heart, ShoppingBag } from "lucide-react";
 import { Product } from "../../data/products";
 import { useCart } from "../contexts/CartContext";
 import { cn } from '@/lib/utils';
+import toast from 'react-hot-toast';
+
+/**
+ * Hook customizado para gerenciar favoritos
+ * Funciona tanto no admin (modo visual) quanto na web (modo funcional)
+ */
+function useFavoriteLogic(productId: string) {
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Detectar se estamos no ambiente do editor admin
+  const isInEditor = typeof window !== 'undefined' && (
+    !!(window as any).Craft ||
+    window.location.pathname.includes('/editor') ||
+    window.location.pathname.includes('/admin')
+  );
+
+  // Verificar favorito inicial apenas na web
+  useEffect(() => {
+    if (isInEditor || typeof window === 'undefined') return;
+
+    const checkFavorite = async () => {
+      try {
+        const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+        const storeId = process.env.NEXT_PUBLIC_STORE_ID;
+        const authStorage = localStorage.getItem('auth-storage');
+        
+        if (!authStorage || !storeId) return;
+        
+        const parsed = JSON.parse(authStorage);
+        const accessToken = parsed?.state?.accessToken;
+        if (!accessToken) return;
+
+        const response = await fetch(`${API_URL}/customers/me/favorites/${productId}/check`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'x-store-id': storeId,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setIsFavorite(data.isFavorite || false);
+        }
+      } catch {
+        // Ignorar erros 
+      }
+    };
+
+    checkFavorite();
+  }, [productId, isInEditor]);
+
+  const toggleFavorite = async () => {
+    if (isInEditor) {
+      // No editor: apenas toggle visual
+      setIsFavorite(!isFavorite);
+      return;
+    }
+
+    // Na web: fazer requisição real
+    setIsLoading(true);
+    try {
+      const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333';
+      const storeId = process.env.NEXT_PUBLIC_STORE_ID;
+      const authStorage = localStorage.getItem('auth-storage');
+      
+      if (!storeId) {
+        setIsLoading(false);
+        return;
+      }
+      
+      if (!authStorage) {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        setIsLoading(false);
+        return;
+      }
+      
+      const parsed = JSON.parse(authStorage);
+      const accessToken = parsed?.state?.accessToken;
+      if (!accessToken) {
+        window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
+        return;
+      }
+
+      const method = isFavorite ? 'DELETE' : 'POST';
+      const url = isFavorite 
+        ? `${API_URL}/customers/me/favorites/${productId}`
+        : `${API_URL}/customers/me/favorites`;
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+          'x-store-id': storeId,
+        },
+        body: !isFavorite ? JSON.stringify({ product_id: productId }) : undefined,
+      });
+
+      if (response.ok || response.status === 204) {
+        const wasFavorite = isFavorite;
+        setIsFavorite(!isFavorite);
+        
+        // Mostrar notificação
+        if (wasFavorite) {
+          toast.success('Produto removido dos favoritos', {
+            icon: '❤️',
+            duration: 3000,
+          });
+        } else {
+          toast.success('Produto adicionado aos favoritos', {
+            icon: '❤️',
+            duration: 3000,
+          });
+        }
+        
+        // Invalidar cache do React Query se disponível
+        if ((window as any).__REACT_QUERY_CLIENT__) {
+          (window as any).__REACT_QUERY_CLIENT__.invalidateQueries({ queryKey: ['customer-favorites'] });
+          (window as any).__REACT_QUERY_CLIENT__.invalidateQueries({ queryKey: ['customer-favorite-check', productId] });
+        }
+      }
+    } catch (error: any) {
+      toast.error('Erro ao favoritar produto', {
+        duration: 3000,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  return { isFavorite, isLoading, toggleFavorite };
+}
+
+/**
+ * Componente de botão de favorito para ProductCard
+ * Funciona no admin (visual) e na web (funcional)
+ */
+function FavoriteButtonWrapper({ 
+  productId, 
+  className 
+}: { 
+  productId: string
+  className?: string 
+}) {
+  const { isFavorite, isLoading, toggleFavorite } = useFavoriteLogic(productId);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  return (
+    <button
+      ref={buttonRef}
+      type="button"
+      onClick={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleFavorite();
+      }}
+      disabled={isLoading}
+      className={cn(
+        "w-9 h-9 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center transition-colors",
+        "disabled:opacity-50 disabled:cursor-wait",
+        isFavorite ? "text-primary" : "text-foreground hover:text-primary",
+        className
+      )}
+    >
+      {isLoading ? (
+        <div className="h-[18px] w-[18px] border-2 border-current border-t-transparent rounded-full animate-spin" />
+      ) : (
+        <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
+      )}
+    </button>
+  );
+}
 
 interface ProductCardProps {
   product: Product;
@@ -12,7 +185,6 @@ interface ProductCardProps {
 
 export function ProductCard({ product, className }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const { addItem } = useCart();
 
   const formatPrice = (price: number) => {
@@ -31,13 +203,14 @@ export function ProductCard({ product, className }: ProductCardProps) {
     const color = product.colors && product.colors.length > 0 ? product.colors[0].name : '';
     
     addItem(product, size, color);
+    
+    // Mostrar notificação
+    toast.success('Produto adicionado ao carrinho!', {
+      icon: '🛒',
+      duration: 3000,
+    });
   };
 
-  const handleFavorite = (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsFavorite(!isFavorite);
-  };
 
   // Usar slug se disponível, senão usar id
   const productUrl = product.slug ? `/produto/${product.slug}` : `/produto/${product.id}`
@@ -96,15 +269,10 @@ export function ProductCard({ product, className }: ProductCardProps) {
           "absolute top-3 right-3 flex flex-col gap-2 transition-all duration-300",
           isHovered ? "opacity-100 translate-x-0" : "opacity-0 translate-x-4"
         )}>
-          <button
-            onClick={handleFavorite}
-            className={cn(
-              "w-9 h-9 rounded-full bg-background/90 backdrop-blur-sm flex items-center justify-center transition-colors",
-              isFavorite ? "text-primary" : "text-foreground hover:text-primary"
-            )}
-          >
-            <Heart size={18} fill={isFavorite ? "currentColor" : "none"} />
-          </button>
+          <FavoriteButtonWrapper 
+            productId={String(product.id)} 
+            className="w-9 h-9"
+          />
         </div>
 
         {/* Quick Add */}
