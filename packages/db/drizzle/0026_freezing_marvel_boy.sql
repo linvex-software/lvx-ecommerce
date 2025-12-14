@@ -18,6 +18,8 @@ CREATE TABLE IF NOT EXISTS "review_tags" (
 	"rating" integer NOT NULL
 );
 --> statement-breakpoint
+ALTER TABLE "physical_sales" ADD COLUMN IF NOT EXISTS "subtotal" numeric(12, 2) DEFAULT '0' NOT NULL;--> statement-breakpoint
+ALTER TABLE "physical_sales" ADD COLUMN IF NOT EXISTS "discount_amount" numeric(12, 2) DEFAULT '0' NOT NULL;--> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "product_reviews" ADD CONSTRAINT "product_reviews_store_id_stores_id_fk" FOREIGN KEY ("store_id") REFERENCES "public"."stores"("id") ON DELETE cascade ON UPDATE no action;
 EXCEPTION
