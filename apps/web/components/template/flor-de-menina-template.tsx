@@ -11,7 +11,6 @@ import { CartProvider } from './flor-de-menina/components/contexts/CartContext'
 import { MiniCart } from './flor-de-menina/components/cart/MiniCart'
 import { WhatsAppButton } from './flor-de-menina/components/layout/WhatsAppButton'
 import { TemplateLayoutRenderer } from '@/lib/templates/template-layout-renderer'
-import FavoritesMenu from '@/components/FavoritesMenu'
 
 export function FlorDeMeninaTemplate() {
   return (
@@ -19,7 +18,6 @@ export function FlorDeMeninaTemplate() {
       <div className="flex flex-col min-h-screen">
         <TemplateLayoutRenderer templateId="flor-de-menina" />
         <MiniCart />
-        <FavoritesMenu />
         <WhatsAppButton />
       </div>
     </CartProvider>
