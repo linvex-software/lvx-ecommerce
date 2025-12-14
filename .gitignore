@@ -1,8 +1,19 @@
 # Environment
 .env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.key
+id_rsa
+id_rsa.pub
+credentials*.json
+service-account*.json
+*.env.local
 .env.local
 .env.development
 .env.production
+.env.test
 
 # Node
 node_modules
