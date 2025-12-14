@@ -75,18 +75,26 @@ export function CouponInput({ subtotal, onCouponApplied, onCouponRemoved, applie
   // Se já tem cupom aplicado, mostrar resumo
   if (appliedCoupon) {
     return (
-      <div className="border border-green-500 bg-green-50 dark:bg-green-900/20 rounded-lg p-3">
+      <div className="border-2 border-green-500/50 bg-gradient-to-r from-green-50 to-green-100/50 dark:from-green-900/30 dark:to-green-800/20 rounded-lg p-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-            <span className="text-sm font-medium text-green-800 dark:text-green-200">
-              Cupom <strong>{appliedCoupon}</strong> aplicado!
-            </span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-500/20 dark:bg-green-500/30">
+              <Check className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-green-900 dark:text-green-100">
+                Cupom aplicado!
+              </p>
+              <p className="text-xs text-green-700 dark:text-green-300 mt-0.5">
+                Código: <span className="font-mono font-bold">{appliedCoupon}</span>
+              </p>
+            </div>
           </div>
           <button
             onClick={handleRemoveCoupon}
-            className="text-sm text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-green-700 dark:text-green-300 hover:text-green-900 dark:hover:text-green-100 hover:bg-green-200/50 dark:hover:bg-green-800/30 rounded-md transition-colors"
           >
+            <X className="h-3.5 w-3.5" />
             Remover
           </button>
         </div>
@@ -95,7 +103,12 @@ export function CouponInput({ subtotal, onCouponApplied, onCouponRemoved, applie
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
+      <div className="flex items-center gap-2 mb-1">
+        <Tag className="h-4 w-4 text-muted-foreground" />
+        <label className="text-sm font-medium text-foreground">Cupom de Desconto</label>
+      </div>
+      
       <div className="flex gap-2">
         <div className="relative flex-1">
           <input
@@ -111,17 +124,17 @@ export function CouponInput({ subtotal, onCouponApplied, onCouponRemoved, applie
                 handleApplyCoupon()
               }
             }}
-            placeholder="Digite o cupom"
-            className="w-full px-4 py-2 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary text-sm uppercase"
+            placeholder="Digite o código do cupom"
+            className="w-full px-4 py-3 pr-10 border-2 border-border bg-background font-body focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary text-sm uppercase transition-all"
             disabled={isValidating}
           />
-          <Tag className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Tag className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         </div>
         <Button
           onClick={handleApplyCoupon}
           disabled={isValidating || !couponCode.trim()}
-          size="sm"
-          className="px-4"
+          size="default"
+          className="px-6 font-medium"
         >
           {isValidating ? (
             <>
@@ -137,10 +150,10 @@ export function CouponInput({ subtotal, onCouponApplied, onCouponRemoved, applie
       {/* Feedback de validação */}
       {validationResult && (
         <div
-          className={`flex items-start gap-2 text-sm p-2 rounded ${
+          className={`flex items-start gap-2.5 text-sm p-3 rounded-lg border ${
             validationResult.valid
-              ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200'
-              : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200'
+              ? 'bg-green-50 dark:bg-green-900/20 text-green-800 dark:text-green-200 border-green-200 dark:border-green-800'
+              : 'bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 border-red-200 dark:border-red-800'
           }`}
         >
           {validationResult.valid ? (
@@ -148,7 +161,7 @@ export function CouponInput({ subtotal, onCouponApplied, onCouponRemoved, applie
           ) : (
             <X className="h-4 w-4 flex-shrink-0 mt-0.5" />
           )}
-          <span>{validationResult.message}</span>
+          <span className="font-medium">{validationResult.message}</span>
         </div>
       )}
     </div>
