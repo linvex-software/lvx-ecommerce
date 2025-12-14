@@ -6,6 +6,7 @@ import { fetchAPI } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import Navbar from '@/components/Navbar'
+import { FavoriteButton } from '@/components/FavoriteButton'
 import { useCartStore } from '@/lib/store/useCartStore'
 import { useState, useEffect } from 'react'
 import { ArrowLeft, ShoppingCart } from 'lucide-react'
@@ -358,11 +359,14 @@ export default function ProductDetailPage() {
             {/* Nome */}
             <div className="flex items-start justify-between gap-4">
               <h1 className="text-3xl lg:text-4xl font-bold flex-1">{product.name}</h1>
-              {isOutOfStock && (
-                <div className="px-3 py-1 bg-destructive text-destructive-foreground text-sm font-bold uppercase tracking-wider rounded">
-                  Esgotado
-                </div>
-              )}
+              <div className="flex items-center gap-2">
+                <FavoriteButton productId={product.id} size="lg" />
+                {isOutOfStock && (
+                  <div className="px-3 py-1 bg-destructive text-destructive-foreground text-sm font-bold uppercase tracking-wider rounded">
+                    Esgotado
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Preço */}

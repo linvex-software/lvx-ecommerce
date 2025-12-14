@@ -71,7 +71,27 @@ export async function fetchAPI(path: string, options: RequestInit = {}) {
             throw error
         }
 
-        return response.json()
+        // Verificar se a resposta está vazia (204 No Content) ou não tem conteúdo
+        const contentType = response.headers.get('content-type')
+        const contentLength = response.headers.get('content-length')
+        
+        // Se for 204 No Content ou não houver conteúdo, retornar null
+        if (response.status === 204 || contentLength === '0') {
+            return null
+        }
+        
+        // Verificar se há conteúdo antes de tentar parsear JSON
+        const text = await response.text()
+        if (!text || text.trim().length === 0) {
+            return null
+        }
+        
+        try {
+            return JSON.parse(text)
+        } catch (parseError) {
+            // Se não conseguir parsear, retornar o texto como está (pode ser uma string)
+            return text
+        }
     } catch (error) {
         clearTimeout(timeoutId)
         
