@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from "react";
-import { ShoppingBag, Search, User, Menu, X, ChevronDown, ChevronRight } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { ShoppingBag, Search, User, Menu, X, ChevronDown, ChevronRight, Heart } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useStoreTheme } from "@/lib/hooks/use-store-theme";
 import { useAuthStore } from "@/lib/store/useAuthStore";
+import { useFavorites } from "@/lib/hooks/use-favorites";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 
@@ -20,6 +21,8 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
     const { data: theme } = useStoreTheme();
     const { accessToken, customer } = useAuthStore();
     const isAuthenticated = !!(accessToken && customer);
+    const { data: favoritesData } = useFavorites();
+    const favoritesCount = favoritesData?.count || 0;
 
     const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
     const closeMenu = () => setIsMenuOpen(false);
@@ -87,6 +90,37 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                                     <User className="h-5 w-5" />
                                     <span className="text-[10px] mt-1">Minha Conta</span>
                                 </Link>
+
+                                {/* Favorites Icon - Only if authenticated */}
+                                {isAuthenticated && (
+                                    <button
+                                        ref={favoritesButtonRef}
+                                        type="button"
+                                        className="hidden md:flex flex-col items-center cursor-pointer hover:text-muted-foreground transition-colors relative z-[9999]"
+                                    >
+                                        <motion.div
+                                            className="relative pointer-events-none"
+                                            animate={favoritesCount > 0 ? { scale: [1, 1.15, 1] } : {}}
+                                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                                        >
+                                            <Heart className="h-5 w-5 pointer-events-none" />
+                                            <AnimatePresence>
+                                                {favoritesCount > 0 && (
+                                                    <motion.span
+                                                        initial={{ scale: 0 }}
+                                                        animate={{ scale: 1 }}
+                                                        exit={{ scale: 0 }}
+                                                        transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                                                        className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-red-500 text-white text-[9px] flex items-center justify-center font-bold pointer-events-none"
+                                                    >
+                                                        {favoritesCount > 9 ? '9+' : favoritesCount}
+                                                    </motion.span>
+                                                )}
+                                            </AnimatePresence>
+                                        </motion.div>
+                                        <span className="text-[10px] mt-1">Favoritos</span>
+                                    </Link>
+                                    )}
 
                                 {/* Cart Icon */}
                                 <div
@@ -216,7 +250,22 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                 </div>
 
                 {/* Menu Footer */}
-                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-background">
+                <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-border bg-background space-y-2">
+                    {isAuthenticated && (
+                        <Link
+                            href="/minha-conta/lista-desejos"
+                            onClick={closeMenu}
+                            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"
+                        >
+                            <Heart className="h-5 w-5" />
+                            <span className="text-sm font-medium">Favoritos</span>
+                            {favoritesCount > 0 && (
+                                <span className="ml-auto text-xs bg-red-500 text-white rounded-full px-2 py-0.5">
+                                    {favoritesCount}
+                                </span>
+                            )}
+                        </Link>
+                    )}
                     <Link
                         href={isAuthenticated ? "/minha-conta" : "/login"}
                         className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted transition-colors"

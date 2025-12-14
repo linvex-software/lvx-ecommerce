@@ -57,7 +57,7 @@ export default function MinhaContaPage() {
       icon: Heart,
       title: 'Lista de Desejos',
       description: 'Gerencie os produtos adicionados à sua lista.',
-      href: '#',
+      href: '/minha-conta/lista-desejos',
       color: 'text-red-600'
     },
     {
