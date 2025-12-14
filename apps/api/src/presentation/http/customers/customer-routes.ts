@@ -1,8 +1,11 @@
 import type { FastifyInstance } from 'fastify'
 import { CustomerController } from './customer-controller'
+import { FavoriteController } from './favorite-controller'
 import { CustomerRepository } from '../../../infra/db/repositories/customer-repository'
 import { CustomerAddressRepository } from '../../../infra/db/repositories/customer-address-repository'
 import { AuthSessionRepository } from '../../../infra/db/repositories/auth-session-repository'
+import { FavoriteRepository } from '../../../infra/db/repositories/favorite-repository'
+import { ProductRepository } from '../../../infra/db/repositories/product-repository'
 import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
 import { requireCustomerAuth } from '../../../infra/http/middlewares/customer-auth'
 
@@ -173,6 +176,58 @@ export async function registerCustomerRoutes(
     },
     async (request, reply) => {
       await customerController.getOrder(request, reply)
+    }
+  )
+
+  // Rotas de Favoritos
+  const favoriteRepository = new FavoriteRepository()
+  const productRepository = new ProductRepository()
+  const favoriteController = new FavoriteController(
+    favoriteRepository,
+    productRepository
+  )
+
+  // POST /customers/me/favorites - Adicionar produto aos favoritos
+  app.post(
+    '/customers/me/favorites',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await favoriteController.add(request, reply)
+    }
+  )
+
+  // DELETE /customers/me/favorites/:productId - Remover produto dos favoritos
+  app.delete<{ Params: { productId: string } }>(
+    '/customers/me/favorites/:productId',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await favoriteController.remove(request, reply)
+    }
+  )
+
+  // GET /customers/me/favorites - Listar favoritos do cliente
+  app.get(
+    '/customers/me/favorites',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await favoriteController.list(request, reply)
+    }
+  )
+
+  // GET /customers/me/favorites/:productId/check - Verificar se produto está favoritado
+  app.get<{ Params: { productId: string } }>(
+    '/customers/me/favorites/:productId/check',
+    {
+      onRequest: [tenantMiddleware, requireCustomerAuth]
+    },
+    async (request, reply) => {
+      await favoriteController.check(request, reply)
     }
   )
 }

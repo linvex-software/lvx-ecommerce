@@ -5,6 +5,7 @@ import { useParams, notFound, useRouter } from 'next/navigation'
 import { fetchAPI } from '@/lib/api'
 import { useState, useEffect } from 'react'
 import { ArrowLeft, Heart, Minus, Plus, Truck, RefreshCw, Shield, ChevronLeft, ChevronRight } from 'lucide-react'
+import { FavoriteButton } from '@/components/FavoriteButton'
 import Link from 'next/link'
 import { Button } from '@/components/template/flor-de-menina/components/ui/button'
 import { useCart } from '@/components/template/flor-de-menina/components/contexts/CartContext'
@@ -74,7 +75,6 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState<string>('')
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null)
   const [quantity, setQuantity] = useState(1)
-  const [isFavorite, setIsFavorite] = useState(false)
 
   const { data, isLoading, error } = useQuery<ProductResponse>({
     queryKey: ['product', slug],
@@ -519,17 +519,7 @@ export default function ProductDetailPage() {
               >
                 {isOutOfStock ? 'Produto Esgotado' : 'Adicionar ao Carrinho'}
               </Button>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => setIsFavorite(!isFavorite)}
-                className={cn(
-                  "px-4",
-                  isFavorite && "bg-primary text-primary-foreground"
-                )}
-              >
-                <Heart size={20} className={cn(isFavorite && "fill-current")} />
-              </Button>
+              <FavoriteButton productId={product.id} size="lg" />
             </div>
 
             {/* Simulador de Frete */}

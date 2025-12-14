@@ -8,6 +8,7 @@ import {
   uniqueIndex
 } from 'drizzle-orm/pg-core'
 import { stores } from './core'
+import { products } from './catalog'
 
 export const customers = pgTable(
   'customers',
@@ -62,6 +63,35 @@ export const customerAddresses = pgTable(
       table.customer_id,
       table.is_default
     )
+  })
+)
+
+export const customerFavorites = pgTable(
+  'customer_favorites',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    store_id: uuid('store_id')
+      .notNull()
+      .references(() => stores.id, { onDelete: 'cascade' }),
+    customer_id: uuid('customer_id')
+      .notNull()
+      .references(() => customers.id, { onDelete: 'cascade' }),
+    product_id: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (table) => ({
+    storeCustomerProductUnique: uniqueIndex('customer_favorites_store_customer_product_unique').on(
+      table.store_id,
+      table.customer_id,
+      table.product_id
+    ),
+    customerIdx: index('customer_favorites_customer_idx').on(table.customer_id),
+    productIdx: index('customer_favorites_product_idx').on(table.product_id),
+    storeIdx: index('customer_favorites_store_idx').on(table.store_id)
   })
 )
 
