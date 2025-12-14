@@ -114,16 +114,16 @@ export default function CheckoutPage() {
         // Extrair informações do endereço
         // O formato do street pode ser: "Rua, Número, Bairro: X, Complemento"
         const streetParts = defaultAddress.street?.split(',').map(s => s.trim()) || []
-        
+
         let street = ''
         let number = ''
         let complement = ''
         let neighborhood = ''
-        
+
         if (streetParts.length > 0) {
           street = streetParts[0] || ''
         }
-        
+
         if (streetParts.length > 1) {
           // Segundo item pode ser número ou bairro
           const secondPart = streetParts[1]
@@ -133,7 +133,7 @@ export default function CheckoutPage() {
             number = secondPart
           }
         }
-        
+
         if (streetParts.length > 2) {
           // Terceiro item pode ser bairro ou complemento
           const thirdPart = streetParts[2]
@@ -144,7 +144,7 @@ export default function CheckoutPage() {
             complement = thirdPart
           }
         }
-        
+
         if (streetParts.length > 3) {
           // Quarto item geralmente é complemento
           complement = streetParts[3]
@@ -187,18 +187,18 @@ export default function CheckoutPage() {
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
-    
+
     // Formatação automática do CEP
     if (name === 'cep') {
       const cepNumbers = value.replace(/\D/g, '')
       const formattedCep = cepNumbers.replace(/(\d{5})(\d{3})/, '$1-$2')
       setFormData({ ...formData, [name]: formattedCep })
-      
+
       // Limpar erro quando o usuário começar a digitar
       if (cepError) {
         setCepError(null)
       }
-      
+
       // Buscar automaticamente quando tiver 8 dígitos
       if (cepNumbers.length === 8) {
         handleCepSearch(cepNumbers)
@@ -210,7 +210,7 @@ export default function CheckoutPage() {
 
   const handleCepBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
     const cep = e.target.value.replace(/\D/g, '')
-    
+
     if (cep.length === 8) {
       await handleCepSearch(cep)
     } else if (cep.length > 0 && cep.length < 8) {
@@ -260,7 +260,7 @@ export default function CheckoutPage() {
       }
     }
     if (currentStep === 'address') {
-      if (!formData.cep || !formData.street || !formData.number || !formData.city || !formData.state) {
+      if (!formData.cep || !formData.street || !formData.number || !formData.neighborhood || !formData.city || !formData.state) {
         alert('Por favor, preencha todos os campos obrigatórios do endereço.')
         return
       }
@@ -335,7 +335,7 @@ export default function CheckoutPage() {
     setPaymentResult(result)
     setIsProcessingPayment(false)
     setPaymentError(null) // Limpar erro anterior
-    
+
     // Verificar se o pagamento foi rejeitado
     if (result.status === 'rejected' || result.paymentResult?.status === 'rejected') {
       // Tratar como erro para mostrar mensagem ao usuário
@@ -345,7 +345,7 @@ export default function CheckoutPage() {
       handlePaymentError(errorMessage)
       return
     }
-    
+
     // Se for PIX, mostrar QR Code
     if (result.paymentResult.qrCode) {
       // Já está no estado paymentResult, será exibido abaixo
@@ -361,7 +361,7 @@ export default function CheckoutPage() {
   const handlePaymentError = (error: string) => {
     setPaymentError(error)
     setIsProcessingPayment(false)
-    
+
     // Scroll para o topo para mostrar o erro
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -414,10 +414,10 @@ export default function CheckoutPage() {
     return (
         <div className="min-h-screen bg-background">
       <Header />
-      
+
       <div className="container mx-auto px-4 py-4">
         <Breadcrumbs items={[{ label: 'Sacola', href: '/carrinho' }, { label: 'Checkout' }]} />
-        
+
         {/* Exibir erro de pagamento se houver */}
         {paymentError && (
           <div className="mt-4">
@@ -478,7 +478,9 @@ export default function CheckoutPage() {
                   <h2 className="font-display text-2xl mb-6">Dados Pessoais</h2>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-body mb-2">Nome Completo</label>
+                      <label className="block text-sm font-body mb-2">
+                        Nome Completo <span className="text-destructive">*</span>
+                      </label>
                       <input
                         type="text"
                         name="name"
@@ -486,10 +488,13 @@ export default function CheckoutPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="Seu nome completo"
+                        required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-body mb-2">E-mail</label>
+                      <label className="block text-sm font-body mb-2">
+                        E-mail <span className="text-destructive">*</span>
+                      </label>
                       <input
                         type="email"
                         name="email"
@@ -497,10 +502,13 @@ export default function CheckoutPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="seu@email.com"
+                        required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-body mb-2">Telefone</label>
+                      <label className="block text-sm font-body mb-2">
+                        Telefone <span className="text-destructive">*</span>
+                      </label>
                       <input
                         type="tel"
                         name="phone"
@@ -508,6 +516,7 @@ export default function CheckoutPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="(00) 00000-0000"
+                        required
                       />
                     </div>
                     <div className="sm:col-span-2">
@@ -531,7 +540,9 @@ export default function CheckoutPage() {
                   <h2 className="font-display text-2xl mb-6">Endereço de Entrega</h2>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-body mb-2">CEP</label>
+                      <label className="block text-sm font-body mb-2">
+                        CEP <span className="text-destructive">*</span>
+                      </label>
                       <div className="relative">
                         <input
                           type="text"
@@ -545,6 +556,7 @@ export default function CheckoutPage() {
                             cepError ? "border-destructive" : "border-border"
                           )}
                           placeholder="00000-000"
+                          required
                         />
                         {isLoadingCep && (
                           <div className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -558,7 +570,9 @@ export default function CheckoutPage() {
                     </div>
                     <div></div>
                     <div className="sm:col-span-2">
-                      <label className="block text-sm font-body mb-2">Rua</label>
+                      <label className="block text-sm font-body mb-2">
+                        Rua <span className="text-destructive">*</span>
+                      </label>
                       <input
                         type="text"
                         name="street"
@@ -566,10 +580,13 @@ export default function CheckoutPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="Nome da rua"
+                        required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-body mb-2">Número</label>
+                      <label className="block text-sm font-body mb-2">
+                        Número <span className="text-destructive">*</span>
+                      </label>
                       <input
                         type="text"
                         name="number"
@@ -577,6 +594,7 @@ export default function CheckoutPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="000"
+                        required
                       />
                     </div>
                     <div>
@@ -591,7 +609,9 @@ export default function CheckoutPage() {
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-body mb-2">Bairro</label>
+                      <label className="block text-sm font-body mb-2">
+                        Bairro <span className="text-destructive">*</span>
+                      </label>
                       <input
                         type="text"
                         name="neighborhood"
@@ -599,10 +619,13 @@ export default function CheckoutPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="Bairro"
+                        required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-body mb-2">Cidade</label>
+                      <label className="block text-sm font-body mb-2">
+                        Cidade <span className="text-destructive">*</span>
+                      </label>
                       <input
                         type="text"
                         name="city"
@@ -610,10 +633,13 @@ export default function CheckoutPage() {
                         onChange={handleInputChange}
                         className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="Cidade"
+                        required
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-body mb-2">Estado</label>
+                      <label className="block text-sm font-body mb-2">
+                        Estado <span className="text-destructive">*</span>
+                      </label>
                       <input
                         type="text"
                         name="state"
@@ -622,6 +648,7 @@ export default function CheckoutPage() {
                         className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
                         placeholder="UF"
                         maxLength={2}
+                        required
                       />
                     </div>
                   </div>
@@ -667,7 +694,7 @@ export default function CheckoutPage() {
               {currentStep === 'payment' && (
                 <div className="space-y-6 animate-fade-in">
                   <h2 className="font-display text-2xl mb-6">Pagamento</h2>
-                  
+
                   {paymentResult?.paymentResult?.qrCode ? (
                     <div>
                       <PixQrCode
