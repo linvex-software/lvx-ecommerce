@@ -322,15 +322,8 @@ export function Header() {
                 }
                 
                 if (authenticated) {
-                  // Se autenticado, abrir menu de favoritos
-                  try {
-                    // @ts-expect-error - Este módulo só existe no contexto web, não no admin
-                    const favoritesStoreModule = await import('../../../../lib/store/useFavoritesStore');
-                    favoritesStoreModule.useFavoritesStore.getState().openFavorites();
-                  } catch {
-                    // Se não conseguir abrir menu, redirecionar para lista de desejos
-                    window.location.href = '/minha-conta/lista-desejos';
-                  }
+                  // Se autenticado, redirecionar para página de lista de desejos
+                  window.location.href = '/minha-conta/lista-desejos';
                 } else {
                   // Se não autenticado, redirecionar para login
                   window.location.href = '/login?redirect=' + encodeURIComponent(window.location.pathname);
