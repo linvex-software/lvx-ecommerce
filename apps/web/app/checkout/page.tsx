@@ -76,6 +76,8 @@ export default function CheckoutPage() {
     discountValue: number
   } | null>(null)
   const [paymentError, setPaymentError] = useState<string | null>(null)
+  const [isLoadingCep, setIsLoadingCep] = useState(false)
+  const [cepError, setCepError] = useState<string | null>(null)
 
   // Verificar autenticação e redirecionar se necessário
   useEffect(() => {
@@ -184,7 +186,69 @@ export default function CheckoutPage() {
   const currentStepIndex = steps.findIndex((s) => s.id === currentStep)
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value })
+    const { name, value } = e.target
+    
+    // Formatação automática do CEP
+    if (name === 'cep') {
+      const cepNumbers = value.replace(/\D/g, '')
+      const formattedCep = cepNumbers.replace(/(\d{5})(\d{3})/, '$1-$2')
+      setFormData({ ...formData, [name]: formattedCep })
+      
+      // Limpar erro quando o usuário começar a digitar
+      if (cepError) {
+        setCepError(null)
+      }
+      
+      // Buscar automaticamente quando tiver 8 dígitos
+      if (cepNumbers.length === 8) {
+        handleCepSearch(cepNumbers)
+      }
+    } else {
+      setFormData({ ...formData, [name]: value })
+    }
+  }
+
+  const handleCepBlur = async (e: React.FocusEvent<HTMLInputElement>) => {
+    const cep = e.target.value.replace(/\D/g, '')
+    
+    if (cep.length === 8) {
+      await handleCepSearch(cep)
+    } else if (cep.length > 0 && cep.length < 8) {
+      setCepError('CEP deve conter 8 dígitos.')
+    }
+  }
+
+  const handleCepSearch = async (cep: string) => {
+    if (cep.length !== 8) {
+      setCepError('CEP deve conter 8 dígitos.')
+      return
+    }
+
+    setIsLoadingCep(true)
+    setCepError(null)
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+      const data = await response.json()
+
+      if (data.erro) {
+        setCepError('CEP não encontrado.')
+        return
+      }
+
+      // Preencher campos automaticamente
+      setFormData((prev) => ({
+        ...prev,
+        street: data.logradouro || prev.street,
+        neighborhood: data.bairro || prev.neighborhood,
+        city: data.localidade || prev.city,
+        state: data.uf || prev.state,
+      }))
+    } catch (error) {
+      setCepError('Erro ao buscar CEP. Tente novamente.')
+    } finally {
+      setIsLoadingCep(false)
+    }
   }
 
   const nextStep = () => {
@@ -468,14 +532,29 @@ export default function CheckoutPage() {
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-body mb-2">CEP</label>
-                      <input
-                        type="text"
-                        name="cep"
-                        value={formData.cep}
-                        onChange={handleInputChange}
-                        className="w-full px-4 py-3 border border-border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary"
-                        placeholder="00000-000"
-                      />
+                      <div className="relative">
+                        <input
+                          type="text"
+                          name="cep"
+                          value={formData.cep}
+                          onChange={handleInputChange}
+                          onBlur={handleCepBlur}
+                          maxLength={9}
+                          className={cn(
+                            "w-full px-4 py-3 border bg-background font-body focus:outline-none focus:ring-1 focus:ring-primary",
+                            cepError ? "border-destructive" : "border-border"
+                          )}
+                          placeholder="00000-000"
+                        />
+                        {isLoadingCep && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                            <div className="h-4 w-4 border-2 border-primary border-t-transparent rounded-full animate-spin"></div>
+                          </div>
+                        )}
+                      </div>
+                      {cepError && (
+                        <p className="text-xs text-destructive mt-1">{cepError}</p>
+                      )}
                     </div>
                     <div></div>
                     <div className="sm:col-span-2">
