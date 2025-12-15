@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo, useState, useRef, useEffect } from 'react'
-import { Plus, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@white-label/ui'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
