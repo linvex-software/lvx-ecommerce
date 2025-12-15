@@ -149,6 +149,14 @@ export default function PrimeiroAcessoPage() {
     return `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`
   }
 
+  const formatCPF = (value: string) => {
+    const numbers = value.replace(/\D/g, '')
+    if (numbers.length <= 3) return numbers
+    if (numbers.length <= 6) return `${numbers.slice(0, 3)}.${numbers.slice(3)}`
+    if (numbers.length <= 9) return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`
+    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6, 9)}-${numbers.slice(9, 11)}`
+  }
+
   const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const formatted = formatCep(e.target.value)
     setAddress({ ...address, zip: formatted })
@@ -376,8 +384,25 @@ export default function PrimeiroAcessoPage() {
                     id="identifier"
                     type="text"
                     placeholder="seu email ou cpf"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
+                    value={
+                      identifier.includes('@') || /[a-zA-Z]/.test(identifier)
+                        ? identifier 
+                        : formatCPF(identifier.replace(/\D/g, ''))
+                    }
+                    onChange={(e) => {
+                      const value = e.target.value
+                      // Se contém @ ou letras, é email - permitir qualquer caractere
+                      if (value.includes('@') || /[a-zA-Z]/.test(value)) {
+                        setIdentifier(value)
+                      } else {
+                        // Se não tem @ nem letras, pode ser CPF - apenas números
+                        const numbers = value.replace(/\D/g, '')
+                        // Permitir até 11 dígitos (CPF completo)
+                        if (numbers.length <= 11) {
+                          setIdentifier(numbers)
+                        }
+                      }
+                    }}
                     className="mt-2"
                     onKeyDown={(e) => e.key === 'Enter' && handleStep1Next()}
                   />
@@ -429,10 +454,15 @@ export default function PrimeiroAcessoPage() {
                     id="cpf"
                     type="text"
                     placeholder="000.000.000-00"
-                    value={cpf}
-                    onChange={(e) => setCpf(e.target.value.replace(/\D/g, ''))}
+                    value={formatCPF(cpf)}
+                    onChange={(e) => {
+                      const numbers = e.target.value.replace(/\D/g, '')
+                      if (numbers.length <= 11) {
+                        setCpf(numbers)
+                      }
+                    }}
                     className="mt-1"
-                    maxLength={11}
+                    maxLength={14}
                     required
                   />
                 </div>

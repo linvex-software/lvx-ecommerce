@@ -6,7 +6,7 @@ import { useAuthStore } from '@/store/auth-store'
 import { apiClient } from '@/lib/api-client'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Menu, Monitor, Tablet, Undo2, Redo2, Eye, ChevronDown, Settings } from 'lucide-react'
+import { Menu, Monitor, Tablet, Undo2, Redo2, Eye, ChevronDown, Settings, ArrowLeft } from 'lucide-react'
 import { usePreviewMode } from './preview-context'
 import Link from 'next/link'
 
@@ -82,8 +82,12 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
       <div className="flex items-center gap-3">
         {/* Logo */}
         <div className="flex items-center gap-2">
-          <button className="p-1.5 hover:bg-gray-100 rounded transition-colors">
-            <Menu className="w-5 h-5 text-gray-700" />
+          <button
+            onClick={() => router.push('/')}
+            className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+            title="Voltar"
+          >
+            <ArrowLeft className="w-5 h-5 text-gray-700" />
           </button>
           <div className="text-lg font-semibold text-gray-900">Editando: {user?.store?.name || 'Minha Loja'}</div>
         </div>

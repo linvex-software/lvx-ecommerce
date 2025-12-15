@@ -59,7 +59,7 @@ function EditableTextOrPlain({
 
 export function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const { itemCount, setIsOpen } = useCart();
+  const { itemCount, setIsOpen, isOpen: isCartOpen } = useCart();
   const { connectors: { connect }, isInEditor } = useSafeNode();
   const { data: theme } = useStoreTheme();
   const { data: settings } = useStoreSettings();
@@ -228,7 +228,7 @@ export function Header() {
       ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }}
       className={`${isInEditor ? '' : 'sticky top-0'} bg-background/95 backdrop-blur-md border-b border-border`}
       style={{
-        zIndex: isInEditor ? 1 : 9999,
+        zIndex: isInEditor ? 1 : (isCartOpen ? 9998 : 9999),
         position: isInEditor ? 'relative' : 'sticky',
       }}
     >
