@@ -64,6 +64,17 @@ export async function registerCustomerRoutes(
     }
   )
 
+  // POST /customers/refresh - Refresh token (exige store_id e cookie refreshToken)
+  app.post(
+    '/customers/refresh',
+    {
+      onRequest: [tenantMiddleware]
+    },
+    async (request, reply) => {
+      await customerController.refresh(request, reply)
+    }
+  )
+
   // GET /customers/me - Perfil do cliente (protegido)
   app.get(
     '/customers/me',
