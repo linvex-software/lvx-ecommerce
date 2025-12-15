@@ -2,6 +2,7 @@ import type { FastifyRequest, FastifyReply } from 'fastify'
 import { ZodError } from 'zod'
 import { registerCustomerUseCase } from '../../../application/customers/use-cases/register-customer'
 import { loginCustomerUseCase } from '../../../application/customers/use-cases/login-customer'
+import { refreshCustomerTokenUseCase } from '../../../application/customers/use-cases/refresh-customer-token'
 import { getCustomerProfileUseCase } from '../../../application/customers/use-cases/get-customer-profile'
 import { updateCustomerProfileUseCase } from '../../../application/customers/use-cases/update-customer-profile'
 import { listCustomerAddressesUseCase } from '../../../application/customers/use-cases/list-customer-addresses'
@@ -169,6 +170,52 @@ export class CustomerController {
         }
 
         await reply.code(statusCode).send({ error: errorMessage })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async refresh(request: FastifyRequest, reply: FastifyReply): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const refreshToken = request.cookies.refreshToken as string | undefined
+
+      if (!refreshToken) {
+        await reply.code(401).send({ error: 'Refresh token not found' })
+        return
+      }
+
+      const dependencies = {
+        customerRepository: this.customerRepository,
+        authSessionRepository: this.authSessionRepository,
+        jwtSign: this.jwtSign
+      }
+
+      const result = await refreshCustomerTokenUseCase(refreshToken, dependencies)
+
+      const isProduction = process.env.NODE_ENV === 'production'
+
+      reply.setCookie('refreshToken', result.refreshToken, {
+        httpOnly: true,
+        sameSite: 'lax',
+        secure: isProduction,
+        path: '/',
+        maxAge: 60 * 60 * 24 * 30
+      })
+
+      await reply.send({
+        accessToken: result.accessToken,
+        customer: result.customer
+      })
+    } catch (error) {
+      if (error instanceof Error) {
+        await reply.code(401).send({ error: error.message })
         return
       }
       await reply.code(500).send({ error: 'Internal server error' })
