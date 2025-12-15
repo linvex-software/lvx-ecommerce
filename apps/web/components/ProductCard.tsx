@@ -32,7 +32,7 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         <img
           src={product.image}
           alt={product.name}
-          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          className={`w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ${isOutOfStock ? 'opacity-70' : ''}`}
         />
         {isOutOfStock && (
           <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
@@ -90,7 +90,11 @@ const ProductCard = ({ product, onAddToCart }: ProductCardProps) => {
         )}
 
         <div className="flex items-center justify-between pt-2">
-          <p className="text-xl font-bold">R$ {product.price.toFixed(2)}</p>
+          {isOutOfStock ? (
+            <p className="text-xl font-bold text-destructive">ESGOTADO</p>
+          ) : (
+            <p className="text-xl font-bold">R$ {product.price.toFixed(2)}</p>
+          )}
           <Button
             variant="default"
             size="sm"

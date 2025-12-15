@@ -49,7 +49,41 @@ export class PublicProductController {
         productRepository: this.productRepository
       })
 
-      await reply.send(result)
+      // Adicionar estoque para cada produto
+      const productsWithStock = await Promise.all(
+        result.products.map(async (product) => {
+          let stock = null
+          try {
+            stock = await getProductStockUseCase(
+              product.id,
+              storeId,
+              null, // variantId = null para estoque do produto base
+              {
+                stockMovementRepository: this.stockMovementRepository
+              }
+            )
+          } catch (error) {
+            // Se não houver movimentos de estoque, retorna null (estoque = 0)
+            // Não quebra a resposta do produto
+          }
+
+          return {
+            ...product,
+            stock: stock
+              ? {
+                  current_stock: stock.current_stock
+                }
+              : {
+                  current_stock: 0
+                }
+          }
+        })
+      )
+
+      await reply.send({
+        ...result,
+        products: productsWithStock
+      })
     } catch (error) {
       if (error instanceof Error) {
         await reply.code(500).send({ error: error.message })
