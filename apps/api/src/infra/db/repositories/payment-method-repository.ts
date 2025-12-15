@@ -126,11 +126,25 @@ export class PaymentMethodRepository {
       active?: boolean
     }
   ): Promise<PaymentMethod> {
+    // Se config_json foi fornecido, fazer merge com o existente para não perder campos
+    let finalConfigJson = data.config_json
+    if (data.config_json !== undefined) {
+      // Buscar o método atual para fazer merge
+      const existing = await this.findById(id, storeId)
+      if (existing && existing.config_json) {
+        // Fazer merge: manter campos existentes e atualizar/adicionar novos
+        finalConfigJson = {
+          ...(existing.config_json as Record<string, unknown>),
+          ...data.config_json
+        }
+      }
+    }
+
     const [paymentMethod] = await db
       .update(schema.paymentMethods)
       .set({
         ...(data.name && { name: data.name }),
-        ...(data.config_json !== undefined && { config_json: data.config_json }),
+        ...(finalConfigJson !== undefined && { config_json: finalConfigJson }),
         ...(data.active !== undefined && { active: data.active })
       })
       .where(

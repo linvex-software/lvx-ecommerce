@@ -16,6 +16,7 @@ export function MercadoPagoConfig() {
 
   const [accessToken, setAccessToken] = useState('')
   const [publicKey, setPublicKey] = useState('')
+  const [applicationId, setApplicationId] = useState('')
   const [active, setActive] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -26,6 +27,7 @@ export function MercadoPagoConfig() {
       const config = mercadoPagoMethod.config_json as Record<string, unknown> | null
       setAccessToken((config?.access_token as string) || '')
       setPublicKey((config?.public_key as string) || '')
+      setApplicationId((config?.application_id as string) || (config?.applicationId as string) || '')
       setActive(mercadoPagoMethod.active)
     }
   }, [mercadoPagoMethod])
@@ -33,15 +35,23 @@ export function MercadoPagoConfig() {
   const handleSave = async () => {
     setIsSaving(true)
     try {
+      // Preparar config_json - incluir application_id apenas se não estiver vazio
+      const configJson: Record<string, string> = {
+        access_token: accessToken,
+        public_key: publicKey
+      }
+      
+      // Adicionar application_id apenas se não estiver vazio
+      if (applicationId && applicationId.trim() !== '') {
+        configJson.application_id = applicationId.trim()
+      }
+
       if (mercadoPagoMethod) {
         // Atualizar existente
         await updatePaymentMethod.mutateAsync({
           id: mercadoPagoMethod.id,
           data: {
-            config_json: {
-              access_token: accessToken,
-              public_key: publicKey
-            },
+            config_json: configJson,
             active
           }
         })
@@ -50,10 +60,7 @@ export function MercadoPagoConfig() {
         await createPaymentMethod.mutateAsync({
           name: 'Mercado Pago',
           provider: 'mercadopago',
-          config_json: {
-            access_token: accessToken,
-            public_key: publicKey
-          },
+          config_json: configJson,
           active
         })
       }
@@ -124,6 +131,32 @@ export function MercadoPagoConfig() {
           />
           <p className="text-xs text-gray-500">
             Chave pública do Mercado Pago. Use a mesma chave pública nas configurações da aplicação web.
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="applicationId" className="text-sm font-light text-gray-700">
+            Application ID (Número da Aplicação)
+          </Label>
+          <Input
+            id="applicationId"
+            type="text"
+            value={applicationId}
+            onChange={(e) => setApplicationId(e.target.value)}
+            placeholder="6511011023047040"
+            className="font-mono text-sm"
+          />
+          <p className="text-xs text-gray-500">
+            Número da aplicação do Mercado Pago. Encontre em{' '}
+            <a
+              href="https://www.mercadopago.com.br/developers/panel/app"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              Detalhes da aplicação
+            </a>
+            . Usado para identificar a aplicação nos Bricks e webhooks.
           </p>
         </div>
 

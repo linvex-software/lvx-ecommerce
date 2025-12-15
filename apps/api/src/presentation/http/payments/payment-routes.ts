@@ -2,6 +2,7 @@ import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { z } from 'zod'
 import { PaymentController } from './payment-controller'
 import { processPaymentSchema } from '../../../application/payments/use-cases/process-payment'
+import { processOrderSchema } from '../../../application/payments/use-cases/process-order'
 import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
 
 export async function registerPaymentRoutes(app: FastifyInstance): Promise<void> {
@@ -29,6 +30,20 @@ export async function registerPaymentRoutes(app: FastifyInstance): Promise<void>
       reply: FastifyReply
     ) => {
       await paymentController.processPayment(request, reply)
+    }
+  )
+
+  // POST /process_order - Processa order usando Orders API (Card Payment Brick)
+  app.post<{ Body: z.infer<typeof processOrderSchema> }>(
+    '/process_order',
+    {
+      onRequest: [tenantMiddleware]
+    },
+    async (
+      request: FastifyRequest<{ Body: z.infer<typeof processOrderSchema> }>,
+      reply: FastifyReply
+    ) => {
+      await paymentController.processOrder(request, reply)
     }
   )
 }

@@ -805,6 +805,7 @@ export default function CheckoutPage() {
                   <span className="font-display text-xl">{formatPrice(finalTotal)}</span>
                 </div>
               </div>
+
             </div>
           </div>
                     </div>

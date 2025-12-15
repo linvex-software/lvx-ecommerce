@@ -62,7 +62,7 @@ export async function fetchAPI(path: string, options: RequestInit = {}) {
                 // Se não conseguir parsear JSON, usa statusText
             }
             
-            const error = new Error(`API Error: ${errorMessage}`) as Error & { 
+            const error = new Error(errorMessage) as Error & { 
                 status: number
                 payload?: { error?: string; details?: any }
             }

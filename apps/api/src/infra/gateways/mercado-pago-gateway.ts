@@ -190,5 +190,120 @@ export class MercadoPagoGateway implements PaymentGateway {
 
     return statusMap[status.toLowerCase()] || 'pending'
   }
+
+  /**
+   * Cria uma order usando a Orders API do Mercado Pago
+   * Usado pelo Card Payment Brick
+   */
+  async createOrder(orderData: {
+    type: 'online'
+    processing_mode: 'automatic' | 'manual'
+    total_amount: string
+    external_reference: string
+    payer: {
+      email: string
+      identification?: {
+        type: string
+        number: string
+      }
+    }
+    transactions: {
+      payments: Array<{
+        amount: string
+        payment_method: {
+          id: string
+          type: 'credit_card' | 'debit_card'
+          token: string
+          installments: number
+        }
+      }>
+    }
+  }): Promise<{
+    id: string
+    status: string
+    status_detail: string
+    total_amount: string
+    total_paid_amount: string
+    transactions: {
+      payments: Array<{
+        id: string
+        status: string
+        status_detail: string
+        amount: string
+        paid_amount: string
+        payment_method: {
+          id: string
+          type: string
+          token: string
+          installments: number
+        }
+      }>
+    }
+  }> {
+    try {
+      // Gerar X-Idempotency-Key (UUID V4)
+      const idempotencyKey = uuidv4()
+
+      // Fazer requisição HTTP direta para Orders API
+      // O SDK do Mercado Pago pode não ter suporte direto para Orders API
+      const response = await fetch('https://api.mercadopago.com/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${this.accessToken}`,
+          'X-Idempotency-Key': idempotencyKey
+        },
+        body: JSON.stringify(orderData)
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}))
+        console.error('[MercadoPagoGateway] Erro ao criar order:', errorData)
+
+        // Verificar erros específicos
+        if (response.status === 401) {
+          const message = errorData?.message || errorData?.cause?.[0]?.description || 'Erro de autenticação'
+          if (message.includes('live credentials') || message.includes('Unauthorized use of live credentials')) {
+            throw new Error(
+              'Erro de autenticação: Credenciais inválidas ou expiradas. ' +
+              'Verifique se você está usando as credenciais corretas da seção de TESTE no painel do Mercado Pago. ' +
+              'Acesse https://www.mercadopago.com.br/developers/panel/credentials para verificar suas credenciais.'
+            )
+          }
+          throw new Error(`Erro de autenticação no Mercado Pago: ${message}. Verifique se suas credenciais estão corretas.`)
+        }
+
+        if (response.status === 400) {
+          const message = errorData?.message || errorData?.cause?.[0]?.description || 'Erro na requisição'
+          throw new Error(`Erro ao criar order no Mercado Pago: ${message}`)
+        }
+
+        throw new Error(`Erro ao criar order no Mercado Pago: Status ${response.status}`)
+      }
+
+      const order = await response.json()
+      return order
+    } catch (error: any) {
+      console.error('[MercadoPagoGateway] Erro ao criar order:', error)
+
+      if (error instanceof Error) {
+        // Verificar se é timeout
+        if (error.message.includes('timeout') || error.message.includes('ETIMEDOUT')) {
+          throw new Error('Timeout ao criar order no Mercado Pago. Tente novamente.')
+        }
+        // Verificar se é erro de rede
+        if (error.message.includes('ECONNREFUSED') || error.message.includes('ENOTFOUND')) {
+          throw new Error('Erro de conexão com Mercado Pago. Verifique sua conexão.')
+        }
+        // Se já é um erro formatado, re-lançar
+        if (error.message.includes('Erro')) {
+          throw error
+        }
+        throw new Error(`Erro ao criar order no Mercado Pago: ${error.message}`)
+      }
+
+      throw new Error('Erro desconhecido ao criar order no Mercado Pago')
+    }
+  }
 }
 
