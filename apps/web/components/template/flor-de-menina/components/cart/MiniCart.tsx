@@ -19,18 +19,20 @@ export function MiniCart() {
       {/* Overlay */}
       <div
         className={cn(
-          "fixed inset-0 bg-charcoal/50 z-50 transition-opacity duration-300",
+          "fixed inset-0 bg-charcoal/50 z-[10000] transition-opacity duration-300",
           isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
         )}
+        style={{ zIndex: 10000 }}
         onClick={() => setIsOpen(false)}
       />
 
       {/* Drawer */}
       <div
         className={cn(
-          "fixed right-0 top-0 h-full w-full max-w-md bg-background z-50 shadow-2xl transition-transform duration-300 flex flex-col",
+          "fixed right-0 top-0 h-full w-full max-w-md bg-background shadow-2xl transition-transform duration-300 flex flex-col",
           isOpen ? "translate-x-0" : "translate-x-full"
         )}
+        style={{ zIndex: 10001 }}
       >
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-border">
