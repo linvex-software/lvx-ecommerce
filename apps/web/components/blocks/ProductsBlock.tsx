@@ -19,6 +19,9 @@ interface APIProduct {
   main_image: string | null
   description: string | null
   category_name?: string
+  stock?: {
+    current_stock: number
+  }
 }
 
 interface Category {
@@ -121,7 +124,7 @@ export function ProductsBlock({
     category: p.category_name || 'Geral',
     sizes: [],
     colors: [],
-    stock: 10,
+    stock: p.stock?.current_stock ?? 0,
     description: p.description || ''
   }))
 
