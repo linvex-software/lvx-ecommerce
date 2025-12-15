@@ -36,6 +36,9 @@ interface Product {
   main_image?: string | null
   slug: string
   category_name?: string
+  stock?: {
+    current_stock: number
+  }
 }
 
 interface Category {
@@ -203,6 +206,7 @@ export function ProductGrid({
                       price={product.base_price}
                       image={product.main_image || ''}
                       slug={product.slug}
+                      stock={product.stock?.current_stock}
                     />
                   ))}
                 </div>
