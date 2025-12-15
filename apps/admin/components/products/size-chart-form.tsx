@@ -1,11 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Plus, Trash2, Info } from 'lucide-react'
+import { useMemo, useState, useRef, useEffect } from 'react'
+import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
 import { Button } from '@white-label/ui'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 
 export interface SizeChartData {
   name: string
@@ -40,10 +39,53 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
   const [sizes, setSizes] = useState<string[]>(initialSizes)
   const [measurements, setMeasurements] = useState<string[]>(initialMeasurements)
   const [chartData, setChartData] = useState<ChartMatrix>(sizeChart?.chart_json || {})
+  const [showHelper, setShowHelper] = useState(false)
+  
+  // Accordion state para mobile
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    measures: true,
+    sizes: true,
+    table: true
+  })
+
+  // Scroll indicators state
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  // Verificar scroll disponível
+  const checkScroll = () => {
+    if (!scrollContainerRef.current) return
+    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
+    setCanScrollLeft(scrollLeft > 0)
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+  }
+
+  useEffect(() => {
+    if (!scrollContainerRef.current) return
+    checkScroll()
+    const container = scrollContainerRef.current
+    container.addEventListener('scroll', checkScroll)
+    window.addEventListener('resize', checkScroll)
+    return () => {
+      container.removeEventListener('scroll', checkScroll)
+      window.removeEventListener('resize', checkScroll)
+    }
+  }, [measurements.length, sizes.length, expandedSections.table])
 
   const hasBasicSetup = name.trim().length > 0
-  const hasTable =
-    hasBasicSetup && sizes.length > 0 && measurements.length > 0
+  const hasTable = hasBasicSetup && sizes.length > 0 && measurements.length > 0
+
+  const tableSummary = hasTable
+    ? `${sizes.length} tamanhos · ${measurements.length} medidas`
+    : 'Nenhum tamanho configurado'
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [section]: !prev[section]
+    }))
+  }
 
   const upsertChartValue = (data: Record<string, Record<string, string>>) => {
     if (hasBasicSetup && Object.keys(data).length > 0) {
@@ -167,60 +209,113 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
     upsertChartValue(nextData)
   }
 
-  const tableSummary = hasTable
-    ? `${sizes.length} tamanhos · ${measurements.length} medidas`
-    : 'Nenhum tamanho configurado'
-
   return (
-    <Card className="rounded-2xl border-gray-100 shadow-sm">
-      <CardHeader>
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <CardTitle className="text-xl font-light">Tabela de Tamanhos</CardTitle>
-            <CardDescription>
-              Organize medidas para ajudar clientes e filtros internos
-            </CardDescription>
-          </div>
-          <span className="rounded-full bg-gray-50 px-3 py-1 text-[0.7rem] font-medium text-gray-500">
-            {tableSummary}
+    <div className="space-y-6">
+      {/* Header claro */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-semibold text-text-primary dark:text-white">
+            Tabela de Tamanhos
+          </h3>
+          {hasTable && (
+            <span className="rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary dark:bg-primary/20 dark:text-primary">
+              {tableSummary}
+            </span>
+          )}
+        </div>
+        {hasTable && (
+          <span className="inline-flex items-center gap-1.5 rounded-md bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-900/20 dark:text-green-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-green-500"></span>
+            Provador Virtual habilitado automaticamente
           </span>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="size-chart-name">Nome da tabela *</Label>
-          <Input
-            id="size-chart-name"
-            placeholder="Ex: Tabela de blusas femininas"
-            value={name}
-            onChange={(event) => handleNameChange(event.target.value)}
-          />
-          <p className="text-xs text-gray-500">
-            Use nomes padronizados. Ex: “Tabela Jeans Slim” ou “Medidas Camiseta Unissex”.
-          </p>
-        </div>
+        )}
+      </div>
 
-        {hasBasicSetup ? (
-          <>
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">Medidas</p>
-                  <p className="text-xs text-gray-500">Defina colunas como busto, ombro, manga...</p>
-                </div>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddMeasurement}>
-                  <Plus className="h-4 w-4" />
-                  Medida
+      {/* Helper text colapsável */}
+      {!showHelper && (
+        <button
+          type="button"
+          onClick={() => setShowHelper(true)}
+          className="text-xs text-text-tertiary hover:text-text-secondary dark:text-text-tertiary dark:hover:text-text-secondary"
+        >
+          Saiba mais sobre tabelas de medidas
+        </button>
+      )}
+      {showHelper && (
+        <div className="rounded-lg border border-border bg-muted/30 p-3 text-xs text-text-secondary dark:border-border dark:bg-muted/20">
+          <p className="mb-2">
+            Organize medidas para ajudar clientes a escolherem o tamanho correto.
+            Use nomes padronizados como "Busto (cm)", "Cintura (cm)", "Quadril (cm)".
+          </p>
+          <button
+            type="button"
+            onClick={() => setShowHelper(false)}
+            className="font-medium text-primary hover:underline dark:text-primary"
+          >
+            Ocultar
+          </button>
+        </div>
+      )}
+
+      {/* Nome da tabela */}
+      <div className="space-y-2">
+        <Label htmlFor="size-chart-name" className="text-sm font-medium">
+          Nome da tabela *
+        </Label>
+        <Input
+          id="size-chart-name"
+          placeholder="Ex: Tabela de blusas femininas"
+          value={name}
+          onChange={(event) => handleNameChange(event.target.value)}
+          className="dark:bg-surface dark:border-border"
+        />
+      </div>
+
+      {hasBasicSetup ? (
+        <div className="space-y-6">
+          {/* Seção: Medidas - Accordion no mobile */}
+          <div className="rounded-lg border border-border bg-surface dark:border-border dark:bg-surface-2">
+            <button
+              type="button"
+              onClick={() => toggleSection('measures')}
+              className="flex w-full items-center justify-between p-4 text-left lg:cursor-default lg:pointer-events-none"
+            >
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-text-primary dark:text-white">
+                  Medidas
+                </h4>
+                <p className="mt-0.5 text-xs text-text-secondary dark:text-text-tertiary">
+                  Defina colunas como busto, ombro, manga...
+                </p>
+              </div>
+              <div className="ml-4 lg:hidden">
+                {expandedSections.measures ? (
+                  <ChevronUp className="h-4 w-4 text-text-tertiary" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-text-tertiary" />
+                )}
+              </div>
+            </button>
+
+            <div className={`px-3 pb-3 lg:px-4 lg:pb-4 ${expandedSections.measures ? 'block' : 'hidden lg:block'}`}>
+              <div className="mb-3 flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddMeasurement}
+                  className="dark:border-border dark:bg-surface dark:hover:bg-surface-2"
+                >
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Adicionar Medida
                 </Button>
               </div>
 
-              {measurements.length === 0 && (
-                <div className="rounded-xl border border-dashed border-gray-200 p-4 text-xs text-gray-500">
+              {measurements.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-text-tertiary dark:border-border dark:text-text-tertiary">
                   Adicione ao menos uma medida para começar a preencher a grade.
                 </div>
-              )}
-
-              {measurements.length > 0 && (
+              ) : (
                 <div className="space-y-2">
                   {measurements.map((measurement, index) => (
                     <div key={`measurement-${index}`} className="flex items-center gap-2">
@@ -230,14 +325,15 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
                           handleRenameMeasurement(measurement, event.target.value)
                         }
                         placeholder="Ex: Busto (cm)"
-                        className="text-sm"
+                        className="flex-1 text-sm dark:bg-surface dark:border-border"
                       />
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="border-red-200 text-red-500"
+                        className="h-9 w-9 border-red-200 p-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
                         onClick={() => handleRemoveMeasurement(measurement)}
+                        title="Remover medida"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -245,29 +341,52 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
                   ))}
                 </div>
               )}
-            </section>
+            </div>
+          </div>
 
-            <section className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-sm font-semibold text-gray-800">Tamanhos</p>
-                  <p className="text-xs text-gray-500">
-                    Cadastre linhas (PP, P, M, G, GG...) que receberão os valores.
-                  </p>
-                </div>
-                <Button type="button" variant="outline" size="sm" onClick={handleAddSize}>
-                  <Plus className="h-4 w-4" />
-                  Tamanho
+          {/* Seção: Tamanhos - Accordion no mobile */}
+          <div className="rounded-lg border border-border bg-surface dark:border-border dark:bg-surface-2">
+            <button
+              type="button"
+              onClick={() => toggleSection('sizes')}
+              className="flex w-full items-center justify-between p-4 text-left lg:cursor-default lg:pointer-events-none"
+            >
+              <div className="flex-1">
+                <h4 className="text-sm font-semibold text-text-primary dark:text-white">
+                  Tamanhos
+                </h4>
+                <p className="mt-0.5 text-xs text-text-secondary dark:text-text-tertiary">
+                  Cadastre linhas (PP, P, M, G, GG...) que receberão os valores.
+                </p>
+              </div>
+              <div className="ml-4 lg:hidden">
+                {expandedSections.sizes ? (
+                  <ChevronUp className="h-4 w-4 text-text-tertiary" />
+                ) : (
+                  <ChevronDown className="h-4 w-4 text-text-tertiary" />
+                )}
+              </div>
+            </button>
+
+            <div className={`px-3 pb-3 lg:px-4 lg:pb-4 ${expandedSections.sizes ? 'block' : 'hidden lg:block'}`}>
+              <div className="mb-3 flex justify-end">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAddSize}
+                  className="dark:border-border dark:bg-surface dark:hover:bg-surface-2"
+                >
+                  <Plus className="h-4 w-4 mr-1.5" />
+                  Adicionar Tamanho
                 </Button>
               </div>
 
-              {sizes.length === 0 && (
-                <div className="rounded-xl border border-dashed border-gray-200 p-4 text-xs text-gray-500">
+              {sizes.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-border p-4 text-center text-xs text-text-tertiary dark:border-border dark:text-text-tertiary">
                   Adicione um tamanho para liberar a tabela de preenchimento.
                 </div>
-              )}
-
-              {sizes.length > 0 && (
+              ) : (
                 <div className="space-y-2">
                   {sizes.map((size, index) => (
                     <div key={`size-${index}`} className="flex items-center gap-2">
@@ -275,14 +394,15 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
                         value={size}
                         onChange={(event) => handleRenameSize(size, event.target.value)}
                         placeholder="Ex: M (38/40)"
-                        className="text-sm"
+                        className="flex-1 text-sm dark:bg-surface dark:border-border"
                       />
                       <Button
                         type="button"
                         variant="outline"
                         size="sm"
-                        className="border-red-200 text-red-500"
+                        className="h-9 w-9 border-red-200 p-0 text-red-500 hover:bg-red-50 hover:text-red-600 dark:border-red-800 dark:text-red-400 dark:hover:bg-red-900/20"
                         onClick={() => handleRemoveSize(size)}
+                        title="Remover tamanho"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -290,65 +410,113 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
                   ))}
                 </div>
               )}
-            </section>
+            </div>
+          </div>
 
-            {hasTable ? (
-              <div className="space-y-2">
-                <div className="flex items-center gap-2 text-xs text-gray-500">
-                  <Info className="h-4 w-4" />
-                  Preencha cada célula com valores padronizados (cm, pol, etc.).
+          {/* Tabela - Accordion no mobile */}
+          {hasTable && (
+            <div className="rounded-lg border border-border bg-surface dark:border-border dark:bg-surface-2">
+              <button
+                type="button"
+                onClick={() => toggleSection('table')}
+                className="flex w-full items-center justify-between p-4 text-left lg:cursor-default lg:pointer-events-none"
+              >
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-text-primary dark:text-white">
+                    Tabela de Preenchimento
+                  </h4>
+                  <p className="mt-0.5 text-xs text-text-secondary dark:text-text-tertiary">
+                    Preencha cada célula com valores padronizados (cm, pol, etc.).
+                  </p>
                 </div>
-                <div className="overflow-x-auto rounded-2xl border border-gray-200">
-                  <table className="w-full border-collapse text-sm">
-                    <thead>
-                      <tr className="bg-gray-50 text-left text-xs font-semibold uppercase text-gray-500">
-                        <th className="border border-gray-200 px-3 py-2">Tamanho</th>
-                        {measurements.map((measurement, measurementIndex) => (
-                          <th
-                            key={`measurement-header-${measurementIndex}`}
-                            className="border border-gray-200 px-3 py-2"
-                          >
-                            {measurement || 'Medida'}
+                <div className="ml-4 lg:hidden">
+                  {expandedSections.table ? (
+                    <ChevronUp className="h-4 w-4 text-text-tertiary" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-text-tertiary" />
+                  )}
+                </div>
+              </button>
+
+              <div className={`px-3 pb-3 lg:px-4 lg:pb-4 ${expandedSections.table ? 'block' : 'hidden lg:block'}`}>
+                {/* Texto de ajuda no mobile */}
+                <p className="mb-2 text-xs text-text-tertiary lg:hidden">
+                  Deslize horizontalmente para ver todas as medidas →
+                </p>
+                {/* Container com scroll e indicadores */}
+                <div className="relative">
+                  {/* Fade esquerdo */}
+                  {canScrollLeft && (
+                    <div className="pointer-events-none absolute left-0 top-0 z-20 h-full w-8 bg-gradient-to-r from-surface to-transparent lg:hidden dark:from-surface-2" />
+                  )}
+                  {/* Fade direito */}
+                  {canScrollRight && (
+                    <div className="pointer-events-none absolute right-0 top-0 z-20 h-full w-8 bg-gradient-to-l from-surface to-transparent lg:hidden dark:from-surface-2" />
+                  )}
+                  {/* Container de scroll */}
+                  <div
+                    ref={scrollContainerRef}
+                    className="w-full overflow-x-auto overflow-y-visible rounded-lg border border-border dark:border-border [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-muted/30 [&::-webkit-scrollbar-thumb]:bg-muted/60 [&::-webkit-scrollbar-thumb]:rounded [scrollbar-width:thin] [scrollbar-color:rgb(var(--muted)/0.6)_rgb(var(--muted)/0.3)]"
+                    style={{ 
+                      scrollBehavior: 'smooth',
+                      WebkitOverflowScrolling: 'touch' // Smooth scroll no iOS
+                    }}
+                  >
+                    <table className="w-full border-collapse text-sm" style={{ minWidth: `${Math.max(600, 100 + (measurements.length * 140))}px` }}>
+                      <thead>
+                        <tr className="bg-muted/50 dark:bg-muted/30">
+                          <th className="min-w-[100px] lg:sticky lg:left-0 lg:z-10 border-r border-border bg-muted/50 px-3 py-2 lg:px-4 lg:py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary dark:border-border dark:bg-muted/50 dark:text-text-tertiary">
+                            Tamanho
                           </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sizes.map((size, sizeIndex) => (
-                        <tr key={`size-row-${sizeIndex}`}>
-                          <td className="border border-gray-200 bg-gray-50 px-3 py-2 font-semibold text-gray-700">
-                            {size || 'Tamanho'}
-                          </td>
                           {measurements.map((measurement, measurementIndex) => (
-                            <td
-                              key={`cell-${sizeIndex}-${measurementIndex}`}
-                              className="border border-gray-100 px-3 py-2"
+                            <th
+                              key={`measurement-header-${measurementIndex}`}
+                              className="min-w-[120px] lg:min-w-[140px] border-b border-r border-border px-3 py-2 lg:px-4 lg:py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary last:border-r-0 dark:border-border dark:text-text-tertiary"
                             >
-                              <Input
-                                value={chartData[size]?.[measurement] || ''}
-                                onChange={(event) =>
-                                  handleUpdateValue(size, measurement, event.target.value)
-                                }
-                                placeholder="Valor"
-                                className="h-9 text-sm"
-                              />
-                            </td>
+                              {measurement || 'Medida'}
+                            </th>
                           ))}
                         </tr>
+                      </thead>
+                      <tbody>
+                        {sizes.map((size, sizeIndex) => (
+                          <tr
+                            key={`size-row-${sizeIndex}`}
+                            className="border-b border-border last:border-b-0 dark:border-border"
+                          >
+                            <td className="min-w-[100px] lg:sticky lg:left-0 lg:z-10 border-r border-border bg-muted/30 px-3 py-2 lg:px-4 lg:py-3 font-semibold text-text-primary dark:border-border dark:bg-muted/40 dark:text-white">
+                              {size || 'Tamanho'}
+                            </td>
+                            {measurements.map((measurement, measurementIndex) => (
+                              <td
+                                key={`cell-${sizeIndex}-${measurementIndex}`}
+                                className="border-r border-border px-3 py-2 lg:px-4 lg:py-3 last:border-r-0 dark:border-border"
+                              >
+                                <Input
+                                  value={chartData[size]?.[measurement] || ''}
+                                  onChange={(event) =>
+                                    handleUpdateValue(size, measurement, event.target.value)
+                                  }
+                                  placeholder="Ex: 80-84"
+                                  className="h-9 w-full min-w-[96px] text-sm dark:bg-surface dark:border-border"
+                                />
+                              </td>
+                            ))}
+                          </tr>
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
-            ) : null}
-          </>
-        ) : (
-          <div className="rounded-xl border border-dashed border-gray-200 p-6 text-center text-sm text-gray-500">
-            Dê um nome para a tabela para liberar as etapas de medidas e tamanhos.
-          </div>
-        )}
-      </CardContent>
-    </Card>
+            </div>
+          )}
+        </div>
+      ) : (
+        <div className="rounded-lg border border-dashed border-border p-6 text-center text-sm text-text-tertiary dark:border-border dark:text-text-tertiary">
+          Dê um nome para a tabela para liberar as etapas de medidas e tamanhos.
+        </div>
+      )}
+    </div>
   )
 }
-
