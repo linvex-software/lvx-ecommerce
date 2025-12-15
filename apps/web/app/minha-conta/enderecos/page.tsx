@@ -26,6 +26,7 @@ export default function EnderecosPage() {
 
   const [isCreating, setIsCreating] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [isLoadingCep, setIsLoadingCep] = useState(false)
   const [formData, setFormData] = useState({
     street: '',
     city: '',
@@ -68,6 +69,47 @@ export default function EnderecosPage() {
       zip: '',
       is_default: false,
     })
+  }
+
+  const formatCep = (value: string) => {
+    const numbers = value.replace(/\D/g, '')
+    if (numbers.length <= 5) return numbers
+    return `${numbers.slice(0, 5)}-${numbers.slice(5, 8)}`
+  }
+
+  const handleCepChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const formatted = formatCep(e.target.value)
+    setFormData({ ...formData, zip: formatted })
+  }
+
+  const handleCepBlur = async () => {
+    const cep = formData.zip.replace(/\D/g, '')
+
+    if (cep.length !== 8) {
+      return
+    }
+
+    setIsLoadingCep(true)
+
+    try {
+      const response = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+      const data = await response.json()
+
+      if (data.erro) {
+        return
+      }
+
+      setFormData(prev => ({
+        ...prev,
+        street: data.logradouro || prev.street,
+        city: data.localidade || prev.city,
+        state: data.uf || prev.state,
+      }))
+    } catch (error) {
+      // Erro silencioso
+    } finally {
+      setIsLoadingCep(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,17 +218,25 @@ export default function EnderecosPage() {
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                           <Label htmlFor="zip">CEP *</Label>
-                          <Input
-                            id="zip"
-                            type="text"
-                            placeholder="00000-000"
-                            value={formData.zip}
-                            onChange={(e) =>
-                              setFormData({ ...formData, zip: e.target.value })
-                            }
-                            className="mt-1"
-                            required
-                          />
+                          <div className="relative">
+                            <Input
+                              id="zip"
+                              type="text"
+                              placeholder="00000-000"
+                              value={formData.zip}
+                              onChange={handleCepChange}
+                              onBlur={handleCepBlur}
+                              className="mt-1"
+                              required
+                              disabled={isLoadingCep}
+                              maxLength={9}
+                            />
+                            {isLoadingCep && (
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 mt-1">
+                                <span className="h-4 w-4 block rounded-full border-2 border-t-transparent border-primary animate-spin"></span>
+                              </div>
+                            )}
+                          </div>
                         </div>
                         <div>
                           <Label htmlFor="state">Estado (UF) *</Label>

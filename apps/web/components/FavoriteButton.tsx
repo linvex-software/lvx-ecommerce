@@ -78,7 +78,7 @@ export function FavoriteButton({
         className={cn(
           'p-2 rounded-md hover:bg-gray-100 transition-colors',
           'flex items-center justify-center cursor-pointer',
-          'relative z-[99999]',
+          'relative',
           className
         )}
         onClick={(e) => {
@@ -99,7 +99,7 @@ export function FavoriteButton({
       className={cn(
         'transition-colors',
         'flex items-center justify-center cursor-pointer',
-        'relative z-[99999]',
+        'relative',
         'disabled:opacity-50 disabled:cursor-wait',
         isFavorite 
           ? 'text-red-500 hover:text-red-600 hover:bg-red-50' 

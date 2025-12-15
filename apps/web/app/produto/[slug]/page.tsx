@@ -8,12 +8,14 @@ import { ArrowLeft, Heart, Minus, Plus, Truck, RefreshCw, Shield, ChevronLeft, C
 import { FavoriteButton } from '@/components/FavoriteButton'
 import Link from 'next/link'
 import { Button } from '@/components/template/flor-de-menina/components/ui/button'
-import { useCart } from '@/components/template/flor-de-menina/components/contexts/CartContext'
+import { CartProvider, useCart } from '@/components/template/flor-de-menina/components/contexts/CartContext'
+import { MiniCart } from '@/components/template/flor-de-menina/components/cart/MiniCart'
 import { ProductShowcase } from '@/components/template/flor-de-menina/components/home/ProductShowcase'
 import { Header } from '@/components/template/flor-de-menina/components/layout/Header'
 import { ProductShippingSimulator } from '@/components/shipping/ProductShippingSimulator'
 import { ProductReviews } from '@/components/reviews/ProductReviews'
 import { cn } from '@/lib/utils'
+import toast from 'react-hot-toast'
 
 // Types baseados na resposta da API
 interface ProductImage {
@@ -65,11 +67,11 @@ interface ProductResponse {
   product: ProductWithRelations
 }
 
-export default function ProductDetailPage() {
+function ProductDetailPageContent() {
   const params = useParams()
   const slug = params.slug as string
   const router = useRouter()
-  const { addItem } = useCart()
+  const { addItem, setIsOpen } = useCart()
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [selectedSize, setSelectedSize] = useState<string>('')
   const [selectedColor, setSelectedColor] = useState<string>('')
@@ -278,23 +280,23 @@ export default function ProductDetailPage() {
     if (hasVariants) {
       // Se há variantes disponíveis, verificar se uma foi selecionada
       if (availableSizes.length > 0 && !selectedSize) {
-        alert('Por favor, selecione um tamanho')
+        toast.error('Por favor, selecione um tamanho')
         return
       }
       if (availableColors.length > 0 && !selectedColor) {
-        alert('Por favor, selecione uma cor')
+        toast.error('Por favor, selecione uma cor')
         return
       }
       // Verificar se variante existe e está ativa
       if (!selectedVariant || !selectedVariant.active) {
-        alert('Por favor, selecione uma variante válida')
+        toast.error('Por favor, selecione uma variante válida')
         return
       }
     }
 
     // Validar estoque
     if (isOutOfStock || currentStock < quantity) {
-      alert(`Estoque insuficiente. Disponível: ${currentStock} unidades`)
+      toast.error(`Estoque insuficiente. Disponível: ${currentStock} unidades`)
       return
     }
 
@@ -302,6 +304,7 @@ export default function ProductDetailPage() {
       id: product.id,
       name: product.name,
       price: price,
+      image: allImages[0]?.image_url || product.main_image || '',
       images: allImages.map(img => img.image_url),
       category: product.categories[0]?.name || product.category_name || 'Geral',
       sizes: availableSizes,
@@ -309,14 +312,14 @@ export default function ProductDetailPage() {
       description: product.description || '',
     }
 
-    // Passar variant_id correto para o carrinho
-    addItem(
-      productToAdd,
-      selectedSize || '',
-      selectedColor || '',
-      quantity,
-      selectedVariantId || null
-    )
+    // Adicionar item ao carrinho usando CartContext
+    // O CartContext.addItem adiciona 1 unidade por vez, então adicionamos múltiplas vezes se necessário
+    for (let i = 0; i < quantity; i++) {
+      addItem(productToAdd, selectedSize || '', selectedColor || '')
+    }
+
+    setIsOpen(true)
+    toast.success(`${quantity > 1 ? `${quantity}x ` : ''}${product.name} adicionado ao carrinho!`)
   }
 
   const handlePreviousImage = () => {
@@ -416,10 +419,23 @@ export default function ProductDetailPage() {
               )}
             </div>
 
-            <div className="flex items-center gap-4">
-              <span className="font-display text-3xl font-semibold text-foreground">
-                {formatPrice(price)}
-              </span>
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="flex flex-col">
+                {quantity > 1 ? (
+                  <>
+                    <span className="font-display text-3xl font-semibold text-foreground">
+                      {formatPrice(price * quantity)}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {formatPrice(price)} cada
+                    </span>
+                  </>
+                ) : (
+                  <span className="font-display text-3xl font-semibold text-foreground">
+                    {formatPrice(price)}
+                  </span>
+                )}
+              </div>
               {isOutOfStock && (
                 <span className="px-3 py-1 bg-muted text-muted-foreground text-sm rounded-full">
                   Esgotado
@@ -575,3 +591,11 @@ export default function ProductDetailPage() {
   )
 }
 
+export default function ProductDetailPage() {
+  return (
+    <CartProvider>
+      <ProductDetailPageContent />
+      <MiniCart />
+    </CartProvider>
+  )
+}
