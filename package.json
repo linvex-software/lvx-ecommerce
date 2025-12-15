@@ -10,7 +10,7 @@
     "test": "turbo test",
     "db:generate": "turbo run db:generate --filter=@white-label/db --",
     "db:migrate": "turbo run db:migrate --filter=@white-label/db",
-    "test:setup": "tsx --tsconfig scripts/tsconfig.json scripts/setup-test-data.ts",
+    "test:setup": "pnpm db:migrate && tsx --tsconfig scripts/tsconfig.json scripts/setup-test-data.ts",
     "test:store-id": "tsx --tsconfig scripts/tsconfig.json scripts/get-store-id.ts",
     "test:checkout": "tsx --tsconfig scripts/tsconfig.json scripts/test-checkout-orders.ts",
     "test:customer-addresses": "tsx --tsconfig scripts/tsconfig.json scripts/test-customer-addresses.ts",
