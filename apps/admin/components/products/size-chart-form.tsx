@@ -1,7 +1,7 @@
 'use client'
 
-import { useMemo, useState } from 'react'
-import { Plus, Trash2, ChevronDown, ChevronUp } from 'lucide-react'
+import { useMemo, useState, useRef, useEffect } from 'react'
+import { Plus, Trash2, ChevronDown, ChevronUp, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Button } from '@white-label/ui'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,13 +40,38 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
   const [measurements, setMeasurements] = useState<string[]>(initialMeasurements)
   const [chartData, setChartData] = useState<ChartMatrix>(sizeChart?.chart_json || {})
   const [showHelper, setShowHelper] = useState(false)
-
+  
   // Accordion state para mobile
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     measures: true,
     sizes: true,
     table: true
   })
+
+  // Scroll indicators state
+  const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const [canScrollLeft, setCanScrollLeft] = useState(false)
+  const [canScrollRight, setCanScrollRight] = useState(false)
+
+  // Verificar scroll disponível
+  const checkScroll = () => {
+    if (!scrollContainerRef.current) return
+    const { scrollLeft, scrollWidth, clientWidth } = scrollContainerRef.current
+    setCanScrollLeft(scrollLeft > 0)
+    setCanScrollRight(scrollLeft < scrollWidth - clientWidth - 1)
+  }
+
+  useEffect(() => {
+    if (!scrollContainerRef.current) return
+    checkScroll()
+    const container = scrollContainerRef.current
+    container.addEventListener('scroll', checkScroll)
+    window.addEventListener('resize', checkScroll)
+    return () => {
+      container.removeEventListener('scroll', checkScroll)
+      window.removeEventListener('resize', checkScroll)
+    }
+  }, [measurements.length, sizes.length, expandedSections.table])
 
   const hasBasicSetup = name.trim().length > 0
   const hasTable = hasBasicSetup && sizes.length > 0 && measurements.length > 0
@@ -414,8 +439,30 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
               </button>
 
               <div className={`px-3 pb-3 lg:px-4 lg:pb-4 ${expandedSections.table ? 'block' : 'hidden lg:block'}`}>
-                <div className="w-full overflow-x-auto rounded-lg border border-border dark:border-border [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-muted/30 [&::-webkit-scrollbar-thumb]:bg-muted/60 [&::-webkit-scrollbar-thumb]:rounded">
-                  <table className="w-full border-collapse text-sm" style={{ minWidth: `${Math.max(600, 100 + (measurements.length * 140))}px` }}>
+                {/* Texto de ajuda no mobile */}
+                <p className="mb-2 text-xs text-text-tertiary lg:hidden">
+                  Deslize horizontalmente para ver todas as medidas →
+                </p>
+                {/* Container com scroll e indicadores */}
+                <div className="relative">
+                  {/* Fade esquerdo */}
+                  {canScrollLeft && (
+                    <div className="pointer-events-none absolute left-0 top-0 z-20 h-full w-8 bg-gradient-to-r from-surface to-transparent lg:hidden dark:from-surface-2" />
+                  )}
+                  {/* Fade direito */}
+                  {canScrollRight && (
+                    <div className="pointer-events-none absolute right-0 top-0 z-20 h-full w-8 bg-gradient-to-l from-surface to-transparent lg:hidden dark:from-surface-2" />
+                  )}
+                  {/* Container de scroll */}
+                  <div
+                    ref={scrollContainerRef}
+                    className="w-full overflow-x-auto overflow-y-visible rounded-lg border border-border dark:border-border [&::-webkit-scrollbar]:h-2 [&::-webkit-scrollbar-track]:bg-muted/30 [&::-webkit-scrollbar-thumb]:bg-muted/60 [&::-webkit-scrollbar-thumb]:rounded [scrollbar-width:thin] [scrollbar-color:rgb(var(--muted)/0.6)_rgb(var(--muted)/0.3)]"
+                    style={{ 
+                      scrollBehavior: 'smooth',
+                      WebkitOverflowScrolling: 'touch' // Smooth scroll no iOS
+                    }}
+                  >
+                    <table className="w-full border-collapse text-sm" style={{ minWidth: `${Math.max(600, 100 + (measurements.length * 140))}px` }}>
                       <thead>
                         <tr className="bg-muted/50 dark:bg-muted/30">
                           <th className="min-w-[100px] lg:sticky lg:left-0 lg:z-10 border-r border-border bg-muted/50 px-3 py-2 lg:px-4 lg:py-3 text-left text-xs font-semibold uppercase tracking-wide text-text-secondary dark:border-border dark:bg-muted/50 dark:text-text-tertiary">
@@ -459,6 +506,7 @@ export function SizeChartForm({ sizeChart, onChange }: SizeChartFormProps) {
                       ))}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             </div>
