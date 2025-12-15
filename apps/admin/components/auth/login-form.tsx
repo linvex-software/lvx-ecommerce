@@ -65,7 +65,7 @@ export function LoginForm() {
     onSuccess: (data) => {
       // Sempre salvar token (mesmo que seja temporário para seleção)
       setSession(data.user, data.accessToken || null, data.user.storeId)
-      
+
       // Verificar fluxo após login
       if (!data.user.storeId || !data.user.store) {
         // Usuário não tem loja - ir para onboarding
@@ -91,64 +91,70 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full border-0 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white/80 backdrop-blur-sm">
-      <CardHeader className="space-y-2 pb-8 pt-10">
-        <CardTitle className="text-2xl font-light tracking-tight text-gray-900 text-center">
+    <Card className="w-full rounded-2xl border border-gray-200/80 shadow-[0_20px_60px_rgba(0,0,0,0.12)] bg-white/95 backdrop-blur-md">
+      <CardHeader className="space-y-3 pb-10 pt-12 px-6 sm:px-12">
+        <CardTitle className="text-3xl sm:text-3xl font-normal tracking-tight text-gray-900 text-center">
           Acessar painel
         </CardTitle>
-        <CardDescription className="text-center text-sm font-light text-gray-500">
+        <CardDescription className="text-center text-sm font-light text-gray-500 mt-2">
           Entre com suas credenciais para continuar
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-10 pb-10">
+      <CardContent className="px-6 sm:px-12 pb-12">
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {error && (
-            <div className="rounded-lg bg-red-50/80 border border-red-200/50 px-4 py-3 text-sm text-red-700 font-light">
+            <div className="rounded-lg bg-red-50/90 border border-red-200/60 px-4 py-3 text-sm text-red-700 font-light animate-in fade-in">
               {error}
             </div>
           )}
 
-          <div className="space-y-2.5">
-            <Label htmlFor="email" className="text-sm font-light text-gray-700">
+          <div className="space-y-3">
+            <Label htmlFor="email" className="text-sm font-medium text-gray-700">
               E-mail
             </Label>
             <Input
               id="email"
               type="email"
               placeholder="seu@email.com"
+              autoComplete="email"
               {...register('email')}
               className={cn(
-                'h-12 border-gray-200 focus-visible:border-gray-400 focus-visible:ring-gray-200',
-                errors.email && 'border-red-300 focus-visible:border-red-400'
+                'h-14 text-base border-gray-200/80 transition-all duration-200',
+                'hover:border-gray-400 hover:shadow-sm',
+                'focus-visible:border-gray-900 focus-visible:ring-4 focus-visible:ring-gray-900/10 focus-visible:shadow-md',
+                errors.email && 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500/20'
               )}
             />
             {errors.email && (
-              <p className="text-xs font-light text-red-600 mt-1.5">{errors.email.message}</p>
+              <p className="text-xs font-light text-red-600 mt-2 animate-in fade-in">{errors.email.message}</p>
             )}
           </div>
 
-          <div className="space-y-2.5">
-            <Label htmlFor="password" className="text-sm font-light text-gray-700">
+          <div className="space-y-3">
+            <Label htmlFor="password" className="text-sm font-medium text-gray-700">
               Senha
             </Label>
             <Input
               id="password"
               type="password"
               placeholder="••••••••"
+              autoComplete="current-password"
               {...register('password')}
               className={cn(
-                'h-12 border-gray-200 focus-visible:border-gray-400 focus-visible:ring-gray-200',
-                errors.password && 'border-red-300 focus-visible:border-red-400'
+                'h-14 text-base border-gray-200/80 transition-all duration-200',
+                'hover:border-gray-400 hover:shadow-sm',
+                'focus-visible:border-gray-900 focus-visible:ring-4 focus-visible:ring-gray-900/10 focus-visible:shadow-md',
+                errors.password && 'border-red-400 focus-visible:border-red-500 focus-visible:ring-red-500/20'
               )}
             />
             {errors.password && (
-              <p className="text-xs font-light text-red-600 mt-1.5">{errors.password.message}</p>
+              <p className="text-xs font-light text-red-600 mt-2 animate-in fade-in">{errors.password.message}</p>
             )}
           </div>
 
           <Button
             type="submit"
-            className="w-full h-12 text-sm font-light tracking-wide mt-8 bg-gray-900 hover:bg-gray-800 transition-colors"
+            className="w-full h-14 text-base font-medium tracking-wide mt-10 bg-gray-900 hover:bg-gray-800 active:bg-gray-950 active:scale-[0.99] transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:shadow-md"
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Entrando...' : 'Entrar'}
