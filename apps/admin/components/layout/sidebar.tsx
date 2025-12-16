@@ -18,6 +18,7 @@ import {
   ChevronRight,
   Palette,
   HelpCircle,
+  Menu,
 } from 'lucide-react'
 
 import { cn } from '@white-label/ui'
@@ -74,6 +75,11 @@ const navItems: NavItem[] = [
     title: 'Editor',
     href: '/editor',
     icon: Palette,
+  },
+  {
+    title: 'Menu de Navegação',
+    href: '/editor/homepage?tab=navbar',
+    icon: Menu,
   },
   {
     title: 'Cupons',

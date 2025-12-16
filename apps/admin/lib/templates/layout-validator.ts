@@ -8,7 +8,7 @@
 interface CraftNode {
   type?: {
     resolvedName?: string
-  }
+  } | string // type pode ser objeto com resolvedName OU string (elemento HTML)
   props?: Record<string, unknown>
   nodes?: string[]
   [key: string]: unknown
@@ -21,13 +21,26 @@ interface CraftLayout {
 
 /**
  * Valida se um componente existe no resolver
+ * Tenta correspondência case-insensitive se a correspondência exata falhar
  */
 function isValidComponent(
   resolvedName: string | undefined | null,
   resolver: Record<string, any>
 ): boolean {
   if (!resolvedName) return false
-  return resolvedName in resolver
+  
+  // Correspondência exata
+  if (resolvedName in resolver) return true
+  
+  // Tentar correspondência case-insensitive
+  const lowerResolvedName = resolvedName.toLowerCase()
+  for (const key in resolver) {
+    if (key.toLowerCase() === lowerResolvedName) {
+      return true
+    }
+  }
+  
+  return false
 }
 
 /**
@@ -47,18 +60,62 @@ function cleanNode(
   if (visited.has(nodeId)) return null
   visited.add(nodeId)
 
-  const resolvedName = node.type?.resolvedName
-
-  // Se o componente não existe no resolver, retornar null
-  if (resolvedName && !isValidComponent(resolvedName, resolver)) {
-    // Log apenas uma vez por componente único para evitar spam
-    if (!visited.has(`warn_${resolvedName}`)) {
-      console.warn(
-        `[LayoutValidator] Componente inválido removido: "${resolvedName}"`
-      )
-      visited.add(`warn_${resolvedName}`)
+  // Extrair resolvedName - pode estar em type.resolvedName (objeto) ou type (string)
+  let resolvedName: string | undefined
+  if (typeof node.type === 'string') {
+    // type é uma string (elemento HTML como 'div', 'span', etc.)
+    // Elementos HTML básicos são sempre válidos, não precisam estar no resolver
+    // Mas vamos verificar se está no resolver para componentes customizados
+    const typeStr = node.type
+    if (isValidComponent(typeStr, resolver)) {
+      // Está no resolver, é válido
+      resolvedName = typeStr
+    } else {
+      // Não está no resolver, mas se for elemento HTML básico, permitir
+      const htmlElements = ['div', 'span', 'p', 'a', 'img', 'button', 'input', 'textarea', 'select', 'option', 'form', 'label', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'section', 'article', 'header', 'footer', 'nav', 'main', 'aside']
+      if (htmlElements.includes(typeStr.toLowerCase())) {
+        // É elemento HTML básico, permitir
+        resolvedName = typeStr
+      } else {
+        // Não é elemento HTML básico e não está no resolver, remover
+        if (!visited.has(`warn_${typeStr}`)) {
+          console.warn(
+            `[LayoutValidator] Componente inválido removido: "${typeStr}" (nó: ${nodeId}, type é string)`,
+            {
+              typeStr,
+              resolverKeys: Object.keys(resolver).slice(0, 10)
+            }
+          )
+          visited.add(`warn_${typeStr}`)
+        }
+        return null
+      }
     }
-    return null
+  } else if (node.type && typeof node.type === 'object' && 'resolvedName' in node.type) {
+    // type é objeto com resolvedName
+    resolvedName = node.type.resolvedName
+    if (resolvedName && !isValidComponent(resolvedName, resolver)) {
+      // Log apenas uma vez por componente único para evitar spam
+      if (!visited.has(`warn_${resolvedName}`)) {
+        console.warn(
+          `[LayoutValidator] Componente inválido removido: "${resolvedName}" (nó: ${nodeId}, type é objeto)`,
+          {
+            resolvedName,
+            hasType: !!node.type,
+            resolverKeys: Object.keys(resolver).slice(0, 10),
+            nodeType: node.type
+          }
+        )
+        visited.add(`warn_${resolvedName}`)
+      }
+      return null
+    }
+  } else if (!node.type) {
+    // Sem type definido - pode ser um nó de estrutura, permitir por enquanto
+    // Mas logar para debug apenas se for um nó importante
+    if (nodeId.startsWith('node_') && nodeId !== 'ROOT') {
+      console.warn(`[LayoutValidator] Nó ${nodeId} sem type definido, mas permitindo`)
+    }
   }
 
   // Limpar nós filhos recursivamente
@@ -133,11 +190,31 @@ export function validateAndCleanLayout(
   for (const [nodeId, node] of Object.entries(craftLayout)) {
     if (nodeId === 'ROOT') continue
     
+    // Debug: log estrutura do nó antes de limpar
+    if (nodeId.startsWith('node_')) {
+      const resolvedName = (node as CraftNode)?.type?.resolvedName
+      if (!resolvedName || !isValidComponent(resolvedName, resolver)) {
+        console.log(`[LayoutValidator] Debug nó ${nodeId}:`, {
+          hasNode: !!node,
+          hasType: !!(node as CraftNode)?.type,
+          resolvedName,
+          isValid: resolvedName ? isValidComponent(resolvedName, resolver) : false,
+          resolverHasIt: resolvedName ? resolvedName in resolver : false,
+          nodeType: (node as CraftNode)?.type,
+          resolverKeys: Object.keys(resolver)
+        })
+      }
+    }
+    
     const cleanedNode = cleanNode(nodeId, node, craftLayout, resolver, visited)
     if (cleanedNode) {
       cleanedLayout[nodeId] = cleanedNode
     } else {
-      console.warn(`[LayoutValidator] Nó ${nodeId} removido por ser inválido`)
+      const resolvedName = (node as CraftNode)?.type?.resolvedName
+      console.warn(`[LayoutValidator] Nó ${nodeId} removido por ser inválido`, {
+        resolvedName,
+        hasType: !!(node as CraftNode)?.type
+      })
     }
   }
 
@@ -152,6 +229,16 @@ export function validateAndCleanLayout(
   if (validRootNodes.length !== cleanedLayout.ROOT.nodes?.length) {
     console.warn(`[LayoutValidator] Alguns nós do ROOT foram removidos: ${cleanedLayout.ROOT.nodes?.length || 0} -> ${validRootNodes.length}`)
     cleanedLayout.ROOT.nodes = validRootNodes
+  }
+
+  // Resumo final
+  const originalCount = Object.keys(craftLayout).length
+  const cleanedCount = Object.keys(cleanedLayout).length
+  const removedCount = originalCount - cleanedCount
+  const removedPercentage = (removedCount / originalCount) * 100
+  
+  if (removedCount > 0) {
+    console.log(`[LayoutValidator] Validação concluída: ${originalCount} nós originais, ${cleanedCount} nós válidos, ${removedCount} nós removidos (${removedPercentage.toFixed(1)}%)`)
   }
 
   return cleanedLayout

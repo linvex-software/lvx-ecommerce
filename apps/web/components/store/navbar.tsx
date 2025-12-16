@@ -1,11 +1,14 @@
 'use client'
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { ShoppingBag, Search, User, Menu, X, ChevronDown, ChevronRight } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useStoreTheme } from "@/lib/hooks/use-store-theme";
+import { useNavbar } from "@/lib/hooks/use-navbar";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
+import * as LucideIcons from "lucide-react";
+import type { NavbarItem } from "@/lib/types/navbar";
 
 interface NavbarProps {
   cartCount?: number;
@@ -16,20 +19,180 @@ interface NavbarProps {
 export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [expandedItems, setExpandedItems] = useState<Set<string>>(new Set());
   const { data: theme } = useStoreTheme();
+  
+  // Buscar itens do menu do banco de dados
+  const { data: navbarData, isLoading } = useNavbar();
+  const menuItems: NavbarItem[] = Array.isArray((navbarData as { navbar_items?: NavbarItem[] })?.navbar_items) 
+    ? (navbarData as { navbar_items: NavbarItem[] }).navbar_items 
+    : [];
 
   const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
   const closeMenu = () => setIsMenuOpen(false);
 
-  const menuItems = [
-    { label: "NOVIS!", href: "#" },
-    { label: "COLEÇÃO NOVA", href: "#", badge: "ESPECIAL FIM DE ANO" },
-    { label: "PRODUTOS", href: "#", hasSubmenu: true },
-    { label: "MAIS VENDIDOS", href: "#" },
-    { label: "SALE!", href: "#", highlight: true },
-    { label: "KITS PROMOCIONAIS", href: "#" },
-    { label: "BAZAR", href: "#" },
-  ];
+  const toggleExpanded = (id: string) => {
+    const newExpanded = new Set(expandedItems);
+    if (newExpanded.has(id)) {
+      newExpanded.delete(id);
+    } else {
+      newExpanded.add(id);
+    }
+    setExpandedItems(newExpanded);
+  };
+
+  const getIcon = (iconName?: string) => {
+    if (!iconName) return null;
+    const IconComponent = (LucideIcons as Record<string, unknown>)[iconName] as React.ComponentType<{ className?: string }>;
+    return IconComponent ? <IconComponent className="w-4 h-4" /> : null;
+  };
+
+  const getItemStyle = (item: NavbarItem, isMobile = false) => {
+    if (!item.style) return {};
+    
+    const baseStyle: React.CSSProperties = {
+      color: item.style.color,
+      fontSize: item.style.fontSize,
+      fontWeight: item.style.fontWeight,
+      padding: item.style.padding,
+      margin: item.style.margin,
+      border: item.style.border,
+      borderRadius: item.style.borderRadius,
+    };
+
+    // Aplicar estilos responsivos
+    if (item.style.responsive) {
+      const responsiveStyle = isMobile 
+        ? item.style.responsive.mobile 
+        : item.style.responsive.desktop;
+      
+      return { ...baseStyle, ...responsiveStyle } as React.CSSProperties;
+    }
+
+    return baseStyle;
+  };
+
+  const renderNavbarItem = (item: NavbarItem, level = 0, isMobile = false) => {
+    if (!item.visible) return null;
+
+    const style = getItemStyle(item, isMobile);
+    const hasChildren = item.children && item.children.length > 0;
+    const isExpanded = expandedItems.has(item.id);
+
+    // Submenu ou item com filhos
+    if (item.type === 'submenu' || hasChildren) {
+      if (isMobile) {
+        return (
+          <div key={item.id} className="space-y-1">
+            <button
+              onClick={() => toggleExpanded(item.id)}
+              className="flex items-center justify-between w-full p-3 rounded-lg hover:bg-muted transition-colors"
+              style={{ color: item.style?.color || 'var(--store-text-color, #000000)' }}
+            >
+              <div className="flex items-center gap-2">
+                {item.icon && getIcon(item.icon)}
+                <span className="text-sm font-medium">{item.label}</span>
+              </div>
+              <ChevronRight className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+            </button>
+            {isExpanded && hasChildren && (
+              <div className="ml-4 space-y-1">
+                {item.children?.map((child) => renderNavbarItem(child, level + 1, isMobile))}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      // Desktop: dropdown
+      return (
+        <div key={item.id} className="relative group">
+          <button
+            onClick={() => toggleExpanded(item.id)}
+            style={style}
+            className="hover:text-muted-foreground transition-colors flex items-center gap-1"
+            onMouseEnter={(e) => {
+              if (item.style?.hoverColor) {
+                e.currentTarget.style.color = item.style.hoverColor;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (item.style?.color) {
+                e.currentTarget.style.color = item.style.color;
+              } else {
+                e.currentTarget.style.color = '';
+              }
+            }}
+          >
+            {item.icon && getIcon(item.icon)}
+            <span>{item.label}</span>
+            <ChevronDown className={`h-3 w-3 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+          </button>
+          {(isExpanded || true) && hasChildren && (
+            <div className="absolute top-full left-0 mt-1 bg-background border border-border rounded-md shadow-lg min-w-[200px] z-50 py-2">
+              {item.children?.map((child) => (
+                <Link
+                  key={child.id}
+                  href={child.type === 'external' ? child.url || '#' : child.url || '#'}
+                  target={child.type === 'external' ? child.target || '_blank' : undefined}
+                  rel={child.type === 'external' ? 'noopener noreferrer' : undefined}
+                  className="block px-4 py-2 hover:bg-muted transition-colors"
+                  style={getItemStyle(child, false)}
+                >
+                  {child.icon && getIcon(child.icon)}
+                  <span>{child.label}</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Link simples
+    const linkProps = item.type === 'external' 
+      ? { href: item.url || '#', target: item.target || '_blank' as const, rel: 'noopener noreferrer' as const }
+      : { href: item.url || '#' };
+
+    if (isMobile) {
+      return (
+        <Link
+          key={item.id}
+          {...linkProps}
+          onClick={closeMenu}
+          className="flex items-center gap-2 p-3 rounded-lg hover:bg-muted transition-colors"
+          style={style}
+        >
+          {item.icon && getIcon(item.icon)}
+          <span className="text-sm font-medium">{item.label}</span>
+        </Link>
+      );
+    }
+
+    return (
+      <Link
+        key={item.id}
+        {...linkProps}
+        style={style}
+        className="hover:text-muted-foreground transition-colors flex items-center gap-1"
+        onMouseEnter={(e) => {
+          if (item.style?.hoverColor) {
+            e.currentTarget.style.color = item.style.hoverColor;
+          }
+        }}
+        onMouseLeave={(e) => {
+          if (item.style?.color) {
+            e.currentTarget.style.color = item.style.color;
+          } else {
+            e.currentTarget.style.color = '';
+          }
+        }}
+      >
+        {item.icon && getIcon(item.icon)}
+        <span>{item.label}</span>
+      </Link>
+    );
+  };
 
   return (
     <>
@@ -139,25 +302,15 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
         </div>
 
         {/* Navigation Bar - Desktop Only */}
-        <div className="border-b border-border py-3 hidden md:block">
-          <div className="container mx-auto px-4">
-            <div className="flex items-center justify-center gap-8 text-xs font-medium tracking-wide">
-              {menuItems.map((item, index) => (
-                <a
-                  key={index}
-                  href={item.href}
-                  className={`hover:text-muted-foreground transition-colors flex items-center gap-1 ${item.highlight ? 'text-red-600 font-bold' : ''
-                    }`}
-                  style={{ color: item.highlight ? undefined : 'var(--store-text-color, #000000)' }}
-                >
-                  {item.label}
-                  {item.badge && <span className="text-[9px] ml-1" style={{ color: 'var(--store-text-color, #000000)' }}>• {item.badge}</span>}
-                  {item.hasSubmenu && <ChevronDown className="h-3 w-3" style={{ color: 'var(--store-icon-color, #000000)' }} />}
-                </a>
-              ))}
+        {!isLoading && menuItems.length > 0 && (
+          <div className="border-b border-border py-3 hidden md:block">
+            <div className="container mx-auto px-4">
+              <div className="flex items-center justify-center gap-8 text-xs font-medium tracking-wide">
+                {menuItems.map((item) => renderNavbarItem(item, 0, false))}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </nav>
 
       {/* Mobile Menu Overlay */}
@@ -188,25 +341,13 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
         {/* Menu Items */}
         <div className="overflow-y-auto h-[calc(100%-140px)]">
           <div className="p-4 space-y-1">
-            {menuItems.map((item, index) => (
-              <a
-                key={index}
-                href={item.href}
-                onClick={closeMenu}
-                className={`flex items-center justify-between p-3 rounded-lg hover:bg-muted transition-colors ${item.highlight ? 'bg-red-50 text-red-600 font-bold' : ''
-                  }`}
-              >
-                <div className="flex flex-col">
-                  <span className="text-sm font-medium" style={{ color: item.highlight ? undefined : 'var(--store-text-color, #000000)' }}>{item.label}</span>
-                  {item.badge && (
-                    <span className="text-[10px] mt-0.5" style={{ color: 'var(--store-text-color, #000000)' }}>
-                      {item.badge}
-                    </span>
-                  )}
-                </div>
-                {item.hasSubmenu && <ChevronRight className="h-4 w-4" style={{ color: 'var(--store-icon-color, #000000)' }} />}
-              </a>
-            ))}
+            {isLoading ? (
+              <div className="text-center py-4 text-sm text-muted-foreground">Carregando menu...</div>
+            ) : menuItems.length > 0 ? (
+              menuItems.map((item) => renderNavbarItem(item, 0, true))
+            ) : (
+              <div className="text-center py-4 text-sm text-muted-foreground">Nenhum item no menu</div>
+            )}
           </div>
         </div>
 

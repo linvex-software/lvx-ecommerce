@@ -22,18 +22,6 @@ export async function registerAdminNavbarRoutes(
     }
   )
 
-  // GET /admin/navbar/:id - Buscar item por ID
-  app.get(
-    '/admin/navbar/:id',
-    {
-      onRequest: [requireAuth, tenantMiddleware],
-      preHandler: [requireRole(['admin'])],
-    },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      await navbarController.get(request, reply)
-    }
-  )
-
   // POST /admin/navbar - Criar novo item
   app.post(
     '/admin/navbar',
@@ -43,6 +31,30 @@ export async function registerAdminNavbarRoutes(
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       await navbarController.create(request, reply)
+    }
+  )
+
+  // PUT /admin/navbar/order - Atualizar ordem (deve vir antes de /:id para evitar conflito)
+  app.put(
+    '/admin/navbar/order',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin'])],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await navbarController.updateOrder(request, reply)
+    }
+  )
+
+  // GET /admin/navbar/:id - Buscar item por ID
+  app.get(
+    '/admin/navbar/:id',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin'])],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await navbarController.get(request, reply)
     }
   )
 
@@ -67,18 +79,6 @@ export async function registerAdminNavbarRoutes(
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       await navbarController.delete(request, reply)
-    }
-  )
-
-  // PUT /admin/navbar/order - Atualizar ordem
-  app.put(
-    '/admin/navbar/order',
-    {
-      onRequest: [requireAuth, tenantMiddleware],
-      preHandler: [requireRole(['admin'])],
-    },
-    async (request: FastifyRequest, reply: FastifyReply) => {
-      await navbarController.updateOrder(request, reply)
     }
   )
 }

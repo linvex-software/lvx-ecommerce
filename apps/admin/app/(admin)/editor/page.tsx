@@ -441,7 +441,7 @@ function EditorContentInner({
                   minHeight: '100vh', // Garantir altura mínima para scroll
                 }}
               >
-                <RestrictedFrame data={layoutJson} />
+                <RestrictedFrame data={layoutJson} templateId={selectedTemplate} />
               </div>
             </DeviceFrameset>
           ) : (
