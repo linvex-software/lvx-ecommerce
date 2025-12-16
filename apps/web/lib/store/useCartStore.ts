@@ -15,8 +15,8 @@ interface CartState {
     lastSyncedAt: string | null
     syncError: boolean
     addItem: (product: Product, variantId?: string | null) => void
-    removeItem: (id: number | string) => void
-    updateQuantity: (id: number | string, quantity: number) => void
+    removeItem: (id: number | string, variantId?: string | null) => void
+    updateQuantity: (id: number | string, quantity: number, variantId?: string | null) => void
     clearCart: () => void
     openCart: () => void
     closeCart: () => void
@@ -25,6 +25,17 @@ interface CartState {
     markSynced: (cartId: string, syncedAt: string) => void
     setSyncError: (error: boolean) => void
     hydrateFromRemote: (cart: any) => void
+}
+
+// Função auxiliar para normalizar variant_id (null e undefined são tratados como o mesmo)
+const normalizeVariantId = (variantId: string | null | undefined): string | null => {
+    return variantId ?? null
+}
+
+// Função auxiliar para comparar se dois items são iguais
+const itemsMatch = (item1: CartItem, itemId: number | string, variantId?: string | null): boolean => {
+    const normalizedVariantId = normalizeVariantId(variantId)
+    return item1.id === itemId && normalizeVariantId(item1.variant_id) === normalizedVariantId
 }
 
 export const useCartStore = create<CartState>()(
@@ -38,34 +49,47 @@ export const useCartStore = create<CartState>()(
             syncError: false,
             addItem: (product, variantId) => {
                 set((state) => {
+                    const normalizedVariantId = normalizeVariantId(variantId)
                     const existing = state.items.find(
-                        (item) => item.id === product.id && item.variant_id === variantId
+                        (item) => itemsMatch(item, product.id, normalizedVariantId)
                     )
                     if (existing) {
                         return {
                             items: state.items.map((item) =>
-                                item.id === product.id && item.variant_id === variantId
+                                itemsMatch(item, product.id, normalizedVariantId)
                                     ? { ...item, quantity: item.quantity + 1 }
                                     : item
                             ),
                         }
                     }
                     return {
-                        items: [...state.items, { ...product, quantity: 1, variant_id: variantId ?? null }]
+                        items: [...state.items, { ...product, quantity: 1, variant_id: normalizedVariantId }]
                     }
                 })
             },
-            removeItem: (id) => {
-                set((state) => ({
-                    items: state.items.filter((item) => item.id !== id),
-                }))
+            removeItem: (id, variantId) => {
+                set((state) => {
+                    const normalizedVariantId = normalizeVariantId(variantId)
+                    return {
+                        items: state.items.filter((item) => !itemsMatch(item, id, normalizedVariantId)),
+                    }
+                })
             },
-            updateQuantity: (id, quantity) => {
-                set((state) => ({
-                    items: state.items.map((item) =>
-                        item.id === id ? { ...item, quantity } : item
-                    ),
-                }))
+            updateQuantity: (id, quantity, variantId) => {
+                set((state) => {
+                    const normalizedVariantId = normalizeVariantId(variantId)
+                    // Se quantidade <= 0, remover o item
+                    if (quantity <= 0) {
+                        return {
+                            items: state.items.filter((item) => !itemsMatch(item, id, normalizedVariantId)),
+                        }
+                    }
+                    return {
+                        items: state.items.map((item) =>
+                            itemsMatch(item, id, normalizedVariantId) ? { ...item, quantity } : item
+                        ),
+                    }
+                })
             },
             clearCart: () => set({ items: [] }),
             openCart: () => set({ isOpen: true }),

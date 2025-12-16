@@ -24,12 +24,12 @@ const Cart = () => {
     router.push("/");
   };
 
-  const handleQuantityChange = (id: number | string, newQuantity: number) => {
+  const handleQuantityChange = (id: number | string, variantId: string | null | undefined, newQuantity: number) => {
     if (newQuantity <= 0) {
-      removeItem(id);
+      removeItem(id, variantId);
       return;
     }
-    updateQuantity(id, newQuantity);
+    updateQuantity(id, newQuantity, variantId);
   };
 
   if (!isOpen) return null
@@ -93,7 +93,7 @@ const Cart = () => {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                          onClick={() => handleQuantityChange(item.id, item.variant_id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
                         >
                           <Minus className="h-3 w-3" />
@@ -105,7 +105,7 @@ const Cart = () => {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8"
-                          onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                          onClick={() => handleQuantityChange(item.id, item.variant_id, item.quantity + 1)}
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
@@ -117,7 +117,7 @@ const Cart = () => {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 shrink-0"
-                    onClick={() => removeItem(item.id)}
+                    onClick={() => removeItem(item.id, item.variant_id)}
                     title="Remover item"
                   >
                     <X className="h-4 w-4" />

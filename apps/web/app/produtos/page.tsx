@@ -9,6 +9,8 @@ import { ProductCard } from '@/components/template/flor-de-menina/components/pro
 import { Header } from '@/components/template/flor-de-menina/components/layout/Header'
 import { Button } from '@/components/template/flor-de-menina/components/ui/button'
 import { FiltersModal } from '@/components/products/FiltersModal'
+import { MiniCart } from '@/components/template/flor-de-menina/components/cart/MiniCart'
+import { CartProvider } from '@/components/template/flor-de-menina/components/contexts/CartContext'
 
 interface Category {
   id: string
@@ -245,11 +247,13 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Header />
+    <CartProvider>
+      <div className="min-h-screen bg-background">
+        <Header />
+        <MiniCart />
 
-      {/* Header */}
-      <div className="bg-cream py-12">
+        {/* Header */}
+        <div className="bg-cream py-12">
         <div className="container mx-auto px-4">
           <h1 className="font-display text-4xl lg:text-5xl text-foreground mt-4">{pageTitle}</h1>
           <p className="text-muted-foreground font-body mt-2">
@@ -378,7 +382,8 @@ export default function ProductsPage() {
           totalResults={totalResults}
         />
       </div>
-    </div>
+      </div>
+    </CartProvider>
   )
 }
 
