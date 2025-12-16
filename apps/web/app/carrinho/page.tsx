@@ -30,12 +30,12 @@ export default function CarrinhoPage() {
     return items.reduce((sum, item) => sum + item.quantity, 0)
   }, [items])
 
-  const handleQuantityChange = (id: number | string, newQuantity: number) => {
+  const handleQuantityChange = (id: number | string, variantId: string | null | undefined, newQuantity: number) => {
     if (newQuantity <= 0) {
-      removeItem(id)
+      removeItem(id, variantId)
       return
     }
-    updateQuantity(id, newQuantity)
+    updateQuantity(id, newQuantity, variantId)
   }
 
   const handleCheckout = () => {
@@ -106,7 +106,7 @@ export default function CarrinhoPage() {
                         variant="ghost"
                         size="icon"
                         className="h-8 w-8 shrink-0"
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => removeItem(item.id, item.variant_id)}
                         title="Remover item"
                       >
                         <X className="h-4 w-4" />
@@ -119,7 +119,7 @@ export default function CarrinhoPage() {
                           variant="ghost"
                           size="icon"
                           className="h-10 w-10"
-                          onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                          onClick={() => handleQuantityChange(item.id, item.variant_id, item.quantity - 1)}
                           disabled={item.quantity <= 1}
                         >
                           <Minus className="h-4 w-4" />
@@ -131,7 +131,7 @@ export default function CarrinhoPage() {
                           variant="ghost"
                           size="icon"
                           className="h-10 w-10"
-                          onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                          onClick={() => handleQuantityChange(item.id, item.variant_id, item.quantity + 1)}
                         >
                           <Plus className="h-4 w-4" />
                         </Button>
