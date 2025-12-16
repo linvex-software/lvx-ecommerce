@@ -85,7 +85,7 @@ export function Header() {
     (async () => {
       try {
         // @ts-expect-error - Este módulo só existe no contexto web, não no admin
-        const authStoreModule = await import('../../../../lib/store/useAuthStore');
+        const authStoreModule = await import('../../../../../lib/store/useAuthStore');
 
         // Criar uma função que verifica o estado atual
         const checkAuth = () => {
@@ -313,7 +313,7 @@ export function Header() {
                 if (!authenticated) {
                   try {
                     // @ts-expect-error - Este módulo só existe no contexto web, não no admin
-                    const authStoreModule = await import('../../../../lib/store/useAuthStore');
+                    const authStoreModule = await import('../../../../../lib/store/useAuthStore');
                     const authState = authStoreModule.useAuthStore.getState();
                     authenticated = !!(authState.accessToken && authState.customer);
                   } catch {

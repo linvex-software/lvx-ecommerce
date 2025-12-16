@@ -110,12 +110,12 @@ export class CartController {
 
       const cart = await getCartUseCase(
         storeId,
-        query.session_id,
-        customerId,
-        query.cart_id,
         {
           cartRepository: this.cartRepository
-        }
+        },
+        query.session_id,
+        customerId,
+        query.cart_id
       )
 
       if (!cart) {

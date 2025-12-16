@@ -118,7 +118,7 @@ export async function finalizePdvSaleUseCase(
 
   // Preparar shipping_address com metadados do PDV (origem, vendedor, método de pagamento)
   // Comissão será calculada pelo backend baseado em regras de negócio (não vem do frontend)
-  // Se houver endereço de entrega, incluir também; senão, usar apenas para metadados
+  // Se houver endereço de entrega, incluir também; senão, usar null
   const shippingAddressWithMetadata = validated.shipping_address
     ? {
         ...validated.shipping_address,
@@ -129,14 +129,7 @@ export async function finalizePdvSaleUseCase(
           // commission_rate será calculado pelo backend se houver regra configurada
         }
       }
-    : {
-        _pdv_metadata: {
-          origin: validated.origin || cart.origin || 'pdv',
-          seller_user_id: sellerUserId,
-          payment_method: validated.payment_method || 'cash'
-          // commission_rate será calculado pelo backend se houver regra configurada
-        }
-      }
+    : null
 
   // Criar pedido diretamente usando repository
   // PDV físico: pagamento é registrado imediatamente, então payment_status = 'paid'

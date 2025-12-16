@@ -28,7 +28,9 @@ export async function addItemToPdvCartUseCase(
   const validated = addItemToPdvCartSchema.parse(input)
 
   // Buscar carrinho
-  let cart = await physicalSalesCartRepository.findById(validated.cart_id, storeId)
+  let cart = validated.cart_id 
+    ? await physicalSalesCartRepository.findById(validated.cart_id, storeId)
+    : null
 
   // Se carrinho não existir ou não for do vendedor, criar novo
   if (!cart || cart.seller_user_id !== sellerUserId || cart.status !== 'active') {

@@ -26,7 +26,7 @@ import type {
   UpdateCustomerAddressInput
 } from '../../../domain/customers/customer-types'
 
-interface RegisterCustomerBody {
+export interface RegisterCustomerBody {
   name: string
   cpf: string
   email?: string | null
@@ -34,12 +34,12 @@ interface RegisterCustomerBody {
   password: string
 }
 
-interface LoginCustomerBody {
+export interface LoginCustomerBody {
   identifier: string // Pode ser email ou CPF
   password: string
 }
 
-interface UpdateCustomerProfileBody {
+export interface UpdateCustomerProfileBody {
   name?: string
   email?: string | null
   phone?: string | null

@@ -40,7 +40,7 @@ export function QuantityInput({ value, onChange, max, min = 1, disabled = false 
       <Button
         type="button"
         variant="outline"
-        size="icon"
+        size="sm"
         onClick={handleDecrease}
         disabled={disabled || isMinReached}
         className="h-12 w-12 border-gray-300 hover:border-gray-900 transition-colors"
@@ -59,7 +59,7 @@ export function QuantityInput({ value, onChange, max, min = 1, disabled = false 
       <Button
         type="button"
         variant="outline"
-        size="icon"
+        size="sm"
         onClick={handleIncrease}
         disabled={disabled || isMaxReached}
         className="h-12 w-12 border-gray-300 hover:border-gray-900 transition-colors"

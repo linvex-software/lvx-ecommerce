@@ -13,14 +13,12 @@ export class EditorController {
     reply: FastifyReply
   ): Promise<void> {
     try {
-      if (!request.user?.storeId) {
+      const user = request.user as { storeId?: string } | undefined
+      if (!user?.storeId) {
         await reply.code(401).send({ error: 'Unauthorized' })
         return
       }
-
-      const layout = await this.storeLayoutRepository.findByStoreId(
-        request.user.storeId
-      )
+      const layout = await this.storeLayoutRepository.findByStoreId(user.storeId)
 
       // Retornar null se não houver layout (não é erro)
       if (!layout) {
@@ -97,7 +95,8 @@ export class EditorController {
     reply: FastifyReply
   ): Promise<void> {
     try {
-      if (!request.user?.storeId) {
+      const user = request.user as { storeId?: string } | undefined
+      if (!user?.storeId) {
         await reply.code(401).send({ error: 'Unauthorized' })
         return
       }
@@ -128,7 +127,7 @@ export class EditorController {
       // Salvar exatamente como vem do Craft.js, sem sanitização
       // O Craft.js já garante que tudo é serializável
       const layout = await this.storeLayoutRepository.upsert({
-        store_id: request.user.storeId,
+        store_id: user.storeId,
         layout_json: layout_json
       })
 
@@ -142,7 +141,7 @@ export class EditorController {
         {
           error: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined,
-          storeId: request.user?.storeId
+          storeId: (request.user as { storeId?: string } | undefined)?.storeId
         },
         'Error saving layout'
       )

@@ -58,7 +58,7 @@ export function CartView({ onGoToPayment, onSelectCustomer, onBackToHome }: Cart
   }
 
   const getProductImage = (productId: string) => {
-    return productCache[productId]?.images?.[0] || null
+    return (productCache[productId] as any)?.images?.[0] || null
   }
 
   const handleRemoveItem = (productId: string, variantId?: string | null) => {

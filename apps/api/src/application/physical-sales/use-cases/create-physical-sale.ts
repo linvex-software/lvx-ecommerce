@@ -215,7 +215,7 @@ export async function createPhysicalSaleUseCase(
   // Adicionar informações de desconto e subtotal na resposta
   return {
     ...saleWithRelations,
-    subtotal,
+    subtotal_calculated: subtotal,
     discount,
     shipping_cost_amount: shippingCost
   }

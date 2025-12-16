@@ -86,7 +86,7 @@ export function VariantManager({ variants, onChange }: VariantManagerProps) {
                   </span>
                   <Button
                     type="button"
-                    variant="ghost"
+                    variant="outline"
                     size="sm"
                     onClick={() => removeVariant(index)}
                     className="h-8 w-8 p-0 text-red-600 hover:text-red-700"

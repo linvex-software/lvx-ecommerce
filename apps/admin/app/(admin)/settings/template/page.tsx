@@ -7,10 +7,10 @@
 
 import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { apiClient } from '@/lib/api'
+import { apiClient } from '@/lib/api-client'
 import { Button } from '@white-label/ui'
-import { Input } from '@white-label/ui'
-import { Label } from '@white-label/ui'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Save, Upload, Palette, Type, Image as ImageIcon } from 'lucide-react'

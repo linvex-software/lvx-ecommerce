@@ -82,7 +82,7 @@ export function ProductFiltersCraft({
       <div className="flex items-center justify-between">
         <h3 className="font-semibold">Filtros</h3>
         {(filters.categories.length > 0 || filters.sizes.length > 0 || filters.colors.length > 0 || filters.priceRange.min > 0 || filters.priceRange.max < 1000) && (
-          <Button variant="ghost" size="sm" onClick={clearFilters}>
+          <Button variant="outline" size="sm" onClick={clearFilters}>
             <X className="w-4 h-4" />
           </Button>
         )}

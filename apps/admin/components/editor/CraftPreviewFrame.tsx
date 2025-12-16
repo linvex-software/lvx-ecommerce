@@ -18,6 +18,7 @@ export function CraftPreviewFrame({ blocks, blockId }: CraftPreviewFrameProps) {
     isSelected: node.events.selected,
   }))
   const iframeRef = useRef<HTMLIFrameElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [isReady, setIsReady] = useState(false)
 
   const getWebUrl = () => {
@@ -53,9 +54,15 @@ export function CraftPreviewFrame({ blocks, blockId }: CraftPreviewFrameProps) {
     return () => iframe.removeEventListener('load', handleLoad)
   }, [blocks])
 
+  useEffect(() => {
+    if (containerRef.current) {
+      connect(drag(containerRef.current))
+    }
+  }, [connect, drag])
+
   return (
     <div 
-      ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+      ref={containerRef}
       className={`relative w-full ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
       style={{ minHeight: '400px' }}
     >

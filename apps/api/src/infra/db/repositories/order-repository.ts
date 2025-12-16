@@ -7,7 +7,8 @@ import type {
   OrderItem,
   OrderWithItems,
   ListOrdersFilters,
-  UpdateOrderInput
+  UpdateOrderInput,
+  ShippingAddress
 } from '../../../domain/orders/order-types'
 import type { 
   TopProduct,
@@ -486,7 +487,10 @@ export class OrderRepository {
     }))
 
     // JSONB: Drizzle faz parse automaticamente, retorna objeto direto
-    const shippingAddress = row.shipping_address ?? null
+    // Garantir que shipping_address seja null ou tenha zip_code
+    const shippingAddress = row.shipping_address && typeof row.shipping_address === 'object' && 'zip_code' in row.shipping_address
+      ? row.shipping_address as ShippingAddress
+      : null
 
     return {
       id: row.id,
@@ -502,7 +506,7 @@ export class OrderRepository {
       delivery_option_id: row.delivery_option_id,
       created_at: row.created_at,
       items,
-      shipping_address: shippingAddress
+      shipping_address: shippingAddress as OrderWithItems['shipping_address']
     }
   }
 

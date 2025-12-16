@@ -40,7 +40,7 @@ export function Header() {
       <div className="flex items-center gap-3 sm:gap-4">
         {/* Botão menu mobile */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={() => setIsMobileOpen(true)}
           className="lg:hidden h-9 w-9"
@@ -65,7 +65,7 @@ export function Header() {
       <div className="flex items-center gap-2">
         {/* Theme Toggle */}
         <Button
-          variant="ghost"
+          variant="outline"
           size="icon"
           onClick={toggleTheme}
           className="h-9 w-9"

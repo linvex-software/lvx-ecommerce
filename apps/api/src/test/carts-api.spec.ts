@@ -450,10 +450,10 @@ describe('Cart Use Cases', () => {
   it('should get cart via use case', async () => {
     const cart = await getCartUseCase(
       testStoreId,
+      { cartRepository: repository },
       testSessionId,
       undefined,
-      undefined,
-      { cartRepository: repository }
+      undefined
     )
 
     expect(cart).toBeDefined()

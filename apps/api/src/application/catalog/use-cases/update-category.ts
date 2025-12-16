@@ -45,8 +45,7 @@ export async function updateCategoryUseCase(
   const updated = await categoryRepository.update(id, storeId, {
     name: validated.name,
     slug: validated.slug,
-    parent_id: validated.parent_id !== undefined ? (validated.parent_id || null) : undefined,
-    icon: validated.icon
+    parent_id: validated.parent_id !== undefined ? (validated.parent_id || null) : undefined
   })
 
   if (!updated) {

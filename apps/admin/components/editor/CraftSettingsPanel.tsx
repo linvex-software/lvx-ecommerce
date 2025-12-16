@@ -48,7 +48,7 @@ export function CraftSettingsPanel() {
 
         {selected.isDeletable && (
           <Button
-            variant="destructive"
+            variant="outline"
             size="sm"
             className="w-full mt-4"
             onClick={() => {

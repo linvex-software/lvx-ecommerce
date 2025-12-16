@@ -20,7 +20,7 @@ export function useOrderStatus(orderId: string | null, enabled: boolean = true) 
     enabled: enabled && !!orderId,
     refetchInterval: (data) => {
       // Polling a cada 3 segundos se o pagamento estiver pendente
-      if (data?.payment_status === 'pending') {
+      if ((data as any)?.payment_status === 'pending') {
         return 3000
       }
       return false

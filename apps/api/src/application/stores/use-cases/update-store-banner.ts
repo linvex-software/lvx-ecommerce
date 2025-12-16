@@ -44,7 +44,7 @@ export async function updateStoreBannerUseCase(
       .values({
         store_id: input.storeId,
         banner_url: input.bannerUrl,
-        config_json: {}
+        banner_config_json: {}
       })
   }
 }

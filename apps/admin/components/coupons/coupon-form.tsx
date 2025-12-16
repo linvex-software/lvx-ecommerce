@@ -286,7 +286,7 @@ export function CouponForm({ coupon, onSubmit, onCancel, isLoading = false }: Co
           <Switch
             id="active"
             checked={active}
-            onChange={(e) => setValue('active', e.target.checked)}
+            onChange={(e) => setValue('active', (e.target as HTMLInputElement).checked)}
             disabled={isLoading}
           />
         </div>

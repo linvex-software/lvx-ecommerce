@@ -8,8 +8,12 @@ export default function NewProductPage() {
   const createProduct = useCreateProduct()
 
   const handleSubmit = async (data: ProductFormData) => {
+    const { priceDigits, ...restData } = data
     await createProduct.mutateAsync({
-      ...data,
+      ...restData,
+      slug: restData.slug || restData.name.toLowerCase().replace(/\s+/g, '-'),
+      sku: restData.sku || `SKU-${Date.now()}`,
+      base_price: priceDigits ? Math.round(parseFloat(priceDigits) * 100) : 0,
       size_chart: data.size_chart ?? undefined
     })
   }

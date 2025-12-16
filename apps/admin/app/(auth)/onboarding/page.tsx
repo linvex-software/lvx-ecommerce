@@ -211,7 +211,9 @@ export default function OnboardingPage() {
                   {...nameRegisterProps}
                   ref={(e) => {
                     nameRef(e)
-                    nameInputRef.current = e
+                    if (e) {
+                      (nameInputRef as React.MutableRefObject<HTMLInputElement | null>).current = e
+                    }
                   }}
                   className={cn(
                     'h-14 text-base border-gray-200/80 transition-all duration-200',

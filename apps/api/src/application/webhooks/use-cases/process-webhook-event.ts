@@ -100,10 +100,12 @@ async function handleMercadoPagoEvent(
         const data = payload.data as Record<string, unknown>
         
         // Verificar se é relacionado a venda física
-        if (data.metadata?.sale_type === 'physical_sale' || data.external_reference?.includes('physical_sale')) {
+        const metadata = data.metadata as Record<string, unknown> | undefined
+        const externalReference = data.external_reference as string | undefined
+        if (metadata?.sale_type === 'physical_sale' || (typeof externalReference === 'string' && externalReference.includes('physical_sale'))) {
           const { processPhysicalSaleWebhookUseCase } = await import('../../physical-sales/use-cases/process-physical-sale-webhook')
           const { PhysicalSaleRepository } = await import('../../../infra/db/repositories/physical-sale-repository')
-          const storeId = data.metadata?.store_id as string | undefined
+          const storeId = metadata?.store_id as string | undefined
           if (storeId) {
             await processPhysicalSaleWebhookUseCase(
               data as Record<string, unknown>,
@@ -120,7 +122,8 @@ async function handleMercadoPagoEvent(
           const { OrderRepository } = await import('../../../infra/db/repositories/order-repository')
           
           // Extrair store_id do metadata ou external_reference
-          const storeId = data.metadata?.store_id as string | undefined
+          const metadata = data.metadata as Record<string, unknown> | undefined
+          const storeId = metadata?.store_id as string | undefined
           if (storeId && data.id) {
             await processPaymentWebhookUseCase(
               {
@@ -159,7 +162,8 @@ async function handlePagSeguroEvent(
       // Verificar se é relacionado a venda física
       if (payload.transaction && typeof payload.transaction === 'object') {
         const transaction = payload.transaction as Record<string, unknown>
-        if (transaction.reference?.includes('physical_sale')) {
+        const reference = transaction.reference as string | undefined
+        if (typeof reference === 'string' && reference.includes('physical_sale')) {
           // Processar webhook de venda física
           const { processPhysicalSaleWebhookUseCase } = await import('../../physical-sales/use-cases/process-physical-sale-webhook')
           const { PhysicalSaleRepository } = await import('../../../infra/db/repositories/physical-sale-repository')

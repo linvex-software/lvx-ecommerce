@@ -45,8 +45,7 @@ export async function createCategoryUseCase(
   return await categoryRepository.create(storeId, {
     name: validated.name,
     slug: validated.slug,
-    parent_id: validated.parent_id || null,
-    icon: validated.icon
+    parent_id: validated.parent_id || null
   })
 }
 

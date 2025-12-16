@@ -24,7 +24,7 @@ export const navbarItems = pgTable('navbar_items', {
   order: integer('order').notNull().default(0),
   
   // Relacionamento pai-filho (para submenus)
-  parentId: uuid('parent_id').references(() => navbarItems.id, { onDelete: 'cascade' }),
+  parentId: uuid('parent_id'),
   
   // Estilos (JSON)
   style: jsonb('style').$type<{

@@ -1,5 +1,5 @@
 export type StockMovementType = 'IN' | 'OUT' | 'ADJUST'
-export type StockMovementOrigin = 'manual' | 'order' | 'physical_sale' | 'adjustment' | 'return'
+export type StockMovementOrigin = 'manual' | 'order' | 'physical_sale' | 'adjustment' | 'return' | 'order_cancellation'
 
 export interface StockMovement {
   id: string

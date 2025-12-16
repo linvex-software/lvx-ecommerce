@@ -271,7 +271,7 @@ export function ElementEditor({ selectedElement, onStyleUpdate, onPropsUpdate, o
                 <Label htmlFor="fontWeight">Peso da Fonte</Label>
                 <Select
                   value={localStyles.fontWeight || '400'}
-                  onValueChange={(value) => handleStyleChange('fontWeight', value)}
+                  onValueChange={(value) => handleStyleChange('fontWeight', value || '')}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -318,7 +318,10 @@ export function ElementEditor({ selectedElement, onStyleUpdate, onPropsUpdate, o
                 <Label htmlFor="textAlign">Alinhamento</Label>
                 <Select
                   value={localStyles.textAlign || 'left'}
-                  onValueChange={(value) => handleStyleChange('textAlign', value as ElementStyles['textAlign'])}
+                  onValueChange={(value) => {
+                    const textAlignValue: string = value || 'left'
+                    handleStyleChange('textAlign', textAlignValue as ElementStyles['textAlign'])
+                  }}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -448,7 +451,7 @@ export function ElementEditor({ selectedElement, onStyleUpdate, onPropsUpdate, o
                 <Label htmlFor="borderStyle">Estilo da Borda</Label>
                 <Select
                   value={localStyles.borderStyle || 'solid'}
-                  onValueChange={(value) => handleStyleChange('borderStyle', value)}
+                  onValueChange={(value) => handleStyleChange('borderStyle', value || '')}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -499,7 +502,7 @@ export function ElementEditor({ selectedElement, onStyleUpdate, onPropsUpdate, o
                 <Label htmlFor="display">Display</Label>
                 <Select
                   value={localStyles.display || 'block'}
-                  onValueChange={(value) => handleStyleChange('display', value)}
+                  onValueChange={(value) => handleStyleChange('display', value || '')}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -519,7 +522,7 @@ export function ElementEditor({ selectedElement, onStyleUpdate, onPropsUpdate, o
                     <Label htmlFor="justifyContent">Justify Content</Label>
                     <Select
                       value={localStyles.justifyContent || 'flex-start'}
-                      onValueChange={(value) => handleStyleChange('justifyContent', value)}
+                      onValueChange={(value) => handleStyleChange('justifyContent', value || '')}
                     >
                       <SelectTrigger>
                         <SelectValue />
@@ -537,7 +540,7 @@ export function ElementEditor({ selectedElement, onStyleUpdate, onPropsUpdate, o
                     <Label htmlFor="alignItems">Align Items</Label>
                     <Select
                       value={localStyles.alignItems || 'stretch'}
-                      onValueChange={(value) => handleStyleChange('alignItems', value)}
+                      onValueChange={(value) => handleStyleChange('alignItems', value || '')}
                     >
                       <SelectTrigger>
                         <SelectValue />
