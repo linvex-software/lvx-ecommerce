@@ -195,7 +195,7 @@ export function CategoryTable({ categories, onEdit, isLoading = false }: Categor
                         <p className="text-xs text-blue-600 mt-1.5 font-medium hidden sm:flex items-center gap-1.5 dark:text-blue-400">
                           <span className="inline-flex items-center gap-1 text-gray-400 dark:text-[#777777]">
                             <span className="w-1 h-1 rounded-full bg-gray-400 dark:bg-[#777777]" />
-                            Pai:
+                            Principal:
                           </span>
                           <span className="font-semibold text-blue-700 dark:text-blue-300">{category.parentName}</span>
                         </p>
