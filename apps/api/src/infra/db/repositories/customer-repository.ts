@@ -283,8 +283,8 @@ export class CustomerRepository {
         and(
           eq(schema.customers.store_id, storeId),
           or(
-            like(sql`lower(${schema.customers.name})`, sql`lower(${searchPattern})`),
-            like(sql`lower(${schema.customers.email})`, sql`lower(${searchPattern})`),
+            sql`lower(${schema.customers.name}::text) LIKE lower(${searchPattern})`,
+            sql`lower(${schema.customers.email}::text) LIKE lower(${searchPattern})`,
             like(schema.customers.cpf, cpfPhonePattern), // Busca CPF com ou sem máscara
             like(schema.customers.phone, cpfPhonePattern) // Busca telefone com ou sem máscara
           )

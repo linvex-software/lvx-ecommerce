@@ -183,7 +183,7 @@ export class UserRepository {
 
     const row = result[0]
 
-    if (!row.store_id || !row.store.id) {
+    if (!row.store_id || !row.store?.id) {
       return {
         id: row.id,
         store_id: null,

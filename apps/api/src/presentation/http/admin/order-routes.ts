@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { OrderController } from './order-controller'
 import { OrderRepository } from '../../../infra/db/repositories/order-repository'
 import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
@@ -49,7 +49,7 @@ export async function registerAdminOrderRoutes(app: FastifyInstance): Promise<vo
       preHandler: [requireRole(['admin'])]
     },
     async (request, reply) => {
-      await orderController.update(request, reply)
+      await orderController.update(request as FastifyRequest<{ Params: { id: string }; Body: import('../../../domain/orders/order-types').UpdateOrderInput }>, reply)
     }
   )
 
@@ -73,7 +73,7 @@ export async function registerAdminOrderRoutes(app: FastifyInstance): Promise<vo
       preHandler: [requireRole(['admin'])]
     },
     async (request, reply) => {
-      await orderController.cancel(request, reply)
+      await orderController.cancel(request as FastifyRequest<{ Params: { id: string }; Body: { reason?: string | null } }>, reply)
     }
   )
 }

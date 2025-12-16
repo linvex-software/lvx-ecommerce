@@ -31,7 +31,7 @@ export class CartRepository {
         store_id: storeId,
         customer_id: data.customer_id ?? null,
         session_id: data.session_id ?? null,
-        items_json: JSON.stringify(data.items),
+        items_json: data.items,
         total: total.toString(),
         coupon_code: data.coupon_code ?? null,
         status: 'active'
@@ -163,7 +163,7 @@ export class CartRepository {
     data: UpdateCartInput
   ): Promise<Cart> {
     const updateData: {
-      items_json?: string
+      items_json?: typeof schema.carts.$inferInsert['items_json']
       total?: string
       coupon_code?: string | null
       last_activity_at?: Date
@@ -187,7 +187,7 @@ export class CartRepository {
         throw new Error('Invalid cart total')
       }
 
-      updateData.items_json = JSON.stringify(data.items)
+      updateData.items_json = data.items
       updateData.total = total.toString()
     }
 

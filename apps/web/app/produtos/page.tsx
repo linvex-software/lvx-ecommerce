@@ -229,12 +229,13 @@ export default function ProductsPage() {
     router.push('/produtos')
   }
 
-  const hasActiveFilters =
+  const hasActiveFilters = !!(
     effectiveCategoryId ||
     filtersFromUrl.sizes.length > 0 ||
     filtersFromUrl.colors.length > 0 ||
     filtersFromUrl.minPrice ||
     filtersFromUrl.maxPrice
+  )
 
   const handleSortChange = (sortBy: string) => {
     updateFilters({ sortBy })
@@ -365,7 +366,7 @@ export default function ProductsPage() {
           open={isFilterOpen}
           onOpenChange={setIsFilterOpen}
           categories={categories}
-          effectiveCategoryId={effectiveCategoryId}
+          effectiveCategoryId={effectiveCategoryId ?? null}
           filtersFromUrl={filtersFromUrl}
           availableSizes={AVAILABLE_SIZES}
           availableColors={AVAILABLE_COLORS}

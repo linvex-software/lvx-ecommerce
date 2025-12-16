@@ -76,10 +76,7 @@ export class MercadoPagoGateway implements PaymentGateway {
       const payment = await this.client.create({
         body: paymentData,
         requestOptions: {
-          idempotencyKey,
-          customHeaders: {
-            'X-Idempotency-Key': idempotencyKey
-          }
+          idempotencyKey
         }
       })
 

@@ -102,7 +102,7 @@ export default function NavbarDynamic({ items, cartCount = 0, onCartClick, onSea
     }
 
     const linkProps = item.type === 'external' 
-      ? { href: item.url, target: item.target || '_blank', rel: 'noopener noreferrer' }
+      ? { href: item.url || '#', target: item.target || '_blank', rel: 'noopener noreferrer' }
       : { href: item.url || '#' }
 
     return (

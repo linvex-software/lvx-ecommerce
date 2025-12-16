@@ -60,7 +60,7 @@ export async function registerAdminCategoryRoutes(
       preHandler: [requireRole(['admin'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      await categoryController.create(request, reply)
+      await categoryController.create(request as FastifyRequest<{ Body: { name: string; slug?: string; parent_id?: string | null } }>, reply)
     }
   )
 
@@ -75,7 +75,7 @@ export async function registerAdminCategoryRoutes(
       request: FastifyRequest<{ Params: { id: string } }>,
       reply: FastifyReply
     ) => {
-      await categoryController.update(request, reply)
+      await categoryController.update(request as FastifyRequest<{ Params: { id: string }; Body: { name?: string; slug?: string; parent_id?: string | null } }>, reply)
     }
   )
 

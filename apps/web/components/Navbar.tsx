@@ -94,7 +94,6 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                                 {/* Favorites Icon - Only if authenticated */}
                                 {isAuthenticated && (
                                     <button
-                                        ref={favoritesButtonRef}
                                         type="button"
                                         className="hidden md:flex flex-col items-center cursor-pointer hover:text-muted-foreground transition-colors relative z-[9999]"
                                     >
@@ -119,7 +118,7 @@ const Navbar = ({ cartCount, onCartClick, onSearch }: NavbarProps) => {
                                             </AnimatePresence>
                                         </motion.div>
                                         <span className="text-[10px] mt-1">Favoritos</span>
-                                    </Link>
+                                    </button>
                                     )}
 
                                 {/* Cart Icon */}

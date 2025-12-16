@@ -42,9 +42,8 @@ export default function ListaDesejosPage() {
       name: favorite.product.name,
       price: parseFloat(favorite.product.base_price),
       image: favorite.product.main_image || '/placeholder.png',
-      quantity: 1,
-      variant_id: null
-    })
+      category: favorite.product.category || ''
+    }, null)
     toast.success('Produto adicionado ao carrinho!', {
       icon: '🛒',
       duration: 3000,

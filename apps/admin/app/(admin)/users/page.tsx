@@ -415,7 +415,7 @@ export default function UsersPage() {
                     <TableCell className="text-right">
                       <div className="flex items-center justify-end gap-2">
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleOpenPasswordModal(user.id, user.name)}
                           disabled={updatePassword.isPending || (currentUser?.role !== 'admin' && currentUser?.id !== user.id)}
@@ -429,7 +429,7 @@ export default function UsersPage() {
                           <span className="hidden sm:inline">Gerenciar senha</span>
                         </Button>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleDelete(user.id, user.name)}
                           disabled={deleteUser.isPending}

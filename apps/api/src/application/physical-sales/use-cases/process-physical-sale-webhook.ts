@@ -49,7 +49,7 @@ export async function processPhysicalSaleWebhookUseCase(
 
 function determineSaleStatusFromWebhook(
   payload: PhysicalSaleWebhookPayload,
-  sale: PhysicalSale
+  sale: { status: PhysicalSale['status'] }
 ): 'completed' | 'pending' | 'cancelled' | null {
   const status = payload.status ?? payload.payment_status
 

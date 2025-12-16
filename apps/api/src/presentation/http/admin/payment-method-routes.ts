@@ -40,7 +40,7 @@ export async function registerAdminPaymentMethodRoutes(
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
-      await controller.create(request, reply)
+      await controller.create(request as FastifyRequest<{ Body: { name: string; active: boolean; provider: string; config_json?: Record<string, unknown> | null } }>, reply)
     }
   )
 
@@ -52,7 +52,7 @@ export async function registerAdminPaymentMethodRoutes(
       preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) => {
-      await controller.update(request, reply)
+      await controller.update(request as FastifyRequest<{ Params: { id: string }; Body: { name?: string; active?: boolean; config_json?: Record<string, unknown> | null } }>, reply)
     }
   )
 }

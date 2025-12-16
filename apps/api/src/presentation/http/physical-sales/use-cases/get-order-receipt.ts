@@ -1,5 +1,5 @@
-import { OrderRepository } from '../../../infra/db/repositories/order-repository'
-import type { OrderWithItems } from '../../../domain/orders/order-types'
+import { OrderRepository } from '../../../../infra/db/repositories/order-repository'
+import type { OrderWithItems } from '../../../../domain/orders/order-types'
 
 export interface GetOrderReceiptDependencies {
   orderRepository: OrderRepository

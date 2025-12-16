@@ -46,6 +46,10 @@ export async function refreshTokenUseCase(
     throw new Error('User not found')
   }
 
+  if (!user.store_id || !user.role) {
+    throw new Error('User missing required fields')
+  }
+
   const accessToken = await jwtSign({
     sub: user.id,
     storeId: user.store_id,

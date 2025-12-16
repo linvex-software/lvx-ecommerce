@@ -1,4 +1,4 @@
-import type { FastifyInstance } from 'fastify'
+import type { FastifyInstance, FastifyRequest } from 'fastify'
 import { CustomerController } from './customer-controller'
 import { FavoriteController } from './favorite-controller'
 import { CustomerRepository } from '../../../infra/db/repositories/customer-repository'
@@ -49,7 +49,7 @@ export async function registerCustomerRoutes(
       onRequest: [tenantMiddleware]
     },
     async (request, reply) => {
-      await customerController.register(request, reply)
+      await customerController.register(request as FastifyRequest<{ Body: import('./customer-controller').RegisterCustomerBody }>, reply)
     }
   )
 
@@ -60,7 +60,7 @@ export async function registerCustomerRoutes(
       onRequest: [tenantMiddleware]
     },
     async (request, reply) => {
-      await customerController.login(request, reply)
+      await customerController.login(request as FastifyRequest<{ Body: import('./customer-controller').LoginCustomerBody }>, reply)
     }
   )
 
@@ -93,7 +93,7 @@ export async function registerCustomerRoutes(
       onRequest: [tenantMiddleware, requireCustomerAuth]
     },
     async (request, reply) => {
-      await customerController.updateProfile(request, reply)
+      await customerController.updateProfile(request as FastifyRequest<{ Body: import('./customer-controller').UpdateCustomerProfileBody }>, reply)
     }
   )
 
@@ -115,7 +115,7 @@ export async function registerCustomerRoutes(
       onRequest: [tenantMiddleware, requireCustomerAuth]
     },
     async (request, reply) => {
-      await customerController.createAddress(request, reply)
+      await customerController.createAddress(request as FastifyRequest<{ Body: import('../../../domain/customers/customer-types').CreateCustomerAddressInput }>, reply)
     }
   )
 
@@ -126,7 +126,7 @@ export async function registerCustomerRoutes(
       onRequest: [tenantMiddleware, requireCustomerAuth]
     },
     async (request, reply) => {
-      await customerController.updateAddress(request, reply)
+      await customerController.updateAddress(request as FastifyRequest<{ Params: { id: string }; Body: import('../../../domain/customers/customer-types').UpdateCustomerAddressInput }>, reply)
     }
   )
 
@@ -137,7 +137,7 @@ export async function registerCustomerRoutes(
       onRequest: [tenantMiddleware, requireCustomerAuth]
     },
     async (request, reply) => {
-      await customerController.deleteAddress(request, reply)
+      await customerController.deleteAddress(request as FastifyRequest<{ Params: { id: string } }>, reply)
     }
   )
 
@@ -148,7 +148,7 @@ export async function registerCustomerRoutes(
       onRequest: [tenantMiddleware, requireCustomerAuth]
     },
     async (request, reply) => {
-      await customerController.setDefaultAddress(request, reply)
+      await customerController.setDefaultAddress(request as FastifyRequest<{ Params: { id: string } }>, reply)
     }
   )
 
@@ -159,7 +159,7 @@ export async function registerCustomerRoutes(
       onRequest: [tenantMiddleware, requireCustomerAuth]
     },
     async (request, reply) => {
-      await customerController.updatePassword(request, reply)
+      await customerController.updatePassword(request as FastifyRequest<{ Body: { current_password: string; new_password: string } }>, reply)
     }
   )
 

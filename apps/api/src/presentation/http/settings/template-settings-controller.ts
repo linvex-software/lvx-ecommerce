@@ -9,14 +9,13 @@ export class TemplateSettingsController {
     reply: FastifyReply
   ): Promise<void> {
     try {
-      if (!request.user?.storeId) {
+      const user = request.user as { storeId?: string } | undefined
+      if (!user?.storeId) {
         await reply.code(401).send({ error: 'Unauthorized' })
         return
       }
 
-      const settings = await this.templateSettingsRepository.findByStoreId(
-        request.user.storeId
-      )
+      const settings = await this.templateSettingsRepository.findByStoreId(user.storeId)
 
       // Retornar configuração padrão se não houver salva
       if (!settings) {
@@ -117,7 +116,8 @@ export class TemplateSettingsController {
     reply: FastifyReply
   ): Promise<void> {
     try {
-      if (!request.user?.storeId) {
+      const user = request.user as { storeId?: string } | undefined
+      if (!user?.storeId) {
         await reply.code(401).send({ error: 'Unauthorized' })
         return
       }
@@ -151,7 +151,7 @@ export class TemplateSettingsController {
       }
 
       const settings = await this.templateSettingsRepository.upsert({
-        store_id: request.user.storeId,
+        store_id: user.storeId,
         config_json: config,
         template_id: 'flor-de-menina' // Por enquanto, fixo
       })
@@ -166,7 +166,7 @@ export class TemplateSettingsController {
         {
           error: error instanceof Error ? error.message : 'Unknown error',
           stack: error instanceof Error ? error.stack : undefined,
-          storeId: request.user?.storeId
+          storeId: (request.user as { storeId?: string } | undefined)?.storeId
         },
         'Error saving template config'
       )

@@ -7,10 +7,10 @@ export interface GetCartDependencies {
 
 export async function getCartUseCase(
   storeId: string,
+  dependencies: GetCartDependencies,
   sessionId?: string | null,
   customerId?: string | null,
-  cartId?: string | null,
-  dependencies: GetCartDependencies
+  cartId?: string | null
 ): Promise<Cart | null> {
   const { cartRepository } = dependencies
 

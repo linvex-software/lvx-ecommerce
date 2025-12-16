@@ -33,7 +33,7 @@ export async function updateStorePreferencesUseCase(
     .limit(1)
 
   const updateData: Partial<typeof schema.storeThemeConfig.$inferInsert> = {
-    updated_at: sql`now()`
+    updated_at: new Date()
   }
 
   if (input.logo_url !== undefined) {

@@ -120,7 +120,7 @@ export class PhysicalSaleRepository {
             email: row.seller.email
           }
         : null,
-      subtotal,
+      subtotal_calculated: subtotal,
       discount,
       shipping_cost_amount: Math.round(parseFloat(sale.shipping_cost) * 100),
       commission
@@ -202,7 +202,7 @@ export class PhysicalSaleRepository {
                 email: row.seller.email
               }
             : null,
-          subtotal,
+          subtotal_calculated: subtotal,
           discount
         }
       })

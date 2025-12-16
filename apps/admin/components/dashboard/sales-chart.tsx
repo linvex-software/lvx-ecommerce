@@ -243,7 +243,6 @@ export function SalesChart({
                   boxShadow: '0 18px 30px rgba(15, 23, 42, 0.12)',
                   backgroundColor: '#ffffff'
                 }}
-                className="dark:[&_.recharts-tooltip-label]:text-white dark:[&_.recharts-tooltip-item]:text-white"
               />
               <Area
                 type="monotone"

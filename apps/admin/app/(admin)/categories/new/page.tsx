@@ -4,14 +4,14 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft } from 'lucide-react'
 import { CategoryForm } from '@/components/categories/category-form'
-import { useCreateCategory, type CreateCategoryInput } from '@/lib/hooks/use-categories'
+import { useCreateCategory, type CreateCategoryInput, type UpdateCategoryInput } from '@/lib/hooks/use-categories'
 
 export default function NewCategoryPage() {
   const router = useRouter()
   const createCategory = useCreateCategory()
 
-  const handleSubmit = async (data: CreateCategoryInput) => {
-    await createCategory.mutateAsync(data)
+  const handleSubmit = async (data: CreateCategoryInput | UpdateCategoryInput) => {
+    await createCategory.mutateAsync(data as CreateCategoryInput)
     router.push('/categories')
   }
 

@@ -57,7 +57,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -125,7 +125,11 @@ export class PhysicalSalesController {
 
       const result = await listPhysicalSalesUseCase(
         storeId,
-        request.query,
+        {
+          ...request.query,
+          page: request.query.page ? Number.parseInt(request.query.page, 10) : undefined,
+          limit: request.query.limit ? Number.parseInt(request.query.limit, 10) : undefined
+        },
         {
           physicalSaleRepository: this.physicalSaleRepository
         }
@@ -198,7 +202,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -249,7 +253,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -289,7 +293,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
 
       const carts = await listAbandonedCartsUseCase(
         storeId,
@@ -320,7 +324,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -357,7 +361,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -395,7 +399,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -474,7 +478,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -519,7 +523,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -563,7 +567,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -608,7 +612,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -655,7 +659,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -845,7 +849,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return
@@ -888,7 +892,7 @@ export class PhysicalSalesController {
         return
       }
 
-      const userId = request.user?.id
+      const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
         await reply.code(401).send({ error: 'User ID is required' })
         return

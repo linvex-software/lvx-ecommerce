@@ -25,7 +25,7 @@ export class PhysicalSalesCartRepository {
         store_id: storeId,
         seller_user_id: sellerUserId,
         customer_id: data.customer_id ?? null,
-        items_json: JSON.stringify(data.items),
+        items_json: data.items,
         total: subtotal.toString(),
         discount_amount: '0',
         coupon_code: data.coupon_code ?? null,
@@ -87,7 +87,7 @@ export class PhysicalSalesCartRepository {
     data: UpdatePhysicalSalesCartInput
   ): Promise<PhysicalSalesCart> {
     const updateData: {
-      items_json?: string
+      items_json?: typeof schema.physicalSalesCarts.$inferInsert['items_json']
       total?: string
       customer_id?: string | null
       discount_amount?: string
@@ -95,7 +95,7 @@ export class PhysicalSalesCartRepository {
       shipping_address?: string | null
       origin?: string | null
       commission_rate?: string | null
-      seller_user_id?: string | null
+      seller_user_id?: string
       last_activity_at?: Date
       updated_at?: Date
     } = {
@@ -104,7 +104,7 @@ export class PhysicalSalesCartRepository {
     }
 
     if (data.items !== undefined) {
-      updateData.items_json = JSON.stringify(data.items)
+      updateData.items_json = data.items
       const subtotal = data.items.reduce((sum, item) => {
         const itemTotal = item.price * item.quantity
         const itemDiscount = item.discount ?? 0
@@ -117,7 +117,7 @@ export class PhysicalSalesCartRepository {
       updateData.customer_id = data.customer_id
     }
 
-    if (data.discount_amount !== undefined) {
+    if (data.discount_amount !== undefined && data.discount_amount !== null) {
       updateData.discount_amount = data.discount_amount.toString()
     }
 
@@ -137,7 +137,7 @@ export class PhysicalSalesCartRepository {
       updateData.commission_rate = data.commission_rate ? data.commission_rate.toString() : null
     }
 
-    if (data.seller_user_id !== undefined) {
+    if (data.seller_user_id !== undefined && data.seller_user_id !== null) {
       updateData.seller_user_id = data.seller_user_id
     }
 

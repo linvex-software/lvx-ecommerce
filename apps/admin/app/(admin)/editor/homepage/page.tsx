@@ -165,33 +165,31 @@ export default function HomepageEditorPage() {
 
   return (
     <div className="h-screen w-full flex flex-col bg-gray-50">
-      {/* Tabs - Only show if not in blocks mode */}
-      {activeTab !== 'blocks' && (
-        <div className="border-b border-gray-200 bg-white w-full">
-          <div className="flex">
-            <button
-              onClick={() => setActiveTab('blocks')}
-              className={`px-4 py-2 text-sm font-medium ${
-                activeTab === 'blocks'
-                  ? 'border-b-2 border-green-600 text-green-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Blocos
-            </button>
-            <button
-              onClick={() => setActiveTab('navbar')}
-              className={`px-4 py-2 text-sm font-medium ${
-                activeTab === 'navbar'
-                  ? 'border-b-2 border-green-600 text-green-600'
-                  : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              Navbar
-            </button>
-          </div>
+      {/* Tabs */}
+      <div className="border-b border-gray-200 bg-white w-full">
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab('blocks')}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === 'blocks'
+                ? 'border-b-2 border-green-600 text-green-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Blocos
+          </button>
+          <button
+            onClick={() => setActiveTab('navbar')}
+            className={`px-4 py-2 text-sm font-medium ${
+              activeTab === 'navbar'
+                ? 'border-b-2 border-green-600 text-green-600'
+                : 'text-gray-600 hover:text-gray-900'
+            }`}
+          >
+            Navbar
+          </button>
         </div>
-      )}
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex overflow-hidden w-full">

@@ -6,6 +6,7 @@ import { Button } from '@white-label/ui'
 import { Input } from '@/components/ui/input'
 import { useAuthStore } from '@/store/auth-store'
 import { apiClient } from '@/lib/api-client'
+import type { AuthUser } from '@white-label/types'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -38,7 +39,7 @@ export default function LoginPage() {
 
       const { user, accessToken } = response.data
 
-      setSession(user, accessToken, user.storeId)
+      setSession(user as AuthUser, accessToken, user.storeId)
 
       // Aguardar um pouco para o Zustand sincronizar antes de redirecionar
       await new Promise(resolve => setTimeout(resolve, 100))

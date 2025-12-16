@@ -87,7 +87,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   // Verificar role antes de renderizar
-  if (!ALLOWED_ROLES.includes(user.role)) {
+  if (!user.role || !(ALLOWED_ROLES as readonly string[]).includes(user.role)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50/50">
         <div className="text-center">

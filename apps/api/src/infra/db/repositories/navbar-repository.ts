@@ -4,7 +4,7 @@ import type {
   NavbarItem,
   CreateNavbarItemInput,
   UpdateNavbarItemInput
-} from '../../domain/navbar/navbar-types'
+} from '../../../domain/navbar/navbar-types'
 
 export class NavbarRepository {
   /**

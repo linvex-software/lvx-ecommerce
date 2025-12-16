@@ -65,7 +65,7 @@ export function CraftTopbar({ onSave, isSaving, hasUnsavedChanges, onFinish }: C
           onClick={onSave}
           disabled={isSaving || !hasUnsavedChanges}
           size="sm"
-          variant="ghost"
+          variant="outline"
           className="h-8 px-3 text-white hover:bg-white/20"
         >
           <Save className="w-4 h-4 mr-1.5" />

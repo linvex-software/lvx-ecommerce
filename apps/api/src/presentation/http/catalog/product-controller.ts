@@ -21,6 +21,10 @@ export class PublicProductController {
         category_id?: string
         page?: string
         limit?: string
+        sizes?: string | string[]
+        colors?: string | string[]
+        min_price?: string
+        max_price?: string
       }
     }>,
     reply: FastifyReply

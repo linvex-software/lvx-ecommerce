@@ -21,8 +21,8 @@ export class AuthController {
     private readonly authSessionRepository: AuthSessionRepository,
     private readonly jwtSign: (payload: {
       sub: string
-      storeId: string
-      role: string
+      storeId?: string
+      role?: string
     }) => Promise<string>
   ) {}
 

@@ -46,9 +46,9 @@ export interface PhysicalSaleWithRelations extends PhysicalSale {
     name: string
     email: string
   } | null
-  discount?: number // desconto aplicado (em centavos)
-  subtotal?: number // subtotal antes do desconto (em centavos)
-  shipping_cost_amount?: number // em centavos
+  discount?: number // desconto aplicado (em centavos) - calculado
+  subtotal_calculated?: number // subtotal antes do desconto (em centavos) - calculado
+  shipping_cost_amount?: number // em centavos - calculado
   commission?: {
     amount: number
     rate: number | null

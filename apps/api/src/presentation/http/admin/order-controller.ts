@@ -175,7 +175,7 @@ export class OrderController {
         return
       }
 
-      const userId = request.user?.id || null
+      const userId = (request.user as { id?: string } | undefined)?.id || null
       const { id } = request.params
       const body = request.body || {}
 

@@ -43,8 +43,7 @@ export async function updateStoreLogoUseCase(
       .insert(schema.storeThemeConfig)
       .values({
         store_id: input.storeId,
-        logo_url: input.logoUrl,
-        config_json: {}
+        logo_url: input.logoUrl
       })
   }
 }

@@ -11,6 +11,8 @@ export type BlockType =
   | 'faq'
   | 'newsletter'
   | 'features'
+  | 'text'
+  | 'image'
 
 export interface ElementStyles {
   color?: string
@@ -114,5 +116,11 @@ export interface FeaturesBlockProps {
     title: string
     description: string
   }>
+}
+
+export interface ImageBlockProps {
+  image?: string
+  alt_text?: string
+  link?: string
 }
 

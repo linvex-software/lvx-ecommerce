@@ -27,7 +27,7 @@ export async function updateCustomerProfileUseCase(
   const validated = updateCustomerProfileSchema.parse(input)
 
   // Verificar se email já existe (se fornecido e diferente do atual)
-  if (validated.email !== undefined) {
+  if (validated.email !== undefined && validated.email !== null) {
     const existingCustomer = await customerRepository.findByEmail(
       validated.email,
       storeId

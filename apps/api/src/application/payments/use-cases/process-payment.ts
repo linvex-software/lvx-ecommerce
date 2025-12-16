@@ -126,7 +126,7 @@ export async function processPaymentUseCase(
     paymentResult: {
       id: paymentResult.id,
       status: paymentResult.status,
-      statusDetail: paymentResult.statusDetail,
+      statusDetail: paymentResult.statusDetail || '',
       qrCode: paymentResult.qrCode,
       qrCodeBase64: paymentResult.qrCodeBase64,
       ticketUrl: paymentResult.ticketUrl

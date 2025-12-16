@@ -86,7 +86,8 @@ export class UserController {
       const { id } = request.params
 
       // Não permitir deletar a si mesmo
-      if (id === request.user?.id) {
+      const user = request.user as { id?: string } | undefined
+      if (id === user?.id) {
         await reply.code(400).send({ error: 'Cannot delete yourself' })
         return
       }
@@ -142,7 +143,7 @@ export class UserController {
       const { id } = request.params
 
       // Verificar permissão
-      const currentUser = request.user
+      const currentUser = request.user as { id?: string; role?: string } | undefined
       if (currentUser?.role !== 'admin' && currentUser?.id !== id) {
         await reply.code(403).send({ error: 'Forbidden: insufficient permissions' })
         return

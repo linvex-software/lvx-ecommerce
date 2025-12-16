@@ -47,12 +47,13 @@ export default function VirtualTryOn({
 
   // Se não tiver size_chart válido, não renderizar o botão
   // (ou renderizar mensagem amigável - escolhemos não renderizar para manter UI limpa)
-  if (!hasValidSizeChart) {
+  if (!hasValidSizeChart || !sizeChart) {
     return null
   }
 
   // Converter chart_json para formato esperado pelo algoritmo
-  const parsedSizeChart: ParsedSizeChart = sizeChart.chart_json as ParsedSizeChart
+  // sizeChart não é null aqui porque hasValidSizeChart já verificou
+  const parsedSizeChart: ParsedSizeChart = sizeChart!.chart_json as ParsedSizeChart
 
   return (
     <>
