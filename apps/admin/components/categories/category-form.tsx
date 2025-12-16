@@ -6,7 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select } from '@/components/ui/select'
+import { 
+  Select, 
+  SelectTrigger, 
+  SelectValue, 
+  SelectContent, 
+  SelectItem 
+} from '@/components/ui/select'
 import { Button } from '@white-label/ui'
 import type { Category, CreateCategoryInput, UpdateCategoryInput } from '@/lib/hooks/use-categories'
 import { useCategories } from '@/lib/hooks/use-categories'
@@ -231,31 +237,36 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
             )}
           </div>
           <Select
-            id="parent_id"
-            {...register('parent_id', {
-              setValueAs: (value) => value === '' ? null : value
-            })}
-            className={`${errors.parent_id ? 'border-red-500 focus-visible:ring-red-500' : ''} dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:hover:border-[#3A3A3A]`}
-            disabled={isLoading || !categoriesData?.categories || categoriesData.categories.length === 0}
+            value={parentIdValue ?? 'none'}
+            onValueChange={(value) => setValue('parent_id', value === 'none' ? null : value)}
+            disabled={isLoading}
           >
-            <option value="">Nenhuma (categoria raiz)</option>
-            {!categoriesData?.categories || categoriesData.categories.length === 0 ? (
-              <option value="" disabled>
-                Carregando categorias...
-              </option>
-            ) : allParentOptions.length === 0 ? (
-              <option value="" disabled>
-                Nenhuma categoria disponível como pai
-              </option>
-            ) : (
-              allParentOptions.map((option) => (
-                <option key={option.id} value={option.id}>
-                  {'  '.repeat(option.level)}
-                  {option.level > 0 && '└ '}
-                  {option.name}
-                </option>
-              ))
-            )}
+            <SelectTrigger
+              id="parent_id"
+              className={`${errors.parent_id ? 'border-red-500 focus-visible:ring-red-500' : ''} dark:bg-[#111111] dark:border-[#2A2A2A] dark:text-white dark:hover:border-[#3A3A3A]`}
+            >
+              <SelectValue placeholder="Nenhuma (categoria raiz)" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="none">Nenhuma (categoria raiz)</SelectItem>
+              {!categoriesData?.categories || categoriesData.categories.length === 0 ? (
+                <SelectItem value="loading" disabled>
+                  Carregando categorias...
+                </SelectItem>
+              ) : allParentOptions.length === 0 ? (
+                <SelectItem value="empty" disabled>
+                  Nenhuma categoria disponível como pai
+                </SelectItem>
+              ) : (
+                allParentOptions.map((option) => (
+                  <SelectItem key={option.id} value={option.id}>
+                    {'  '.repeat(option.level)}
+                    {option.level > 0 && '└ '}
+                    {option.name}
+                  </SelectItem>
+                ))
+              )}
+            </SelectContent>
           </Select>
           {errors.parent_id && (
             <p className="mt-1.5 text-sm font-medium text-red-600 dark:text-red-400">{errors.parent_id.message}</p>
