@@ -1,9 +1,10 @@
 'use client'
 
 import { useState } from 'react'
-import { Plus, UserPlus, Trash2, Eye, EyeOff, KeyRound } from 'lucide-react'
+import { Plus, UserPlus, Trash2, Eye, EyeOff, KeyRound, Ban } from 'lucide-react'
 import { Button } from '@white-label/ui'
 import { useUsers, useCreateUser, useDeleteUser, useUpdateUserPassword, type CreateUserInput } from '@/lib/hooks/use-users'
+import { useAuthStore } from '@/store/auth-store'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -32,6 +33,7 @@ import {
 } from '@/components/ui/dialog'
 
 export default function UsersPage() {
+  const currentUser = useAuthStore((state) => state.user)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [passwordError, setPasswordError] = useState<string>('')
@@ -281,9 +283,8 @@ export default function UsersPage() {
                       value={formData.password}
                       onChange={(e) => handlePasswordChange(e.target.value)}
                       placeholder="Mínimo 6 caracteres"
-                      className={`pr-12 dark:bg-[#111111] dark:border-[#2A2A2A] dark:hover:border-[#3A3A3A] dark:placeholder:text-[#777777] dark:text-white ${
-                        passwordError ? 'border-error focus-visible:ring-error' : ''
-                      }`}
+                      className={`pr-12 dark:bg-[#111111] dark:border-[#2A2A2A] dark:hover:border-[#3A3A3A] dark:placeholder:text-[#777777] dark:text-white ${passwordError ? 'border-error focus-visible:ring-error' : ''
+                        }`}
                     />
                     <button
                       type="button"
@@ -417,10 +418,14 @@ export default function UsersPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => handleOpenPasswordModal(user.id, user.name)}
-                          disabled={updatePassword.isPending}
+                          disabled={updatePassword.isPending || (currentUser?.role !== 'admin' && currentUser?.id !== user.id)}
                           className="text-text-primary hover:text-primary dark:text-white dark:hover:text-primary"
                         >
-                          <KeyRound className="h-4 w-4 mr-2" />
+                          {currentUser?.role === 'admin' || currentUser?.id === user.id ? (
+                            <KeyRound className="h-4 w-4 mr-2" />
+                          ) : (
+                            <Ban className="h-4 w-4 mr-2" />
+                          )}
                           <span className="hidden sm:inline">Gerenciar senha</span>
                         </Button>
                         <Button
@@ -472,9 +477,8 @@ export default function UsersPage() {
                     }
                   }}
                   placeholder="Digite a nova senha"
-                  className={`pr-10 dark:bg-[#111111] dark:border-[#2A2A2A] dark:hover:border-[#3A3A3A] dark:placeholder:text-[#777777] dark:text-white ${
-                    passwordModalErrors.newPassword ? 'border-error focus-visible:ring-error' : ''
-                  }`}
+                  className={`pr-10 dark:bg-[#111111] dark:border-[#2A2A2A] dark:hover:border-[#3A3A3A] dark:placeholder:text-[#777777] dark:text-white ${passwordModalErrors.newPassword ? 'border-error focus-visible:ring-error' : ''
+                    }`}
                 />
                 <button
                   type="button"
@@ -519,9 +523,8 @@ export default function UsersPage() {
                     }
                   }}
                   placeholder="Repita a nova senha"
-                  className={`pr-10 dark:bg-[#111111] dark:border-[#2A2A2A] dark:hover:border-[#3A3A3A] dark:placeholder:text-[#777777] dark:text-white ${
-                    passwordModalErrors.confirmPassword ? 'border-error focus-visible:ring-error' : ''
-                  }`}
+                  className={`pr-10 dark:bg-[#111111] dark:border-[#2A2A2A] dark:hover:border-[#3A3A3A] dark:placeholder:text-[#777777] dark:text-white ${passwordModalErrors.confirmPassword ? 'border-error focus-visible:ring-error' : ''
+                    }`}
                 />
                 <button
                   type="button"

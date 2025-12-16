@@ -68,3 +68,4 @@ export function requiresUserAction(statusDetail: string): boolean {
   return actionRequired.includes(statusDetail) || actionRequired.includes(statusDetail.toLowerCase())
 }
 
+
