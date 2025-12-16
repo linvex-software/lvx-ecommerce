@@ -64,7 +64,7 @@ export async function registerAdminUserRoutes(app: FastifyInstance): Promise<voi
     '/admin/users/:id/password',
     {
       onRequest: [requireAuth, tenantMiddleware],
-      preHandler: [requireRole(['admin'])]
+      preHandler: [requireRole(['admin', 'operador', 'vendedor'])]
     },
     async (
       request: FastifyRequest<{ Params: { id: string }; Body: { new_password: string } }>,

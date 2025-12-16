@@ -13,7 +13,7 @@ import {
 import { UserRepository } from '../../../infra/db/repositories/user-repository'
 
 export class UserController {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(private readonly userRepository: UserRepository) { }
 
   async list(request: FastifyRequest, reply: FastifyReply) {
     try {
@@ -140,6 +140,13 @@ export class UserController {
       }
 
       const { id } = request.params
+
+      // Verificar permissão
+      const currentUser = request.user
+      if (currentUser?.role !== 'admin' && currentUser?.id !== id) {
+        await reply.code(403).send({ error: 'Forbidden: insufficient permissions' })
+        return
+      }
 
       const dependencies = {
         userRepository: this.userRepository
