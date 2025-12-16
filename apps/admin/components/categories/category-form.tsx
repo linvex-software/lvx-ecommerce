@@ -144,7 +144,7 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
     return buildParentOptions(availableParents)
   }, [availableParents])
 
-  // Incluir categoria pai atual nas opções se ela não estiver disponível (pode ter sido filtrada)
+  // Incluir categoria principal atual nas opções se ela não estiver disponível (pode ter sido filtrada)
   const allParentOptions = useMemo(() => {
     if (!category?.parent_id) return parentOptions
 
@@ -152,7 +152,7 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
     const currentParentExists = parentOptions.some(opt => opt.id === category.parent_id)
 
     if (!currentParentExists && categoriesData?.categories) {
-      // Buscar a categoria pai atual
+      // Buscar a categoria principal atual
       const currentParent = categoriesData.categories.find(cat => cat.id === category.parent_id)
       if (currentParent) {
         // Adicionar no início da lista
@@ -180,7 +180,7 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
     }
   }, [nameValue, autoGenerateSlug, category, setValue])
 
-  // Buscar nome da categoria pai selecionada para preview
+  // Buscar nome da categoria principal selecionada para preview
   const selectedParentName = useMemo(() => {
     if (!parentIdValue || !categoriesData?.categories) return null
     const parent = categoriesData.categories.find(cat => cat.id === parentIdValue)
@@ -224,7 +224,7 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
 
         <div>
           <div className="flex items-center justify-between mb-2">
-            <Label htmlFor="parent_id" className="dark:text-[#CCCCCC]">Categoria pai</Label>
+            <Label htmlFor="parent_id" className="dark:text-[#CCCCCC]">Categoria principal</Label>
             {selectedParentName && (
               <span className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 dark:bg-blue-900/30 dark:text-blue-300">
                 Subcategoria de: {selectedParentName}
@@ -255,7 +255,7 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
                 </SelectItem>
               ) : allParentOptions.length === 0 ? (
                 <SelectItem value="empty" disabled>
-                  Nenhuma categoria disponível como pai
+                  Nenhuma categoria disponível como principal
                 </SelectItem>
               ) : (
                 allParentOptions.map((option) => (
@@ -273,11 +273,11 @@ export function CategoryForm({ category, onSubmit, onCancel, isLoading = false }
           )}
           <p className="mt-1.5 text-xs text-gray-500 dark:text-[#B5B5B5]">
             {category
-              ? 'Altere a categoria pai para reorganizar a hierarquia (opcional)'
-              : 'Selecione uma categoria pai para criar uma subcategoria (opcional)'}
+              ? 'Altere a categoria principal para reorganizar a hierarquia (opcional)'
+              : 'Selecione uma categoria principal para criar uma subcategoria (opcional)'}
             {allParentOptions.length === 0 && categoriesData?.categories && categoriesData.categories.length > 0 && (
               <span className="block mt-1 text-amber-600 dark:text-amber-400">
-                Nota: A categoria atual e suas subcategorias não podem ser selecionadas como pai
+                Nota: A categoria atual e suas subcategorias não podem ser selecionadas como principal
               </span>
             )}
           </p>
