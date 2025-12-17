@@ -16,7 +16,7 @@ export function InstagramFeed() {
   const { connectors: { connect } } = useSafeNode();
 
   return (
-    <section ref={(ref: HTMLElement | null) => ref && connect(ref)} className="py-16">
+    <section ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }} className="py-16">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12">
           <a

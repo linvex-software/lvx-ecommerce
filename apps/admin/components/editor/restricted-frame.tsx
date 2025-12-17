@@ -329,8 +329,8 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
             iframeDoc.body.style.fontFamily = 'var(--font-body, "Montserrat", system-ui, sans-serif) !important'
             iframeDoc.body.style.backgroundColor = 'hsl(var(--background, 0 0% 100%))'
             iframeDoc.body.style.color = 'hsl(var(--foreground, 0 0% 12%))'
-            iframeDoc.body.style.webkitFontSmoothing = 'antialiased'
-            iframeDoc.body.style.mozOsxFontSmoothing = 'grayscale'
+            iframeDoc.body.style.setProperty('-webkit-font-smoothing', 'antialiased')
+            iframeDoc.body.style.setProperty('-moz-osx-font-smoothing', 'grayscale')
             iframeDoc.body.style.lineHeight = '1.5'
             iframeDoc.body.style.letterSpacing = 'normal'
 
@@ -595,9 +595,9 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
 
     // Adicionar listeners em todos os elementos dentro do frame
     const addListeners = (element: Element) => {
-      element.addEventListener('dragstart', handleDragStart, true)
-      element.addEventListener('dragover', handleDragOver, true)
-      element.addEventListener('drop', handleDrop, true)
+      element.addEventListener('dragstart', handleDragStart as unknown as EventListener, true)
+      element.addEventListener('dragover', handleDragOver as unknown as EventListener, true)
+      element.addEventListener('drop', handleDrop as unknown as EventListener, true)
       
       // Remover atributo draggable
       if (element instanceof HTMLElement) {
@@ -617,9 +617,9 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
         document.head.removeChild(style)
       }
       if (frameElement) {
-        frameElement.removeEventListener('dragstart', handleDragStart, true)
-        frameElement.removeEventListener('dragover', handleDragOver, true)
-        frameElement.removeEventListener('drop', handleDrop, true)
+        frameElement.removeEventListener('dragstart', handleDragStart as unknown as EventListener, true)
+        frameElement.removeEventListener('dragover', handleDragOver as unknown as EventListener, true)
+        frameElement.removeEventListener('drop', handleDrop as unknown as EventListener, true)
       }
     }
   }, [previewMode]) // Re-executar quando o preview mode mudar

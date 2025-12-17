@@ -2,7 +2,8 @@
 
 import React from 'react'
 import { cn } from '@white-label/ui'
-import { getColorWithOpacity, type ColorConfig } from './types'
+import { type ColorConfig } from './types'
+import { getColorWithOpacity } from './utils'
 
 export interface ComponentStyleProps {
   textColor?: string | ColorConfig | { mobile?: string; tablet?: string; desktop?: string }
@@ -43,18 +44,22 @@ export function ComponentWrapper({
 
     if (!value) return undefined
 
+    // Se for string simples
+    if (typeof value === 'string') {
+      return value
+    }
+
     // Se for objeto responsivo, usar desktop como padrão (será sobrescrito por media queries)
     if (typeof value === 'object' && !('type' in value) && !('value' in value)) {
-      return value.desktop || value.tablet || value.mobile
+      return value.desktop || value.tablet || value.mobile || undefined
     }
 
     // Se for ColorConfig
     if (typeof value === 'object' && 'type' in value && 'value' in value) {
-      return getColorWithOpacity(value)
+      return getColorWithOpacity(value as ColorConfig)
     }
 
-    // String simples
-    return value
+    return undefined
   }
 
   const resolvedTextColor = getResponsiveValue(textColor, useThemeTextColor, '--store-text-color')
@@ -65,14 +70,14 @@ export function ComponentWrapper({
   )
 
   // CSS Variables para propagar aos filhos
-  const cssVars: React.CSSProperties = {}
+  const cssVars: Record<string, string> = {}
   
   if (resolvedTextColor) {
-    cssVars['--component-text-color' as any] = resolvedTextColor
+    cssVars['--component-text-color'] = resolvedTextColor
   }
   
   if (resolvedBackgroundColor) {
-    cssVars['--component-background-color' as any] = resolvedBackgroundColor
+    cssVars['--component-background-color'] = resolvedBackgroundColor
   }
 
   // Inline styles com prioridade máxima
@@ -81,7 +86,7 @@ export function ComponentWrapper({
     ...(resolvedTextColor && { color: resolvedTextColor }),
     ...(resolvedBackgroundColor && { backgroundColor: resolvedBackgroundColor }),
     ...style
-  }
+  } as React.CSSProperties
 
   return (
     <div

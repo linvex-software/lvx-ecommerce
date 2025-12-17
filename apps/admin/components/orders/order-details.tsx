@@ -201,10 +201,10 @@ export function OrderDetails({
           </Button>
           {onCancelOrder && order.status !== 'cancelled' && order.status !== 'delivered' && (
             <Button
-              variant="destructive"
+              variant="outline"
               onClick={onCancelOrder}
               disabled={isCancelling}
-              className="gap-2"
+              className="gap-2 border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
             >
               <Ban className="h-4 w-4" />
               {isCancelling ? 'Cancelando...' : 'Cancelar Pedido'}
@@ -245,9 +245,10 @@ export function OrderDetails({
                 Voltar
               </Button>
               <Button
-                variant="destructive"
+                variant="outline"
                 onClick={onConfirmCancel}
                 disabled={isCancelling}
+                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
               >
                 {isCancelling ? 'Cancelando...' : 'Confirmar Cancelamento'}
               </Button>

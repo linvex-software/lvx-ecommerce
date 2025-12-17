@@ -21,7 +21,7 @@ export function Footer() {
   }
 
   return (
-    <footer ref={(ref: HTMLElement | null) => ref && connect(ref)} className="bg-charcoal text-secondary mt-20">
+    <footer ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }} className="bg-charcoal text-secondary mt-20">
       {/* Newsletter */}
       <div className="bg-primary py-12">
         <div className="container mx-auto px-4 text-center">

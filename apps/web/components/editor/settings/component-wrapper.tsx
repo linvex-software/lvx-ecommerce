@@ -62,14 +62,14 @@ export function ComponentWrapper({
     '--store-background-color'
   )
 
-  const cssVars: React.CSSProperties = {}
+  const cssVars: Record<string, string> = {}
   
   if (resolvedTextColor) {
-    cssVars['--component-text-color' as any] = resolvedTextColor
+    cssVars['--component-text-color'] = resolvedTextColor
   }
   
   if (resolvedBackgroundColor) {
-    cssVars['--component-background-color' as any] = resolvedBackgroundColor
+    cssVars['--component-background-color'] = resolvedBackgroundColor
   }
 
   const inlineStyles: React.CSSProperties = {
@@ -77,7 +77,7 @@ export function ComponentWrapper({
     ...(resolvedTextColor && { color: resolvedTextColor }),
     ...(resolvedBackgroundColor && { backgroundColor: resolvedBackgroundColor }),
     ...style
-  }
+  } as React.CSSProperties
 
   return (
     <div
