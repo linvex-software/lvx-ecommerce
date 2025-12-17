@@ -28,13 +28,13 @@ export function useShipping() {
       setError(null)
 
       try {
-        const response = await fetchAPI<CalculateShippingResponse>(
+        const response = await fetchAPI(
           '/shipping/calculate',
           {
             method: 'POST',
             body: JSON.stringify(input)
           }
-        )
+        ) as CalculateShippingResponse
 
         setQuotes(response.quotes || [])
         return response.quotes

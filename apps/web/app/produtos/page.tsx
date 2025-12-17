@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { SlidersHorizontal } from 'lucide-react'
@@ -55,7 +55,7 @@ const AVAILABLE_COLORS = [
   { name: 'Prata', hex: '#C0C0C0' },
 ]
 
-export default function ProductsPage() {
+function ProductsPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
 
@@ -388,3 +388,10 @@ export default function ProductsPage() {
   )
 }
 
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <ProductsPageContent />
+    </Suspense>
+  )
+}

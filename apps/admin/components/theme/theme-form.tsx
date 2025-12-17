@@ -59,7 +59,7 @@ export function ThemeForm({ initialConfig, onSave, isLoading = false, onExport, 
   useEffect(() => {
     const newInitial = { ...DEFAULT_THEME, ...initialConfig }
     const currentInitial = initialConfigRef.current
-    
+
     // Comparar apenas se realmente mudou (não apenas referência)
     if (JSON.stringify(newInitial) !== JSON.stringify(currentInitial)) {
       initialConfigRef.current = newInitial
@@ -213,7 +213,7 @@ export function ThemeForm({ initialConfig, onSave, isLoading = false, onExport, 
                 </div>
                 <Switch
                   checked={config.darkMode}
-                  onChange={(e) => setConfig({ ...config, darkMode: e.target.checked })}
+                  onCheckedChange={(checked) => setConfig({ ...config, darkMode: checked })}
                 />
               </div>
             </div>

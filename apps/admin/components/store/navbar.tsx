@@ -22,19 +22,19 @@ export function Navbar({ cartCount = 0, onCartClick, onSearch }: NavbarProps) {
   } = useNode((state) => ({
     isActive: state.events.selected
   }))
-  
+
   // Detectar se estamos no editor
   const { enabled } = useEditor((state) => ({
     enabled: state.options.enabled
   }))
-  
+
   const isInEditor = enabled
 
   // Detectar modo de preview (mobile/tablet/desktop)
   // Usar contexto de forma segura (pode não existir se não estiver no editor)
   const previewContext = useContext(PreviewContext)
   const previewMode = previewContext?.previewMode || 'desktop'
-  const isMobilePreview = previewMode === 'mobile' || previewMode === 'tablet'
+  const isMobilePreview = previewMode === 'tablet'
 
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);

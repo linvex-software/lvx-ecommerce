@@ -189,7 +189,7 @@ export function StockManager({ productId, variants = [], productName, productIdF
                 <p className="text-sm text-text-secondary dark:text-[#B5B5B5]">Status</p>
                 {stockSummary.isZeroStock ? (
                   <>
-                    <Badge variant="destructive" className="mt-1">
+                    <Badge variant="error" className="mt-1">
                       Estoque zerado
                     </Badge>
                     <p className="mt-1 text-xs text-text-tertiary dark:text-[#777777]">

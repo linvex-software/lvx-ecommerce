@@ -45,7 +45,7 @@ const getStatusBadgeVariant = (status: Order['status']) => {
     case 'delivered':
       return 'success'
     case 'cancelled':
-      return 'destructive'
+      return 'error'
     default:
       return 'secondary'
   }

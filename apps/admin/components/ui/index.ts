@@ -44,7 +44,6 @@ export {
 } from './dropdown-menu'
 
 export { Label } from './label'
-export type { LabelProps } from './label'
 
 export { PageHeader } from './page-header'
 export type { PageHeaderProps } from './page-header'

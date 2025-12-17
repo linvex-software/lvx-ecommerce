@@ -21,7 +21,13 @@ interface CraftJSON {
     nodes?: string[]
     props?: Record<string, unknown>
   }
-  [key: string]: CraftNode | undefined
+  [key: string]: CraftNode | undefined | {
+    type: {
+      resolvedName: string
+    }
+    nodes?: string[]
+    props?: Record<string, unknown>
+  }
 }
 
 /**
@@ -76,13 +82,13 @@ export function craftJsonToBlocks(craftJson: string): Block[] {
 export function blocksToCraftJson(blocks: Block[]): string {
   const enabledBlocks = blocks
     .filter(block => block.enabled)
-    .sort((a, b) => a.order - b.order)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
 
   console.log('[craft-converter] Convertendo blocos:', enabledBlocks.length, enabledBlocks.map(b => b.type))
 
   // Criar um container canvas que será o filho do ROOT
   const canvasNodeId = 'canvas-container'
-  
+
   const craftJson: CraftJSON = {
     ROOT: {
       type: {
