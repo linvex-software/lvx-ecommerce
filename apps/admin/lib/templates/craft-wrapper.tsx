@@ -1,6 +1,6 @@
 /**
  * Wrapper para componentes do template funcionarem com Craft.js
- * 
+ *
  * Adiciona apenas o mínimo necessário para o Craft.js processar os componentes
  */
 
@@ -15,16 +15,16 @@ export function withCraftSupport<T extends Record<string, any>>(
 ): React.ComponentType<T> {
   const CraftComponent = (props: T) => {
     const { connectors: { connect, drag } } = useNode()
-    
+
     return (
-      <div ref={(ref: HTMLDivElement | null) => connect(drag(ref))}>
+      <div ref={(ref: HTMLDivElement | null) => { if (ref) connect(drag(ref)) }}>
         <Component {...props} />
       </div>
     )
   }
-  
+
   CraftComponent.displayName = `Craft(${Component.displayName || Component.name || 'Component'})`
-  
+
   return CraftComponent
 }
 

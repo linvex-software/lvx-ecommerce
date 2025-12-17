@@ -262,7 +262,8 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
 
   const handleFormSubmit = async (data: ProductFormData) => {
     // Converter dígitos para número antes de enviar
-    const finalPrice = digitsToNumber((data as any).priceDigits || priceDigits)
+    const formPriceDigits = (data as any).priceDigits || priceDigits
+    const finalPrice = digitsToNumber(formPriceDigits)
 
     // Validar preço
     if (isNaN(finalPrice) || finalPrice <= 0) {
@@ -307,7 +308,7 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     // Filtrar size chart vazio
     const hasSizeChart = finalSizeChart && finalSizeChart.name.trim() !== '' && Object.keys(finalSizeChart.chart_json).length > 0
 
-    const { priceDigits, ...restData } = data as any
+    const { priceDigits: _priceDigits, ...restData } = data as any
     const submitData = {
       ...restData,
       slug: autoGenerateSlug ? undefined : (data.slug || undefined), // Enviar undefined se auto-gerar

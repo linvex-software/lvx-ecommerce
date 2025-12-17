@@ -236,10 +236,10 @@ function HeroBannerSettings() {
           min="0"
         />
       </div>
-      {items.map((item, index) => (
+      {items.map((item: any, index: number) => (
         <div key={index} className="border border-gray-200 rounded-lg p-4 space-y-3">
           <h3 className="font-semibold text-sm">Item {index + 1}</h3>
-          
+
           <ImageField
             label="Imagem"
             value={{ url: item.imageUrl }}
@@ -250,7 +250,7 @@ function HeroBannerSettings() {
             }}
             showAdvanced={false}
           />
-          
+
           <TextField
             label="Título"
             value={item.title}
@@ -260,7 +260,7 @@ function HeroBannerSettings() {
               setProp((props: HeroBannerProps) => (props.items = newItems))
             }}
           />
-          
+
           <TextField
             label="Subtítulo"
             value={item.subtitle}
@@ -272,7 +272,7 @@ function HeroBannerSettings() {
             type="textarea"
             rows={2}
           />
-          
+
           <TextField
             label="Texto Botão Primário"
             value={item.primaryButtonText}
@@ -282,7 +282,7 @@ function HeroBannerSettings() {
               setProp((props: HeroBannerProps) => (props.items = newItems))
             }}
           />
-          
+
           <TextField
             label="Link Botão Primário"
             value={item.primaryButtonLink || ''}
@@ -294,7 +294,7 @@ function HeroBannerSettings() {
             type="url"
             placeholder="https://..."
           />
-          
+
           <TextField
             label="Texto Botão Secundário"
             value={item.secondaryButtonText}
@@ -304,7 +304,7 @@ function HeroBannerSettings() {
               setProp((props: HeroBannerProps) => (props.items = newItems))
             }}
           />
-          
+
           <TextField
             label="Link Botão Secundário"
             value={item.secondaryButtonLink || ''}

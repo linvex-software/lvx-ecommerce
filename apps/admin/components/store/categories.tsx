@@ -122,7 +122,7 @@ export function Categories({ title = 'Escolha por categoria' }: CategoriesProps)
       style={{ cursor: 'move' }}
     >
       <h2 className="text-2xl font-bold text-center mb-6" style={{ color: 'var(--store-text-color, #000000)' }}>{title}</h2>
-      
+
       <div className="relative max-w-6xl mx-auto w-full">
         {/* Carrossel */}
         <div className="flex items-center gap-2 md:gap-4 w-full">
@@ -150,11 +150,11 @@ export function Categories({ title = 'Escolha por categoria' }: CategoriesProps)
                   href={`/categoria/${category.slug}`}
                     className="flex flex-col items-center gap-2 md:gap-3 flex-shrink-0 group min-w-[80px] md:min-w-0"
                 >
-                    <div className="w-20 h-20 md:w-28 md:h-28 lg:w-40 lg:h-40 rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors flex items-center justify-center">
+                    <div className="w-20 h-20 md:w-28 md:h-28 lg:w-40 lg:h-40 rounded-full bg-gray-100 group-hover:bg-gray-200 transition-colors flex items-center justify-center" style={{ color: 'var(--store-icon-color, #000000)' }}>
                     {IconComponent ? (
-                        <IconComponent className="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20" style={{ color: 'var(--store-icon-color, #000000)' }} />
+                        <IconComponent className="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20" />
                     ) : DefaultIcon ? (
-                        <DefaultIcon className="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20" style={{ color: 'var(--store-icon-color, #000000)' }} />
+                        <DefaultIcon className="w-10 h-10 md:w-14 md:h-14 lg:w-20 lg:h-20" />
                     ) : null}
                   </div>
                     <span className="text-xs md:text-sm font-medium text-center max-w-[80px] md:max-w-none" style={{ color: 'var(--store-text-color, #000000)' }}>

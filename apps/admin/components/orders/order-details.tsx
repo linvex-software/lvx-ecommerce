@@ -62,7 +62,7 @@ const getStatusBadgeVariant = (status: Order['status']) => {
     case 'delivered':
       return 'success'
     case 'cancelled':
-      return 'destructive'
+      return 'error'
     default:
       return 'secondary'
   }
@@ -100,9 +100,9 @@ const getPaymentStatusLabel = (status: Order['payment_status']) => {
   }
 }
 
-export function OrderDetails({ 
-  order, 
-  onDownloadLabel, 
+export function OrderDetails({
+  order,
+  onDownloadLabel,
   isDownloading = false,
   onCancelOrder,
   isCancelling = false,

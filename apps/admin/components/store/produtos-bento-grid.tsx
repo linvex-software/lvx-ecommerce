@@ -103,7 +103,7 @@ export function ProdutosBentoGrid({
 
     const colSpan = card.colSpan || 1
     // No modo mobile do editor, sempre 1 coluna
-    const isMobilePreview = previewMode === 'mobile'
+    const isMobilePreview = previewMode === 'tablet'
     const colSpanClass = isMobilePreview
       ? 'col-span-1'
       : colSpan === 3 ? 'col-span-1 md:col-span-3' :
@@ -133,7 +133,7 @@ export function ProdutosBentoGrid({
         }}
       >
         {/* Background color - deve ficar ATRÁS da imagem */}
-        <div 
+        <div
           className="absolute inset-0 rounded-xl z-0"
           style={{
             backgroundColor: safeBackgroundColor
@@ -173,7 +173,7 @@ export function ProdutosBentoGrid({
       )}
       <div className={cn(
         'grid gap-4 auto-rows-fr w-full md:items-start md:justify-start',
-        previewMode === 'mobile' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'
+        previewMode === 'tablet' ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-3'
       )}>
         {renderCard(card1, 1)}
         {renderCard(card2, 2)}
@@ -231,11 +231,11 @@ function ProdutosBentoGridSettings() {
     })
   }
 
-  const CardSettings = ({ 
-    card, 
-    cardIndex, 
-    label 
-  }: { 
+  const CardSettings = ({
+    card,
+    cardIndex,
+    label
+  }: {
     card: BentoCard
     cardIndex: 1 | 2 | 3 | 4 | 5
     label: string
@@ -245,7 +245,7 @@ function ProdutosBentoGridSettings() {
     return (
       <div className="border border-gray-200 rounded-lg p-4 space-y-3">
         <h4 className="font-semibold text-sm mb-3">{label}</h4>
-        
+
         <div>
           <label className="block text-xs font-medium mb-1">Habilitar Card</label>
           <input
@@ -280,8 +280,8 @@ function ProdutosBentoGridSettings() {
             {selectedProduct && selectedProduct.main_image && (
               <div>
                 <label className="block text-xs font-medium mb-1">Preview</label>
-                <img 
-                  src={selectedProduct.main_image} 
+                <img
+                  src={selectedProduct.main_image}
                   alt={selectedProduct.name}
                   className="w-full h-32 object-cover rounded"
                 />
@@ -319,7 +319,7 @@ function ProdutosBentoGridSettings() {
         />
         <p className="text-xs text-gray-500 mt-1">Deixe vazio para ocultar o título</p>
       </div>
-      
+
       <div>
         <label className="block text-sm font-medium mb-2">Cor de Fundo dos Cards</label>
         <select
@@ -348,12 +348,12 @@ function ProdutosBentoGridSettings() {
             </option>
           ))}
         </select>
-        <div 
+        <div
           className="mt-2 w-full h-12 rounded border border-gray-300"
           style={{ backgroundColor }}
         />
       </div>
-      
+
       <div className="space-y-4 pt-4 border-t">
         <h3 className="font-semibold text-sm">Cards do Grid</h3>
         <CardSettings card={card1} cardIndex={1} label="Card 1" />

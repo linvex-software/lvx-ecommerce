@@ -139,7 +139,7 @@ export function MercadoPagoConfig() {
           <Switch
             id="active"
             checked={active}
-            onChange={(e) => setActive(e.target.checked)}
+            onCheckedChange={setActive}
           />
         </div>
 

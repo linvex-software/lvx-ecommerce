@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, Suspense } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import { useQuery } from '@tanstack/react-query'
 import { Search as SearchIcon, X, Filter } from 'lucide-react'
@@ -31,10 +31,10 @@ interface ProductsResponse {
   totalPages?: number
 }
 
-export default function SearchPage() {
+function SearchPageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   // Inicializar estado a partir dos searchParams apenas uma vez
   const [query, setQuery] = useState(() => searchParams.get('q') || '')
   const [debouncedQuery, setDebouncedQuery] = useState(() => searchParams.get('q') || '')
@@ -81,17 +81,17 @@ export default function SearchPage() {
       params.set('q', debouncedQuery)
     }
     params.set('page', page.toString())
-    
+
     // Preservar outros parâmetros da URL (filtros)
     if (filtersFromUrl.categoryId) params.set('category_id', filtersFromUrl.categoryId)
     filtersFromUrl.sizes.forEach(size => params.append('sizes', size))
     filtersFromUrl.colors.forEach(color => params.append('colors', color))
     if (filtersFromUrl.minPrice) params.set('min_price', filtersFromUrl.minPrice)
     if (filtersFromUrl.maxPrice) params.set('max_price', filtersFromUrl.maxPrice)
-    
+
     const newUrl = `/busca?${params.toString()}`
     const currentUrl = `/busca?${searchParams.toString()}`
-    
+
     // Só atualizar URL se realmente mudou (evitar loops)
     if (newUrl !== currentUrl) {
       router.replace(newUrl, { scroll: false })
@@ -102,20 +102,20 @@ export default function SearchPage() {
   // Build query params for API
   const apiParams = useMemo(() => {
     const params = new URLSearchParams()
-    
+
     if (debouncedQuery) {
       params.append('q', debouncedQuery)
     }
-    
+
     if (filtersFromUrl.categoryId) params.append('category_id', filtersFromUrl.categoryId)
     filtersFromUrl.sizes.forEach(size => params.append('sizes', size))
     filtersFromUrl.colors.forEach(color => params.append('colors', color))
     if (filtersFromUrl.minPrice) params.append('min_price', filtersFromUrl.minPrice)
     if (filtersFromUrl.maxPrice) params.append('max_price', filtersFromUrl.maxPrice)
-    
+
     params.append('page', page.toString())
     params.append('limit', '12')
-    
+
     return params
   }, [debouncedQuery, page, filtersFromUrl])
 
@@ -230,7 +230,7 @@ export default function SearchPage() {
               <>
                 <div className="flex items-center justify-between mb-6">
                   <p className="text-muted-foreground font-body">
-                    {totalResults} resultado{totalResults !== 1 ? 's' : ''} 
+                    {totalResults} resultado{totalResults !== 1 ? 's' : ''}
                     {debouncedQuery && ` para "${debouncedQuery}"`}
                   </p>
                   <Button
@@ -294,3 +294,10 @@ export default function SearchPage() {
   )
 }
 
+export default function SearchPage() {
+  return (
+    <Suspense fallback={<div>Carregando...</div>}>
+      <SearchPageContent />
+    </Suspense>
+  )
+}
