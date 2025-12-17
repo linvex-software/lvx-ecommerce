@@ -3,7 +3,9 @@
   "compilerOptions": {
     "outDir": "dist",
     "jsx": "react-jsx",
-    "types": ["react", "react-dom"]
+    "moduleResolution": "node",
+    "types": ["react", "react-dom"],
+    "skipLibCheck": true
   },
   "include": ["src"]
 }

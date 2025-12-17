@@ -14,7 +14,11 @@ export const ContainerCraft = ({ background = '#ffffff', padding = 0, children }
 
   return (
     <div
-      ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+      ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
       style={{
         background,
         padding: `${padding}px`,

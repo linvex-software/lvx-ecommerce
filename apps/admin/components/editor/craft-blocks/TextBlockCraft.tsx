@@ -43,7 +43,11 @@ export const TextBlockCraft = ({
 
   return (
     <section 
-      ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+      ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
       className={`container mx-auto px-4 py-12 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
     >
       <div className={`max-w-4xl mx-auto ${alignClasses[align]}`}>

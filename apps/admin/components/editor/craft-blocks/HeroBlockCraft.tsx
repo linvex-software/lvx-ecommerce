@@ -36,7 +36,11 @@ export const HeroBlockCraft = ({
   if (!finalImage) {
     return (
       <div 
-        ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+        ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
         className="w-full mb-10 sm:mb-14 relative overflow-hidden flex items-center justify-center bg-muted -mt-px lg:max-h-[800px] min-h-[400px] border-2 border-dashed border-gray-300"
       >
         <div className="text-center text-gray-400">
@@ -48,7 +52,11 @@ export const HeroBlockCraft = ({
 
   return (
     <div 
-      ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+      ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
       className={`w-full mb-10 sm:mb-14 relative overflow-hidden flex items-center justify-center bg-muted -mt-px lg:max-h-[800px] ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
     >
       <div className="w-full h-full flex items-center justify-center">

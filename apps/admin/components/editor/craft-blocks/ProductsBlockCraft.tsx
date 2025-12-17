@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo } from 'react'
 import { useNode } from '@craftjs/core'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import Link from 'next/link'
 import axios from 'axios'
 import { Button } from '@white-label/ui'
@@ -125,7 +125,7 @@ export const ProductsBlockCraft = ({
       
       return fetchAPI(`/products?${params.toString()}`)
     },
-    keepPreviousData: true
+    placeholderData: keepPreviousData
   })
 
   const products: (Product & { slug: string })[] = (productsData?.products || []).map(p => ({
@@ -153,7 +153,11 @@ export const ProductsBlockCraft = ({
   if (show_filters) {
     return (
       <section 
-        ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+        ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
         className={`container mx-auto px-4 py-12 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
       >
         <h2 className="text-3xl font-bold mb-8 text-center">{title}</h2>
@@ -219,7 +223,11 @@ export const ProductsBlockCraft = ({
   if (isLoading) {
     return (
       <section 
-        ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+        ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
         className={`container mx-auto px-4 py-12 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
       >
         <h2 className="text-3xl font-bold mb-8 text-center">{title}</h2>
@@ -241,7 +249,11 @@ export const ProductsBlockCraft = ({
 
   return (
     <section 
-      ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+      ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
       className={`container mx-auto px-4 py-12 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
     >
       <h2 className="text-3xl font-bold mb-8 text-center">{title}</h2>

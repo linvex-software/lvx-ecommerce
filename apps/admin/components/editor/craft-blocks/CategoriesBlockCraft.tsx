@@ -52,7 +52,11 @@ export const CategoriesBlockCraft = ({
   if (isLoading) {
     return (
       <section 
-        ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+        ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
         className={`container mx-auto px-4 py-12 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
       >
         <h2 className="text-3xl font-bold mb-8">{title}</h2>
@@ -73,7 +77,11 @@ export const CategoriesBlockCraft = ({
 
   return (
     <section 
-      ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+      ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
       className={`container mx-auto px-4 py-12 ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
     >
       <h2 className="text-3xl font-bold mb-8 text-center">{title}</h2>

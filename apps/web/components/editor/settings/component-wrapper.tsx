@@ -2,7 +2,8 @@
 
 import React from 'react'
 import { cn } from '@/lib/utils'
-import { getColorWithOpacity, type ColorConfig } from './types'
+import { type ColorConfig } from './types'
+import { getColorWithOpacity } from './utils'
 
 export interface ComponentStyleProps {
   textColor?: string | ColorConfig | { mobile?: string; tablet?: string; desktop?: string }
@@ -37,15 +38,21 @@ export function ComponentWrapper({
 
     if (!value) return undefined
 
-    if (typeof value === 'object' && !('type' in value) && !('value' in value)) {
-      return value.desktop || value.tablet || value.mobile
+    if (typeof value === 'string') {
+      return value
     }
 
-    if (typeof value === 'object' && 'type' in value && 'value' in value) {
-      return getColorWithOpacity(value)
+    if (typeof value === 'object') {
+      // Verifica se é ColorConfig
+      if ('type' in value && 'value' in value) {
+        return getColorWithOpacity(value as ColorConfig)
+      }
+      // Caso contrário, é um objeto responsivo
+      const responsiveObj = value as { mobile?: string; tablet?: string; desktop?: string }
+      return responsiveObj.desktop || responsiveObj.tablet || responsiveObj.mobile
     }
 
-    return value
+    return undefined
   }
 
   const resolvedTextColor = getResponsiveValue(textColor, useThemeTextColor, '--store-text-color')

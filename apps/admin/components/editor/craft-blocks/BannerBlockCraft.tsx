@@ -31,7 +31,11 @@ export const BannerBlockCraft = ({
 
   return (
     <section 
-      ref={(ref: HTMLDivElement | null) => connect(drag(ref))}
+      ref={(ref: HTMLDivElement | null) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
       className={`w-full ${position === 'top' ? 'mb-10' : position === 'bottom' ? 'mt-10' : 'my-10'} ${isSelected ? 'ring-2 ring-blue-500' : ''}`}
     >
       <div className="relative overflow-hidden rounded-lg">
