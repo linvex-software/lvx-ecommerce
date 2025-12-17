@@ -166,13 +166,13 @@ export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) 
               <CardContent className="space-y-6">
                 <ColorPicker
                   label="Cor Primária"
-                  value={localPreferences.primary_color}
+                  value={localPreferences.primary_color ?? DEFAULT_PREFERENCES.primary_color}
                   onChange={(color) => setLocalPreferences(prev => ({ ...prev, primary_color: color }))}
                   description="Usada em botões, links e elementos de destaque"
                 />
                 <ColorPicker
                   label="Cor Secundária"
-                  value={localPreferences.secondary_color}
+                  value={localPreferences.secondary_color ?? DEFAULT_PREFERENCES.secondary_color}
                   onChange={(color) => setLocalPreferences(prev => ({ ...prev, secondary_color: color }))}
                   description="Usada em elementos complementares e acentos"
                 />
@@ -190,13 +190,13 @@ export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) 
               <CardContent className="space-y-6">
                 <ColorPicker
                   label="Cor do Texto"
-                  value={localPreferences.text_color}
+                  value={localPreferences.text_color ?? DEFAULT_PREFERENCES.text_color}
                   onChange={(color) => setLocalPreferences(prev => ({ ...prev, text_color: color }))}
                   description="Cor principal dos textos e títulos"
                 />
                 <ColorPicker
                   label="Cor dos Ícones"
-                  value={localPreferences.icon_color}
+                  value={localPreferences.icon_color ?? DEFAULT_PREFERENCES.icon_color}
                   onChange={(color) => setLocalPreferences(prev => ({ ...prev, icon_color: color }))}
                   description="Cor dos ícones e elementos gráficos"
                 />

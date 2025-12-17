@@ -460,7 +460,7 @@ export function MercadoPagoPayment({
               }
               
               // Garantir que o cardForm state está definido
-              setCardForm((prev) => {
+              setCardForm((prev: any) => {
                 if (!prev && cardFormInstanceRef) {
                   console.warn('[MercadoPagoPayment] CardForm foi limpo antes de onFormMounted, restaurando...')
                   return cardFormInstanceRef
@@ -552,7 +552,7 @@ export function MercadoPagoPayment({
         
         // Timeout de segurança: se onFormMounted não for chamado em 5 segundos, considerar como montado
         const mountTimeout = setTimeout(() => {
-          setCardForm((current) => {
+          setCardForm((current: any) => {
             // Se o CardForm foi limpo, restaurar
             if (!current && cardFormInstanceRef) {
               console.warn('[MercadoPagoPayment] CardForm foi limpo, restaurando após timeout')
@@ -591,7 +591,7 @@ export function MercadoPagoPayment({
             })
             
             // Garantir que o state está sincronizado
-            setCardForm((current) => {
+            setCardForm((current: any) => {
               if (!current && cardFormRef.current) {
                 return cardFormRef.current
               }
@@ -859,11 +859,7 @@ export function MercadoPagoPayment({
           <button
             type="button"
             onClick={() => setPaymentMethod('pix')}
-            className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-all ${
-              paymentMethod === 'pix'
-                ? 'border-foreground bg-secondary/50'
-                : 'border-border hover:border-foreground/50'
-            }`}
+            className="flex flex-col items-center justify-center p-4 border rounded-lg transition-all border-border hover:border-foreground/50"
           >
             <QrCode className="w-8 h-8 mb-2" />
             <span className="font-medium">Pix</span>
@@ -964,11 +960,7 @@ export function MercadoPagoPayment({
         <button
           type="button"
           onClick={() => setPaymentMethod('card')}
-          className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-all ${
-            paymentMethod === 'card'
-              ? 'border-foreground bg-secondary/50'
-              : 'border-border hover:border-foreground/50'
-          }`}
+          className="flex flex-col items-center justify-center p-4 border rounded-lg transition-all border-border hover:border-foreground/50"
         >
           <CreditCard className="w-8 h-8 mb-2" />
           <span className="font-medium">Cartão</span>
@@ -976,11 +968,7 @@ export function MercadoPagoPayment({
         <button
           type="button"
           onClick={() => setPaymentMethod('pix')}
-          className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-all ${
-            paymentMethod === 'pix'
-              ? 'border-foreground bg-secondary/50'
-              : 'border-border hover:border-foreground/50'
-          }`}
+          className="flex flex-col items-center justify-center p-4 border rounded-lg transition-all border-foreground bg-secondary/50"
         >
           <QrCode className="w-8 h-8 mb-2" />
           <span className="font-medium">Pix</span>

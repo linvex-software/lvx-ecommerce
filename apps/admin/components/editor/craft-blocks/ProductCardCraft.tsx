@@ -58,7 +58,7 @@ export function ProductCardCraft({ product, onAddToCart }: ProductCardCraftProps
             }}
             disabled={isOutOfStock}
             className="w-full"
-            variant={isOutOfStock ? 'secondary' : 'default'}
+            variant={isOutOfStock ? 'outline' : 'default'}
           >
             {isOutOfStock ? 'Esgotado' : 'Adicionar ao Carrinho'}
           </Button>

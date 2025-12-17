@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, keepPreviousData } from '@tanstack/react-query'
 import Link from 'next/link'
 import { fetchAPI } from '@/lib/api'
 import ProductCard, { Product } from '@/components/ProductCard'
@@ -112,7 +112,7 @@ export function ProductsBlock({
       
       return fetchAPI(`/products?${params.toString()}`)
     },
-    keepPreviousData: true
+    placeholderData: keepPreviousData
   })
 
   const products: (Product & { slug: string })[] = (productsData?.products || []).map(p => ({

@@ -318,9 +318,8 @@ export function ElementEditor({ selectedElement, onStyleUpdate, onPropsUpdate, o
                 <Label htmlFor="textAlign">Alinhamento</Label>
                 <Select
                   value={localStyles.textAlign || 'left'}
-                  onValueChange={(value) => {
-                    const textAlignValue: string = value || 'left'
-                    handleStyleChange('textAlign', textAlignValue as ElementStyles['textAlign'])
+                  onValueChange={(value: string) => {
+                    handleStyleChange('textAlign', value || 'left')
                   }}
                 >
                   <SelectTrigger>
