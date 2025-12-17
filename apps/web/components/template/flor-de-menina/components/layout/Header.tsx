@@ -84,7 +84,6 @@ export function Header() {
     // Usar uma função assíncrona para carregar o módulo apenas no runtime
     (async () => {
       try {
-        // @ts-expect-error - Este módulo só existe no contexto web, não no admin
         const authStoreModule = await import('../../../../../lib/store/useAuthStore');
 
         // Criar uma função que verifica o estado atual
@@ -312,7 +311,6 @@ export function Header() {
                 // Se não encontrou no localStorage, tentar via store
                 if (!authenticated) {
                   try {
-                    // @ts-expect-error - Este módulo só existe no contexto web, não no admin
                     const authStoreModule = await import('../../../../../lib/store/useAuthStore');
                     const authState = authStoreModule.useAuthStore.getState();
                     authenticated = !!(authState.accessToken && authState.customer);

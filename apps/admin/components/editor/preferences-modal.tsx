@@ -15,12 +15,17 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 
+const DEFAULT_PRIMARY_COLOR = '#000000'
+const DEFAULT_SECONDARY_COLOR = '#6366F1'
+const DEFAULT_TEXT_COLOR = '#000000'
+const DEFAULT_ICON_COLOR = '#000000'
+
 const DEFAULT_PREFERENCES: StorePreferences = {
   logo_url: null,
-  primary_color: '#000000',
-  secondary_color: '#6366F1',
-  text_color: '#000000',
-  icon_color: '#000000'
+  primary_color: DEFAULT_PRIMARY_COLOR,
+  secondary_color: DEFAULT_SECONDARY_COLOR,
+  text_color: DEFAULT_TEXT_COLOR,
+  icon_color: DEFAULT_ICON_COLOR
 }
 
 interface PreferencesModalProps {
@@ -35,6 +40,11 @@ export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) 
 
   const [localPreferences, setLocalPreferences] = useState<StorePreferences>(DEFAULT_PREFERENCES)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Helper para garantir que uma cor seja sempre uma string válida
+  const getColorValue = (color: string | null | undefined, defaultValue: string): string => {
+    return (color ?? defaultValue) as string
+  }
 
   // Carregar preferências do servidor
   useEffect(() => {
@@ -166,13 +176,13 @@ export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) 
               <CardContent className="space-y-6">
                 <ColorPicker
                   label="Cor Primária"
-                  value={localPreferences.primary_color ?? DEFAULT_PREFERENCES.primary_color}
+                  value={getColorValue(localPreferences.primary_color, DEFAULT_PRIMARY_COLOR)}
                   onChange={(color) => setLocalPreferences(prev => ({ ...prev, primary_color: color }))}
                   description="Usada em botões, links e elementos de destaque"
                 />
                 <ColorPicker
                   label="Cor Secundária"
-                  value={localPreferences.secondary_color ?? DEFAULT_PREFERENCES.secondary_color}
+                  value={getColorValue(localPreferences.secondary_color, DEFAULT_SECONDARY_COLOR)}
                   onChange={(color) => setLocalPreferences(prev => ({ ...prev, secondary_color: color }))}
                   description="Usada em elementos complementares e acentos"
                 />
@@ -190,13 +200,13 @@ export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) 
               <CardContent className="space-y-6">
                 <ColorPicker
                   label="Cor do Texto"
-                  value={localPreferences.text_color ?? DEFAULT_PREFERENCES.text_color}
+                  value={getColorValue(localPreferences.text_color, DEFAULT_TEXT_COLOR)}
                   onChange={(color) => setLocalPreferences(prev => ({ ...prev, text_color: color }))}
                   description="Cor principal dos textos e títulos"
                 />
                 <ColorPicker
                   label="Cor dos Ícones"
-                  value={localPreferences.icon_color ?? DEFAULT_PREFERENCES.icon_color}
+                  value={getColorValue(localPreferences.icon_color, DEFAULT_ICON_COLOR)}
                   onChange={(color) => setLocalPreferences(prev => ({ ...prev, icon_color: color }))}
                   description="Cor dos ícones e elementos gráficos"
                 />
@@ -234,21 +244,21 @@ export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) 
                       <p className="text-xs font-medium text-gray-600 mb-2">Cor Primária</p>
                       <div
                         className="h-12 rounded-lg border-2 border-gray-200"
-                        style={{ backgroundColor: localPreferences.primary_color }}
+                        style={{ backgroundColor: getColorValue(localPreferences.primary_color, DEFAULT_PRIMARY_COLOR) }}
                       />
                     </div>
                     <div>
                       <p className="text-xs font-medium text-gray-600 mb-2">Cor Secundária</p>
                       <div
                         className="h-12 rounded-lg border-2 border-gray-200"
-                        style={{ backgroundColor: localPreferences.secondary_color }}
+                        style={{ backgroundColor: getColorValue(localPreferences.secondary_color, DEFAULT_SECONDARY_COLOR) }}
                       />
                     </div>
                     <div>
                       <p className="text-xs font-medium text-gray-600 mb-2">Cor do Texto</p>
                       <div
                         className="h-12 rounded-lg border-2 border-gray-200 flex items-center justify-center"
-                        style={{ backgroundColor: localPreferences.text_color, color: '#fff' }}
+                        style={{ backgroundColor: getColorValue(localPreferences.text_color, DEFAULT_TEXT_COLOR), color: '#fff' }}
                       >
                         <span className="text-sm font-medium">Texto</span>
                       </div>
@@ -257,7 +267,7 @@ export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) 
                       <p className="text-xs font-medium text-gray-600 mb-2">Cor dos Ícones</p>
                       <div
                         className="h-12 rounded-lg border-2 border-gray-200 flex items-center justify-center"
-                        style={{ backgroundColor: localPreferences.icon_color }}
+                        style={{ backgroundColor: getColorValue(localPreferences.icon_color, DEFAULT_ICON_COLOR) }}
                       >
                         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
                           <path d="M10 2L3 7v11h4v-6h6v6h4V7l-7-5z" />
@@ -271,7 +281,7 @@ export function PreferencesModal({ open, onOpenChange }: PreferencesModalProps) 
                     <p className="text-xs font-medium text-gray-600 mb-2">Preview de Botão</p>
                     <button
                       className="w-full px-4 py-2 rounded-lg text-white font-medium transition-colors"
-                      style={{ backgroundColor: localPreferences.primary_color }}
+                      style={{ backgroundColor: getColorValue(localPreferences.primary_color, DEFAULT_PRIMARY_COLOR) }}
                     >
                       Botão de Exemplo
                     </button>

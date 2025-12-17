@@ -19,7 +19,7 @@ export function PromoBanner() {
   }
 
   return (
-    <section ref={(ref: HTMLElement | null) => ref && connect(ref)} className="relative py-24 overflow-hidden">
+    <section ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }} className="relative py-24 overflow-hidden">
       {/* Background */}
       <div className="absolute inset-0 bg-gradient-wine" />
       
