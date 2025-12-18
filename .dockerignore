@@ -47,8 +47,8 @@ Thumbs.db
 !README.md
 docs
 
-# Scripts (não necessários em produção)
-scripts
+# Scripts - NÃO ignorar, são necessários para test-setup
+# scripts
 
 # Templates (não necessários em produção)
 templates
