@@ -18,8 +18,9 @@ COPY packages/db/package.json ./packages/db/
 COPY packages/shared/package.json ./packages/shared/
 COPY packages/types/package.json ./packages/types/
 
-# Instalar apenas dependências de produção para a API
-RUN pnpm install --frozen-lockfile --filter=@white-label/api... --prod=false
+# Instalar dependências para a API
+# Temporariamente sem --frozen-lockfile até o lockfile ser atualizado no repositório
+RUN pnpm install --filter=@white-label/api... --prod=false
 
 # Stage 2: Build
 FROM base AS builder
@@ -68,7 +69,8 @@ COPY --from=builder /app/scripts ./scripts
 
 # Instalar dependências de produção (incluindo drizzle-kit que agora está em dependencies)
 # O filter @white-label/api... inclui todas as dependências do workspace (incluindo @white-label/db)
-RUN pnpm install --frozen-lockfile --filter=@white-label/api... --prod
+# Temporariamente sem --frozen-lockfile até o lockfile ser atualizado no repositório
+RUN pnpm install --filter=@white-label/api... --prod
 
 # Verificar se o arquivo existe (debug)
 RUN ls -la apps/api/dist/ || echo "Directory not found"
