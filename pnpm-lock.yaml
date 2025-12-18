@@ -513,6 +513,9 @@ importers:
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      drizzle-kit:
+        specifier: ^0.24.0
+        version: 0.24.2
       drizzle-orm:
         specifier: ^0.32.0
         version: 0.32.2(@types/react@18.3.27)(pg@8.16.3)(postgres@3.4.7)(react@18.3.1)
@@ -532,9 +535,6 @@ importers:
       dotenv:
         specifier: ^16.4.0
         version: 16.6.1
-      drizzle-kit:
-        specifier: ^0.24.0
-        version: 0.24.2
 
   packages/shared: {}
 
