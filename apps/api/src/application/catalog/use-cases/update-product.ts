@@ -16,7 +16,9 @@ const updateProductSchema = z.object({
       return normalizeSlug(val.trim())
     }),
   description: z.string().max(5000).optional().nullable(),
-  base_price: z.number().positive().optional(),
+  base_price: z.coerce.number().positive({
+    message: 'O preço base deve ser maior que 0'
+  }).optional(),
   sku: z.string().min(1).max(100).optional(),
   status: z.enum(['draft', 'active', 'inactive']).optional(),
   virtual_model_url: z.string().url().optional().nullable(),

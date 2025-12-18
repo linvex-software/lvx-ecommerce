@@ -262,11 +262,21 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
 
   const handleFormSubmit = async (data: ProductFormData) => {
     // Converter dígitos para número antes de enviar
-    const formPriceDigits = (data as any).priceDigits || priceDigits
+    // Usar sempre o estado priceDigits que está sendo atualizado em tempo real
+    const formPriceDigits = priceDigits || (data as any).priceDigits || ''
+    
+    // Debug: verificar valores
+    if (process.env.NODE_ENV === 'development') {
+      console.log('[ProductForm] Submit - priceDigits state:', priceDigits)
+      console.log('[ProductForm] Submit - data.priceDigits:', (data as any).priceDigits)
+      console.log('[ProductForm] Submit - formPriceDigits:', formPriceDigits)
+    }
+    
     const finalPrice = digitsToNumber(formPriceDigits)
 
     // Validar preço
-    if (isNaN(finalPrice) || finalPrice <= 0) {
+    if (!formPriceDigits || formPriceDigits.trim() === '' || isNaN(finalPrice) || finalPrice <= 0) {
+      console.error('[ProductForm] Preço inválido:', { formPriceDigits, finalPrice })
       throw new Error('Preço inválido. Informe um preço maior que zero.')
     }
 
@@ -442,12 +452,12 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
                         const digits = e.target.value.replace(/\D/g, '')
                         setPriceDigits(digits)
                         // Atualizar o valor do form para validação
-                        setValue('priceDigits' as any, digits, { shouldValidate: true })
+                        setValue('priceDigits' as any, digits, { shouldValidate: true, shouldDirty: true })
                       }}
                       onBlur={() => {
-                        // Manter formatação ao perder foco
+                        // Manter formatação ao perder foco e garantir que o valor está no form
                         if (priceDigits) {
-                          setValue('priceDigits' as any, priceDigits, { shouldValidate: true })
+                          setValue('priceDigits' as any, priceDigits, { shouldValidate: true, shouldDirty: true })
                         }
                       }}
                       placeholder="R$ 0,00"
