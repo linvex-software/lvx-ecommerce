@@ -96,10 +96,23 @@ async function buildServer() {
     credentials: true
   })
   const cookieSecret = process.env.COOKIE_SECRET
-  if (!cookieSecret) {
+
+  // Debug log para Railway
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[Config] COOKIE_SECRET está definido:', !!cookieSecret)
+    console.log('[Config] COOKIE_SECRET tem valor:', cookieSecret ? 'sim (length: ' + cookieSecret.length + ')' : 'não')
+  }
+
+  if (!cookieSecret || cookieSecret.trim() === '') {
+    const availableEnvVars = Object.keys(process.env)
+      .filter(k => k.includes('COOKIE') || k.includes('SECRET'))
+      .join(', ')
     throw new Error(
-      'COOKIE_SECRET environment variable is required. ' +
-      'Please set it in your .env file. Generate a secure random string (e.g., openssl rand -hex 32)'
+      'COOKIE_SECRET environment variable is required.\n' +
+      `Current working directory: ${process.cwd()}\n` +
+      `Available cookie/secret env vars: ${availableEnvVars || 'none'}\n` +
+      'Please set COOKIE_SECRET in Railway environment variables.\n' +
+      'Generate a secure random string (e.g., openssl rand -hex 32)'
     )
   }
   await app.register(cookie, {
