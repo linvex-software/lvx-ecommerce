@@ -28,12 +28,13 @@ WORKDIR /app
 # Copiar node_modules do stage anterior
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/apps/api/node_modules ./apps/api/node_modules
-COPY --from=deps /app/packages ./packages
 
-# Copiar código fonte
+# Copiar código fonte e configuração
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY turbo.json tsconfig.base.json ./
 COPY apps/api ./apps/api
+
+# Copiar packages necessários do contexto
 COPY packages ./packages
 
 # Build apenas da API e suas dependências
