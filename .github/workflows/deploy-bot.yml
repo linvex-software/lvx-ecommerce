@@ -17,8 +17,8 @@ jobs:
       # 2️⃣ Configurar Git (para evitar erro de autor)
       - name: Configure Git author
         run: |
-          git config user.name "linvexgroup"
-          git config user.email "linvex.software@gmail.com"
+          git config user.name "vgabrielk"
+          git config user.email "vfelix1553@gmail.com"
 
       # 3️⃣ Fazer merge do PR para main
       - name: Merge PR into main
@@ -26,4 +26,4 @@ jobs:
           git checkout main
           git merge ${{ github.event.pull_request.head.ref }} --no-ff -m "Merge PR #${{ github.event.pull_request.number }} via bot"
           git push https://x-access-token:${{ secrets.BOT_TOKEN }}@github.com/linvex-software/lvx-ecommerce.git main
-##
+################
