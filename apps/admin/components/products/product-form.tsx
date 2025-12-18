@@ -262,21 +262,38 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
 
   const handleFormSubmit = async (data: ProductFormData) => {
     // Converter dígitos para número antes de enviar
-    // Usar sempre o estado priceDigits que está sendo atualizado em tempo real
-    const formPriceDigits = priceDigits || (data as any).priceDigits || ''
+    // Priorizar: 1) estado priceDigits (mais atualizado), 2) data do form, 3) watch do form
+    const watchedPriceDigits = watch('priceDigits' as any)
+    const formPriceDigits = priceDigits || watchedPriceDigits || (data as any).priceDigits || ''
     
-    // Debug: verificar valores
-    if (process.env.NODE_ENV === 'development') {
-      console.log('[ProductForm] Submit - priceDigits state:', priceDigits)
-      console.log('[ProductForm] Submit - data.priceDigits:', (data as any).priceDigits)
-      console.log('[ProductForm] Submit - formPriceDigits:', formPriceDigits)
+    // Debug: verificar valores (sempre logar para debug)
+    console.log('[ProductForm] Submit - priceDigits state:', priceDigits)
+    console.log('[ProductForm] Submit - watchedPriceDigits:', watchedPriceDigits)
+    console.log('[ProductForm] Submit - data.priceDigits:', (data as any).priceDigits)
+    console.log('[ProductForm] Submit - formPriceDigits final:', formPriceDigits)
+    
+    // Validar se há dígitos antes de converter
+    if (!formPriceDigits || formPriceDigits.trim() === '' || formPriceDigits === '0') {
+      console.error('[ProductForm] Preço vazio ou zero:', { 
+        formPriceDigits, 
+        priceDigits, 
+        watchedPriceDigits,
+        dataPriceDigits: (data as any).priceDigits 
+      })
+      throw new Error('Preço inválido. Informe um preço maior que zero.')
     }
     
     const finalPrice = digitsToNumber(formPriceDigits)
+    console.log('[ProductForm] Submit - finalPrice calculado:', finalPrice, 'de', formPriceDigits)
 
-    // Validar preço
-    if (!formPriceDigits || formPriceDigits.trim() === '' || isNaN(finalPrice) || finalPrice <= 0) {
-      console.error('[ProductForm] Preço inválido:', { formPriceDigits, finalPrice })
+    // Validar preço convertido
+    if (isNaN(finalPrice) || finalPrice <= 0) {
+      console.error('[ProductForm] Preço inválido após conversão:', { 
+        formPriceDigits, 
+        finalPrice, 
+        parsed: parseInt(formPriceDigits, 10),
+        calculation: `${parseInt(formPriceDigits, 10)} / 100 = ${parseInt(formPriceDigits, 10) / 100}`
+      })
       throw new Error('Preço inválido. Informe um preço maior que zero.')
     }
 
@@ -318,17 +335,27 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     // Filtrar size chart vazio
     const hasSizeChart = finalSizeChart && finalSizeChart.name.trim() !== '' && Object.keys(finalSizeChart.chart_json).length > 0
 
-    const { priceDigits: _priceDigits, ...restData } = data as any
+    // Remover priceDigits e qualquer base_price que possa estar no data
+    const { priceDigits: _priceDigits, base_price: _basePrice, ...restData } = data as any
     const submitData = {
       ...restData,
       slug: autoGenerateSlug ? undefined : (data.slug || undefined), // Enviar undefined se auto-gerar
       sku: data.sku || undefined, // Enviar undefined se vazio para o backend gerar
-      base_price: finalPrice,
+      base_price: finalPrice, // SEMPRE usar o finalPrice calculado
       variants: validVariants.length > 0 ? validVariants : undefined,
       images: validImages.length > 0 ? validImages : undefined,
       seo: hasSEO ? seo : undefined,
       size_chart: hasSizeChart ? finalSizeChart : undefined
     }
+
+    // Debug: log do payload final
+    console.log('[ProductForm] Payload final sendo enviado:', {
+      ...submitData,
+      base_price: submitData.base_price,
+      base_price_type: typeof submitData.base_price,
+      finalPrice_calculado: finalPrice,
+      formPriceDigits_usado: formPriceDigits
+    })
 
     await onSubmit(submitData as any)
   }

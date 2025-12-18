@@ -1,5 +1,5 @@
 import type { FastifyRequest, FastifyReply } from 'fastify'
-import { ZodError } from 'zod'
+import { ZodError, z } from 'zod'
 import { loginUseCase, type LoginDependencies } from '../../../application/auth/use-cases/login'
 import {
   refreshTokenUseCase,
@@ -8,7 +8,12 @@ import {
 import { logoutUseCase, type LogoutDependencies } from '../../../application/auth/use-cases/logout'
 import { UserRepository } from '../../../infra/db/repositories/user-repository'
 import { AuthSessionRepository } from '../../../infra/db/repositories/auth-session-repository'
-import { loginSchema } from '@white-label/types'
+
+// Schema de validação para login
+const loginSchema = z.object({
+  email: z.string().email(),
+  password: z.string().min(6)
+})
 
 interface LoginBody {
   email: string

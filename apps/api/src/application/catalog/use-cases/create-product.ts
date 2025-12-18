@@ -15,9 +15,14 @@ const createProductSchema = z.object({
       return trimmed && trimmed.length > 0 ? normalizeSlug(trimmed) : undefined
     }),
   description: z.string().max(5000).optional().nullable(),
-  base_price: z.coerce.number().positive({
-    message: 'O preço base deve ser maior que 0'
-  }),
+  base_price: z.coerce
+    .number({
+      required_error: 'O preço base é obrigatório',
+      invalid_type_error: 'O preço base deve ser um número'
+    })
+    .positive({
+      message: 'O preço base deve ser maior que 0'
+    }),
   sku: z
     .string()
     .max(100)

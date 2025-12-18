@@ -111,6 +111,11 @@ export class ProductController {
         return
       }
 
+      // Debug: log do body recebido
+      console.log('[ProductController] Body recebido:', JSON.stringify(request.body, null, 2))
+      console.log('[ProductController] base_price recebido:', (request.body as any)?.base_price)
+      console.log('[ProductController] base_price type:', typeof (request.body as any)?.base_price)
+
       const validated = createProductSchema.parse(request.body)
 
       const product = await createProductUseCase(validated, storeId, {
