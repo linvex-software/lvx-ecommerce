@@ -38,8 +38,9 @@ COPY apps/api ./apps/api
 # Copiar packages necessários do contexto
 COPY packages ./packages
 
-# Copiar scripts (necessários para test-setup)
-COPY scripts ./scripts
+# Scripts não são necessários em produção (apenas para test-setup opcional)
+# Removido para simplificar - adicione de volta se precisar de test-setup
+# COPY scripts ./scripts
 
 # Build apenas da API e suas dependências
 RUN pnpm build --filter=@white-label/api...
@@ -64,8 +65,9 @@ COPY --from=builder /app/packages ./packages
 # Garantir que o package.json do db está disponível (necessário para executar scripts)
 COPY --from=builder /app/packages/db/package.json ./packages/db/package.json
 
-# Copiar scripts (necessários para test-setup se RUN_TEST_SETUP estiver definido)
-COPY --from=builder /app/scripts ./scripts
+# Scripts não são necessários em produção (apenas para test-setup opcional)
+# Removido para simplificar - adicione de volta se precisar de test-setup
+# COPY --from=builder /app/scripts ./scripts
 
 # Instalar dependências de produção (incluindo drizzle-kit que agora está em dependencies)
 # O filter @white-label/api... inclui todas as dependências do workspace (incluindo @white-label/db)
