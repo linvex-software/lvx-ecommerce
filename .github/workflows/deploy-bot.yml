@@ -26,4 +26,4 @@ jobs:
           git checkout main
           git merge ${{ github.event.pull_request.head.ref }} --no-ff -m "Merge PR #${{ github.event.pull_request.number }} via bot"
           git push https://x-access-token:${{ secrets.BOT_TOKEN }}@github.com/linvex-software/lvx-ecommerce.git main
-################
+###################
