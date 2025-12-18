@@ -14,7 +14,9 @@
     "test:store-id": "tsx --tsconfig scripts/tsconfig.json scripts/get-store-id.ts",
     "test:checkout": "tsx --tsconfig scripts/tsconfig.json scripts/test-checkout-orders.ts",
     "test:customer-addresses": "tsx --tsconfig scripts/tsconfig.json scripts/test-customer-addresses.ts",
-    "test:create-orders": "tsx --tsconfig scripts/tsconfig.json scripts/create-test-orders.ts"
+    "test:create-orders": "tsx --tsconfig scripts/tsconfig.json scripts/create-test-orders.ts",
+    "build:api": "turbo run build --filter=api...",
+    "start:api": "turbo run start --filter=api..."
   },
   "packageManager": "pnpm@9.0.0",
   "devDependencies": {
