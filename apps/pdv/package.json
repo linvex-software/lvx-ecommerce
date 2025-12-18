@@ -12,7 +12,7 @@
     "@white-label/ui": "workspace:*",
     "@white-label/types": "workspace:*",
     "@radix-ui/react-dialog": "^1.1.15",
-    "next": "latest",
+    "next": "16.0.10",
     "react": "18.3.1",
     "react-dom": "18.3.1",
     "zustand": "^5.0.0",
@@ -34,4 +34,3 @@
     "eslint-config-next": "latest"
   }
 }
-
