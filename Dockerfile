@@ -46,7 +46,7 @@ WORKDIR /app
 
 ENV NODE_ENV=production
 
-# Instalar pnpm
+# Instalar pnpm (necessário para instalar dependências do workspace)
 RUN corepack enable && corepack prepare pnpm@9.0.0 --activate
 
 # Copiar apenas arquivos necessários para produção
@@ -60,10 +60,15 @@ COPY --from=builder /app/packages ./packages
 # Instalar apenas dependências de produção
 RUN pnpm install --frozen-lockfile --filter=@white-label/api... --prod
 
+# Verificar se o arquivo existe (debug)
+RUN ls -la apps/api/dist/ || echo "Directory not found"
+RUN test -f apps/api/dist/server.js || (echo "server.js not found!" && ls -la apps/api/dist/ && exit 1)
+
 # Expor porta (padrão 3333, mas pode ser sobrescrita via PORT env var)
 EXPOSE 3333
 
-# Comando para iniciar a API
-CMD ["node", "apps/api/dist/server.js"]
+# Comando para iniciar a API (usar caminho absoluto)
+WORKDIR /app
+CMD ["node", "/app/apps/api/dist/server.js"]
 
 
