@@ -1,4 +1,22 @@
-import 'dotenv/config'
+// Carregar .env da raiz do projeto (não da pasta apps/api)
+import { config } from 'dotenv'
+import { resolve } from 'path'
+import { existsSync } from 'fs'
+
+// Tentar encontrar o .env na raiz do projeto (subindo 2 níveis de apps/api)
+const envPath = resolve(process.cwd(), '../../.env')
+if (existsSync(envPath)) {
+  config({ path: envPath })
+} else {
+  // Fallback: tentar na raiz atual
+  const currentEnvPath = resolve(process.cwd(), '.env')
+  if (existsSync(currentEnvPath)) {
+    config({ path: currentEnvPath })
+  } else {
+    // Último fallback: usar dotenv/config padrão
+    config()
+  }
+}
 
 // Debug: log todas as variáveis de ambiente disponíveis no Railway (apenas nomes, não valores)
 if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_NAME) {

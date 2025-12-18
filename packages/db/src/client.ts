@@ -35,18 +35,27 @@ function initializeDb() {
   return drizzle(client)
 }
 
+// Função getter para inicialização lazy
+function getDb() {
+  if (!_db) {
+    _db = initializeDb()
+  }
+  return _db
+}
+
 // Exporta proxy que inicializa lazy quando acessado
-export const db = new Proxy({} as ReturnType<typeof drizzle>, {
+// Usando uma abordagem mais compatível com ESM
+const dbProxy = new Proxy({} as ReturnType<typeof drizzle>, {
   get(_target, prop) {
-    if (!_db) {
-      _db = initializeDb()
-    }
-    const value = _db[prop as keyof ReturnType<typeof drizzle>]
+    const db = getDb()
+    const value = db[prop as keyof ReturnType<typeof drizzle>]
     // Se for uma função, bind o contexto correto
     if (typeof value === 'function') {
-      return value.bind(_db)
+      return value.bind(db)
     }
     return value
   }
 })
+
+export const db = dbProxy
 
