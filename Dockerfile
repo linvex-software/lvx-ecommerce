@@ -62,8 +62,12 @@ COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/packages ./packages
 
-# Garantir que o package.json do db está disponível (necessário para executar scripts)
-COPY --from=builder /app/packages/db/package.json ./packages/db/package.json
+# Verificar se arquivos necessários para migrations estão presentes
+RUN test -f packages/db/drizzle.config.ts || (echo "ERROR: packages/db/drizzle.config.ts not found!" && exit 1)
+RUN test -d packages/db/drizzle || (echo "ERROR: packages/db/drizzle/ directory not found!" && exit 1)
+RUN test -d packages/db/src/schema || (echo "ERROR: packages/db/src/schema/ directory not found!" && exit 1)
+RUN test -f packages/db/package.json || (echo "ERROR: packages/db/package.json not found!" && exit 1)
+RUN echo "✅ All migration files are present"
 
 # Scripts não são necessários em produção (apenas para test-setup opcional)
 # Removido para simplificar - adicione de volta se precisar de test-setup
