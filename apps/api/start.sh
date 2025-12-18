@@ -1,8 +1,11 @@
 #!/bin/sh
 set -e
 
-echo "🔄 Rodando migrations..."
-pnpm db:migrate
+echo "🧬 Gerando schema (drizzle generate)..."
+pnpm --filter @white-label/db db:generate
+
+echo "🗄️ Rodando migrations..."
+pnpm --filter @white-label/db db:migrate
 
 echo "🔧 Rodando test-setup (se necessário)..."
 # Opcional: rodar test-setup apenas se a variável RUN_TEST_SETUP estiver definida
