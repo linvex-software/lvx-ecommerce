@@ -60,10 +60,14 @@ COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/packages ./packages
 
+# Garantir que o package.json do db está disponível (necessário para executar scripts)
+COPY --from=builder /app/packages/db/package.json ./packages/db/package.json
+
 # Copiar scripts (necessários para test-setup se RUN_TEST_SETUP estiver definido)
 COPY --from=builder /app/scripts ./scripts
 
-# Instalar apenas dependências de produção (dev deps serão instaladas no start.sh se necessário)
+# Instalar dependências de produção (incluindo drizzle-kit que agora está em dependencies)
+# O filter @white-label/api... inclui todas as dependências do workspace (incluindo @white-label/db)
 RUN pnpm install --frozen-lockfile --filter=@white-label/api... --prod
 
 # Verificar se o arquivo existe (debug)
