@@ -64,5 +64,6 @@ RUN pnpm install --frozen-lockfile --filter=@white-label/api... --prod
 EXPOSE 3333
 
 # Comando para iniciar a API
-CMD ["pnpm", "--filter", "@white-label/api", "start"]
+CMD ["node", "apps/api/dist/server.js"]
+
 
