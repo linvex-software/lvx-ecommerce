@@ -1,5 +1,12 @@
 import 'dotenv/config'
 
+// Debug: log todas as variáveis de ambiente disponíveis no Railway (apenas nomes, não valores)
+if (process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_NAME) {
+  console.log('[Railway] Ambiente detectado')
+  console.log('[Railway] Variáveis de ambiente disponíveis:', Object.keys(process.env).sort().join(', '))
+  console.log('[Railway] NODE_ENV:', process.env.NODE_ENV)
+}
+
 import Fastify, { type FastifyRequest } from 'fastify'
 import cors from '@fastify/cors'
 import multipart from '@fastify/multipart'
@@ -97,20 +104,21 @@ async function buildServer() {
   })
   const cookieSecret = process.env.COOKIE_SECRET
 
-  // Debug log para Railway
-  if (process.env.NODE_ENV !== 'production') {
-    console.log('[Config] COOKIE_SECRET está definido:', !!cookieSecret)
-    console.log('[Config] COOKIE_SECRET tem valor:', cookieSecret ? 'sim (length: ' + cookieSecret.length + ')' : 'não')
-  }
+  // Debug log para Railway - sempre mostrar em Railway
+  console.log('[Config] COOKIE_SECRET está definido:', !!cookieSecret)
+  console.log('[Config] COOKIE_SECRET tem valor:', cookieSecret ? 'sim (length: ' + cookieSecret.length + ')' : 'não')
+  
+  const availableEnvVars = Object.keys(process.env)
+    .filter(k => k.includes('COOKIE') || k.includes('SECRET') || k.includes('DATABASE'))
+    .join(', ')
+  console.log('[Config] Variáveis relacionadas disponíveis:', availableEnvVars || 'none')
 
   if (!cookieSecret || cookieSecret.trim() === '') {
-    const availableEnvVars = Object.keys(process.env)
-      .filter(k => k.includes('COOKIE') || k.includes('SECRET'))
-      .join(', ')
     throw new Error(
       'COOKIE_SECRET environment variable is required.\n' +
       `Current working directory: ${process.cwd()}\n` +
-      `Available cookie/secret env vars: ${availableEnvVars || 'none'}\n` +
+      `Available cookie/secret/database env vars: ${availableEnvVars || 'none'}\n` +
+      `Total env vars count: ${Object.keys(process.env).length}\n` +
       'Please set COOKIE_SECRET in Railway environment variables.\n' +
       'Generate a secure random string (e.g., openssl rand -hex 32)'
     )
