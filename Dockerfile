@@ -37,6 +37,9 @@ COPY apps/api ./apps/api
 # Copiar packages necessários do contexto
 COPY packages ./packages
 
+# Copiar scripts (necessários para test-setup)
+COPY scripts ./scripts
+
 # Build apenas da API e suas dependências
 RUN pnpm build --filter=@white-label/api...
 
@@ -57,18 +60,27 @@ COPY --from=builder /app/apps/api/package.json ./apps/api/
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/packages ./packages
 
-# Instalar apenas dependências de produção
+# Copiar scripts (necessários para test-setup se RUN_TEST_SETUP estiver definido)
+COPY --from=builder /app/scripts ./scripts
+
+# Instalar apenas dependências de produção (dev deps serão instaladas no start.sh se necessário)
 RUN pnpm install --frozen-lockfile --filter=@white-label/api... --prod
 
 # Verificar se o arquivo existe (debug)
 RUN ls -la apps/api/dist/ || echo "Directory not found"
 RUN test -f apps/api/dist/server.js || (echo "server.js not found!" && ls -la apps/api/dist/ && exit 1)
 
+# Copiar script de startup
+COPY apps/api/start.sh ./apps/api/start.sh
+
+# Garantir permissão de execução
+RUN chmod +x apps/api/start.sh
+
 # Expor porta (padrão 3333, mas pode ser sobrescrita via PORT env var)
 EXPOSE 3333
 
-# Comando para iniciar a API (usar caminho absoluto)
+# Comando para iniciar a API via script
 WORKDIR /app
-CMD ["node", "/app/apps/api/dist/server.js"]
+CMD ["sh", "/app/apps/api/start.sh"]
 
 
