@@ -10,6 +10,7 @@ import {
   index
 } from 'drizzle-orm/pg-core'
 import { stores } from './core'
+import { products } from './catalog'
 
 export const landingPages = pgTable(
   'landing_pages',
@@ -21,7 +22,11 @@ export const landingPages = pgTable(
     title: text('title').notNull(),
     slug: text('slug').notNull(),
     published: boolean('published').notNull().default(false),
+    content_json: jsonb('content_json').$type<Record<string, unknown>>(),
     created_at: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updated_at: timestamp('updated_at', { withTimezone: true })
       .defaultNow()
       .notNull()
   },
@@ -49,6 +54,33 @@ export const landingPageBlocks = pgTable(
   (table) => ({
     landingPageOrderIdx: index('landing_page_blocks_landing_page_order_idx').on(
       table.landing_page_id,
+      table.order_index
+    )
+  })
+)
+
+export const dynamicPageProducts = pgTable(
+  'dynamic_page_products',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    dynamic_page_id: uuid('dynamic_page_id')
+      .notNull()
+      .references(() => landingPages.id, { onDelete: 'cascade' }),
+    product_id: uuid('product_id')
+      .notNull()
+      .references(() => products.id, { onDelete: 'cascade' }),
+    order_index: integer('order_index').notNull().default(0),
+    created_at: timestamp('created_at', { withTimezone: true })
+      .defaultNow()
+      .notNull()
+  },
+  (table) => ({
+    pageProductIdx: index('dynamic_page_products_page_product_idx').on(
+      table.dynamic_page_id,
+      table.product_id
+    ),
+    pageOrderIdx: index('dynamic_page_products_page_order_idx').on(
+      table.dynamic_page_id,
       table.order_index
     )
   })

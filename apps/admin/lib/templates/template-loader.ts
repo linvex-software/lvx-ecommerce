@@ -6,6 +6,9 @@
 
 import React from 'react'
 
+// Cache para evitar carregar o mesmo template múltiplas vezes
+const templateResolverCache = new Map<string, Record<string, any>>()
+
 export interface TemplateMetadata {
   id: string
   name: string
@@ -66,6 +69,11 @@ export async function loadTemplateConfig(templateId: string): Promise<Record<str
 
 
 export async function loadTemplateComponents(templateId: string) {
+  // Verificar cache primeiro
+  if (templateResolverCache.has(templateId)) {
+    return templateResolverCache.get(templateId)!
+  }
+
   try {
     // Importar dinamicamente o módulo do template
     const templateModule = await import(`../../../../templates/${templateId}/index.ts`)
@@ -104,28 +112,33 @@ export async function loadTemplateComponents(templateId: string) {
       aside: createNativeElement('aside'),
     }
     
+    let finalResolver: Record<string, any>
+    
     // Se o módulo exporta componentResolver diretamente, mesclar com o resolver base
     if (templateModule.componentResolver) {
-      const finalResolver = {
+      finalResolver = {
         ...resolver,
         ...templateModule.componentResolver
       }
-      console.log(`[template-loader] Resolver carregado para ${templateId}:`, Object.keys(finalResolver))
-      return finalResolver
+    } else {
+      // Caso contrário, construir o resolver a partir das exportações
+      if (templateModule.Header) resolver.Header = templateModule.Header
+      if (templateModule.Footer) resolver.Footer = templateModule.Footer
+      if (templateModule.HeroBanner) resolver.HeroBanner = templateModule.HeroBanner
+      if (templateModule.ProductShowcase) resolver.ProductShowcase = templateModule.ProductShowcase
+      if (templateModule.CategoryBanner) resolver.CategoryBanner = templateModule.CategoryBanner
+      if (templateModule.PromoBanner) resolver.PromoBanner = templateModule.PromoBanner
+      if (templateModule.InstagramFeed) resolver.InstagramFeed = templateModule.InstagramFeed
+      if (templateModule.EditableText) resolver.EditableText = templateModule.EditableText
+      if (templateModule.EditableButton) resolver.EditableButton = templateModule.EditableButton
+      finalResolver = resolver
     }
     
-    // Caso contrário, construir o resolver a partir das exportações
-    if (templateModule.Header) resolver.Header = templateModule.Header
-    if (templateModule.Footer) resolver.Footer = templateModule.Footer
-    if (templateModule.HeroBanner) resolver.HeroBanner = templateModule.HeroBanner
-    if (templateModule.ProductShowcase) resolver.ProductShowcase = templateModule.ProductShowcase
-    if (templateModule.CategoryBanner) resolver.CategoryBanner = templateModule.CategoryBanner
-    if (templateModule.PromoBanner) resolver.PromoBanner = templateModule.PromoBanner
-    if (templateModule.InstagramFeed) resolver.InstagramFeed = templateModule.InstagramFeed
-    if (templateModule.EditableText) resolver.EditableText = templateModule.EditableText
+    // Armazenar no cache
+    templateResolverCache.set(templateId, finalResolver)
     
-    console.log(`[template-loader] Resolver construído para ${templateId}:`, Object.keys(resolver))
-    return resolver
+    console.log(`[template-loader] Resolver carregado para ${templateId}:`, Object.keys(finalResolver))
+    return finalResolver
   } catch (error) {
     console.error(`Erro ao carregar componentes do template ${templateId}:`, error)
     throw error

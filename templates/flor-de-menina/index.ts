@@ -16,6 +16,7 @@ import { CategoryBanner } from '../../apps/web/components/template/flor-de-menin
 import { PromoBanner } from '../../apps/web/components/template/flor-de-menina/components/home/PromoBanner'
 import { InstagramFeed } from '../../apps/web/components/template/flor-de-menina/components/home/InstagramFeed'
 import { EditableText } from '../../apps/web/components/template/flor-de-menina/components/common/editable-text'
+import { EditableButton } from '../../apps/web/components/template/flor-de-menina/components/common/editable-button'
 
 export const templateId = 'flor-de-menina'
 export const templateName = 'Flor de Menina'
@@ -33,11 +34,12 @@ export const componentResolver = {
   CategoryBanner,
   PromoBanner,
   InstagramFeed,
-  EditableText
+  EditableText,
+  EditableButton
 }
 
 // Exportar componentes individualmente também
-export { Header, Footer, HeroBanner, ProductShowcase, CategoryBanner, PromoBanner, InstagramFeed, EditableText }
+export { Header, Footer, HeroBanner, ProductShowcase, CategoryBanner, PromoBanner, InstagramFeed, EditableText, EditableButton }
 
 /**
  * Carrega o layout fixo do template

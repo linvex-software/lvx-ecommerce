@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
+import { Spinner } from '@/components/ui/ios-spinner'
 
 // Roles permitidas para acessar o editor
 const ALLOWED_ROLES: Array<'admin' | 'operador' | 'vendedor'> = ['admin', 'operador']
@@ -62,8 +63,8 @@ export default function EditorLayout({ children }: { children: React.ReactNode }
   // Mostrar loading enquanto verifica autenticação
   if (!isMounted || isChecking || !isAuthenticated || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50/50">
-        <div className="text-sm font-light text-gray-500 tracking-wide">Carregando...</div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <Spinner size="lg" />
       </div>
     )
   }

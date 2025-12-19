@@ -62,6 +62,8 @@ export class NavbarRepository {
         visible: input.visible ?? true,
         order: input.order ?? 0,
         parentId: input.parentId || null,
+        config: input.config || null,
+        visibility: input.visibility || { desktop: true, tablet: true, mobile: true },
         style: input.style || null,
       })
       .returning()
@@ -89,6 +91,8 @@ export class NavbarRepository {
     if (input.visible !== undefined) updateData.visible = input.visible
     if (input.order !== undefined) updateData.order = input.order
     if (input.parentId !== undefined) updateData.parentId = input.parentId || null
+    if (input.config !== undefined) updateData.config = input.config || null
+    if (input.visibility !== undefined) updateData.visibility = input.visibility || null
     if (input.style !== undefined) updateData.style = input.style || null
 
     const [item] = await db
@@ -197,6 +201,8 @@ export class NavbarRepository {
       visible: row.visible,
       order: row.order,
       parentId: row.parentId || undefined,
+      config: row.config as NavbarItem['config'] || undefined,
+      visibility: row.visibility as NavbarItem['visibility'] || undefined,
       style: row.style as NavbarItem['style'] || undefined,
       children: undefined,
       createdAt: row.createdAt,

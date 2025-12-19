@@ -55,6 +55,10 @@ import { registerPaymentRoutes } from './presentation/http/payments/payment-rout
 import { registerAdminPaymentMethodRoutes } from './presentation/http/admin/payment-method-routes'
 import { registerAdminReviewRoutes } from './presentation/http/admin/review-routes'
 import { registerUploadRoutes } from './presentation/http/admin/upload-routes'
+import { registerAdminNavbarRoutes } from './presentation/http/admin/navbar-routes'
+import { registerStoreNavbarRoutes } from './presentation/http/store/navbar-routes'
+import { registerAdminLandingRoutes } from './presentation/http/admin/landing-routes'
+import { registerStoreLandingRoutes } from './presentation/http/store/landing-routes'
 
 async function buildServer() {
   const app = Fastify({
@@ -211,6 +215,10 @@ async function buildServer() {
   await registerAdminPaymentMethodRoutes(app)
   await registerAdminReviewRoutes(app)
   await registerUploadRoutes(app)
+  await registerAdminNavbarRoutes(app)
+  await registerStoreNavbarRoutes(app)
+  await registerAdminLandingRoutes(app)
+  await registerStoreLandingRoutes(app)
 
   return app
 }

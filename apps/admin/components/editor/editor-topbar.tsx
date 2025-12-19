@@ -1,13 +1,13 @@
 'use client'
 
 import { useEditor } from '@craftjs/core'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
 import { apiClient } from '@/lib/api-client'
 import { useState } from 'react'
 import { toast } from 'sonner'
-import { Menu, Monitor, Tablet, Undo2, Redo2, Eye, ChevronDown, Settings, ArrowLeft } from 'lucide-react'
-import { usePreviewMode } from './preview-context'
+import { Menu, Undo2, Redo2, Eye, ChevronDown, Settings, ArrowLeft } from 'lucide-react'
+import { PreviewViewportControls } from './preview-viewport-controls'
 import Link from 'next/link'
 
 interface EditorTopbarProps {
@@ -15,21 +15,119 @@ interface EditorTopbarProps {
 }
 
 export function EditorTopbar({ isPreview }: EditorTopbarProps) {
-  const { query, enabled } = useEditor((state) => ({
-    enabled: state.options.enabled
+  const { query, enabled, actions } = useEditor((state) => ({
+    enabled: state.options.enabled,
+    nodes: state.nodes, // Incluir nodes para garantir que temos acesso ao estado
   }))
   const router = useRouter()
+  const pathname = usePathname()
   const user = useAuthStore((state) => state.user)
   const [isSaving, setIsSaving] = useState(false)
-  const { previewMode, setPreviewMode } = usePreviewMode()
+  const isMenuPage = pathname?.includes('/editor/menu') || false
 
   const handleSave = async () => {
     if (!user?.storeId) return
 
     setIsSaving(true)
     try {
-      const serialized = query.serialize()
-      const layoutJson = JSON.parse(serialized)
+      // O editor está dentro de um iframe, então precisamos solicitar a serialização do iframe
+      // Primeiro, tentar solicitar serialização do iframe
+      let layoutJson: Record<string, unknown> | null = null
+      
+      if (typeof window !== 'undefined' && (window as any).__requestLayoutSerialize) {
+        console.log('[EditorTopbar] Solicitando serialização do iframe...')
+        
+        // Criar uma promise para aguardar a resposta do iframe
+        const serializedPromise = new Promise<string>((resolve, reject) => {
+          const timeout = setTimeout(() => {
+            reject(new Error('Timeout aguardando serialização do iframe'))
+          }, 5000)
+          
+          const handleMessage = (event: MessageEvent) => {
+            if (event.data.action === 'LAYOUT_SERIALIZED' && event.data.layout) {
+              clearTimeout(timeout)
+              window.removeEventListener('message', handleMessage)
+              resolve(event.data.layout)
+            }
+          }
+          
+          window.addEventListener('message', handleMessage)
+          ;(window as any).__requestLayoutSerialize()
+        })
+        
+        try {
+          const serialized = await serializedPromise
+          layoutJson = JSON.parse(serialized)
+          console.log('[EditorTopbar] Layout recebido do iframe:', {
+            nodeCount: Object.keys(layoutJson).length,
+            hasRoot: !!layoutJson.ROOT,
+          })
+        } catch (error) {
+          console.warn('[EditorTopbar] Erro ao obter layout do iframe, tentando local:', error)
+        }
+      }
+      
+      // Fallback: tentar serializar do editor local (pode estar vazio se o editor estiver no iframe)
+      if (!layoutJson || Object.keys(layoutJson).length === 0) {
+        console.log('[EditorTopbar] Tentando serializar do editor local...')
+        await new Promise(resolve => setTimeout(resolve, 300))
+        
+        try {
+          const serializedNodes = query.getSerializedNodes()
+          layoutJson = serializedNodes as Record<string, unknown>
+          console.log('[EditorTopbar] Usando getSerializedNodes(), nodeCount:', Object.keys(layoutJson).length)
+        } catch (error) {
+          const serialized = query.serialize()
+          layoutJson = JSON.parse(serialized)
+        }
+      }
+      
+      if (!layoutJson || Object.keys(layoutJson).length === 0) {
+        throw new Error('Não foi possível serializar o layout. O editor pode estar vazio ou não estar carregado.')
+      }
+      
+      console.log('[EditorTopbar] Serializado antes de salvar:', {
+        serializedLength: JSON.stringify(layoutJson).length,
+        nodeCount: Object.keys(layoutJson).length,
+        hasRoot: !!layoutJson.ROOT,
+        rootNodes: (layoutJson.ROOT as any)?.nodes?.length || 0,
+      })
+
+      // Debug: Verificar se há EditableText com conteúdo no layout
+      const editableTextNodes: any[] = []
+      const findEditableTexts = (nodeId: string, node: any, visited = new Set<string>()) => {
+        if (visited.has(nodeId)) return
+        visited.add(nodeId)
+        
+        if (node?.type?.resolvedName === 'EditableText') {
+          editableTextNodes.push({
+            nodeId,
+            content: node.props?.content || '',
+            hasContent: !!node.props?.content
+          })
+        }
+        
+        if (node?.nodes) {
+          for (const childId of node.nodes) {
+            const childNode = layoutJson[childId]
+            if (childNode) {
+              findEditableTexts(childId, childNode, visited)
+            }
+          }
+        }
+      }
+      
+      if (layoutJson.ROOT) {
+        findEditableTexts('ROOT', layoutJson.ROOT)
+      }
+      
+      console.log('[EditorTopbar] Salvando layout:', {
+        totalNodes: Object.keys(layoutJson).length,
+        rootNodes: (layoutJson.ROOT as any)?.nodes?.length || 0,
+        editableTextCount: editableTextNodes.length,
+        editableTextsWithContent: editableTextNodes.filter(n => n.hasContent).length,
+        editableTexts: editableTextNodes.slice(0, 5) // Primeiros 5 para debug
+      })
 
       const response = await apiClient.post<{
         success: boolean
@@ -39,7 +137,11 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
         layout_json: layoutJson
       })
 
-      console.log('[EditorTopbar] Layout salvo com sucesso:', response.data)
+      console.log('[EditorTopbar] Layout salvo com sucesso:', {
+        success: response.data.success,
+        updated_at: response.data.updated_at,
+        savedNodeCount: Object.keys(response.data.layout_json || {}).length
+      })
       toast.success('Layout salvo com sucesso!')
       
       // Notificar a página principal para recarregar (se estiver aberta)
@@ -95,29 +197,8 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
         
       </div>
 
-      {/* Center Section - Preview Icons */}
-      <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
-        <button
-          onClick={() => setPreviewMode('desktop')}
-          className={`p-2 rounded transition-colors ${
-            previewMode === 'desktop' 
-              ? 'bg-[#7c3aed] text-white' 
-              : 'text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <Monitor className="w-4 h-4" />
-        </button>
-        <button
-          onClick={() => setPreviewMode('tablet')}
-          className={`p-2 rounded transition-colors ${
-            previewMode === 'tablet' 
-              ? 'bg-[#7c3aed] text-white' 
-              : 'text-gray-600 hover:bg-gray-200'
-          }`}
-        >
-          <Tablet className="w-4 h-4" />
-        </button>
-      </div>
+      {/* Center Section - Preview Viewport Controls */}
+      <PreviewViewportControls />
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
@@ -146,8 +227,8 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
           <Eye className="w-4 h-4" />
         </button>
         
-        {/* Publish Button */}
-        {!isPreview && (
+        {/* Publish Button - apenas na homepage, não no menu */}
+        {!isPreview && !isMenuPage && (
           <div className="relative">
             <button
               onClick={handleSave}

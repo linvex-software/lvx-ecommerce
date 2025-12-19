@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState, useRef, useCallback } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Editor, useEditor } from '@craftjs/core'
 import { useAuthStore } from '@/store/auth-store'
@@ -8,14 +8,13 @@ import { apiClient } from '@/lib/api-client'
 import { EditorSettingsPanel } from '@/components/editor/editor-settings-panel'
 import { EditorTopbar } from '@/components/editor/editor-topbar'
 import { TemplateSelector } from '@/components/editor/template-selector'
-import { RestrictedFrame } from '@/components/editor/restricted-frame'
-import { PreviewProvider, usePreviewMode } from '@/components/editor/preview-context'
+import { IsolatedPreviewFrame } from '@/components/editor/isolated-preview-frame'
+import { PreviewProvider } from '@/components/editor/preview-context'
 import { ThemeProvider } from '@/components/theme/theme-provider'
 import { loadTemplateLayout, loadTemplateConfig, loadTemplateComponents } from '@/lib/templates/template-loader'
 import { validateAndCleanLayout, createSafeDefaultLayout } from '@/lib/templates/layout-validator'
 import { EditorCartProvider } from '@/components/editor/editor-cart-provider'
-import { DeviceFrameset } from 'react-device-frameset'
-import 'react-device-frameset/styles/marvel-devices.min.css'
+import { Spinner } from '@/components/ui/ios-spinner'
 
 function EditorContent() {
   const searchParams = useSearchParams()
@@ -56,21 +55,17 @@ function EditorContent() {
         setTemplateConfig(config)
         applyTemplateConfig(config)
 
-        // Carregar layout padrão do template PRIMEIRO
-        const defaultLayout = await loadTemplateLayout(selectedTemplate)
-        console.log('[Editor] Layout padrão carregado:', {
-          hasRoot: !!defaultLayout?.ROOT,
-          totalNodes: Object.keys(defaultLayout || {}).length,
-          rootNodes: (defaultLayout?.ROOT as any)?.nodes?.length || 0
-        })
-
         // Carregar layout do template ou layout personalizado salvo
+        // IMPORTANTE: Não carregar layout padrão primeiro para evitar flash do template padrão
         if (!user?.storeId) {
+          // Sem storeId, usar layout padrão
+          const defaultLayout = await loadTemplateLayout(selectedTemplate)
           setSavedLayout(defaultLayout)
           setIsLoading(false)
           return
         }
 
+        // Tentar carregar layout salvo primeiro
         try {
           const response = await apiClient.get<{
             layout_json: Record<string, unknown> | null
@@ -92,20 +87,25 @@ function EditorContent() {
             // Se o layout salvo tiver estrutura válida, usar ele
             if (savedNodeCount > 1 && savedRootNodes > 0) {
               setSavedLayout(savedLayoutData)
-            } else {
-              // Layout salvo está vazio ou inválido, usar padrão
-              console.warn('[Editor] Layout salvo está vazio ou inválido, usando layout padrão')
-              setSavedLayout(defaultLayout)
+              setIsLoading(false)
+              return
             }
-          } else {
-            // Se não houver layout salvo ou não tiver ROOT, usar layout padrão do template
-            console.log('[Editor] Usando layout padrão do template (sem layout salvo ou inválido)')
-            setSavedLayout(defaultLayout)
           }
-        } catch (error) {
-          // Se não houver layout salvo, usar layout padrão do template
-          console.log('[Editor] Erro ao carregar layout salvo, usando padrão:', error)
+          
+          // Se não houver layout salvo válido, carregar layout padrão
+          console.log('[Editor] Sem layout salvo válido, carregando layout padrão do template')
+          const defaultLayout = await loadTemplateLayout(selectedTemplate)
           setSavedLayout(defaultLayout)
+        } catch (error) {
+          // Se houver erro ao carregar layout salvo, usar layout padrão
+          console.log('[Editor] Erro ao carregar layout salvo, usando padrão:', error)
+          try {
+            const defaultLayout = await loadTemplateLayout(selectedTemplate)
+            setSavedLayout(defaultLayout)
+          } catch (layoutError) {
+            console.error('[Editor] Erro ao carregar layout padrão:', layoutError)
+            setSavedLayout(null)
+          }
         }
       } catch (error) {
         console.error('Erro ao carregar template:', error)
@@ -125,6 +125,7 @@ function EditorContent() {
 
     loadInitialTemplate()
   }, [user?.storeId, selectedTemplate])
+  
 
   const applyTemplateConfig = (config: Record<string, unknown>, templateId?: string) => {
     if (typeof document === 'undefined') return
@@ -212,10 +213,12 @@ function EditorContent() {
     }
   }
 
-  if (isLoading || savedLayout === undefined) {
+  // Mostrar spinner apenas durante carregamento inicial dos dados
+  // Não esperar pelo preview estar pronto para evitar loading infinito
+  if (isLoading || savedLayout === undefined || Object.keys(templateResolver).length === 0) {
     return (
-      <div className="flex items-center justify-center h-full">
-        <div className="text-sm text-gray-500">Carregando editor...</div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <Spinner size="lg" />
       </div>
     )
   }
@@ -255,6 +258,11 @@ function EditorContentInner({
   selectedTemplate: string
   templateResolver: Record<string, any>
 }) {
+  // Se não tiver layout ou resolver vazio, não renderizar nada
+  // O spinner já está sendo mostrado no nível superior
+  if (!savedLayoutProp || Object.keys(templateResolver).length === 0) {
+    return null
+  }
   // Se o layout não tem ROOT válido, usar layout padrão seguro
   let savedLayout = savedLayoutProp
   if (savedLayout && (!savedLayout.ROOT || typeof savedLayout.ROOT !== 'object')) {
@@ -316,138 +324,22 @@ function EditorContentInner({
     hasJson: !!layoutJson,
     jsonLength: layoutJson?.length || 0
   })
-  const { previewMode } = usePreviewMode()
-  const frameRef = useRef<HTMLDivElement>(null)
-  const { enabled } = useEditor((state: any) => ({
-    enabled: state.options.enabled
-  }))
-
-  // Adicionar estilos para permitir scroll dentro do DeviceFrameset
-  useEffect(() => {
-    const style = document.createElement('style')
-    style.id = 'device-frameset-scroll-fix'
-    style.textContent = `
-      /* Permitir scroll dentro do DeviceFrameset */
-      .marvel-device {
-        overflow: visible !important;
-      }
-      
-      .marvel-device .screen {
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        height: 100% !important;
-      }
-      
-      /* Garantir que o conteúdo interno possa fazer scroll */
-      .marvel-device .screen > * {
-        min-height: 100% !important;
-      }
-    `
-    if (!document.getElementById('device-frameset-scroll-fix')) {
-      document.head.appendChild(style)
-    }
-    return () => {
-      const existingStyle = document.getElementById('device-frameset-scroll-fix')
-      if (existingStyle) {
-        existingStyle.remove()
-      }
-    }
-  }, [])
-  
-  // Aplicar tema no Frame do Craft.js
-  useEffect(() => {
-    const applyThemeToFrame = () => {
-      if (frameRef.current) {
-        const computedStyle = getComputedStyle(document.documentElement)
-        const primaryColor = computedStyle.getPropertyValue('--template-primary-color').trim()
-        const secondaryColor = computedStyle.getPropertyValue('--template-secondary-color').trim()
-        const textColor = computedStyle.getPropertyValue('--template-text-color').trim()
-        
-        if (primaryColor) {
-          frameRef.current.style.setProperty('--template-primary-color', primaryColor)
-        }
-        if (secondaryColor) {
-          frameRef.current.style.setProperty('--template-secondary-color', secondaryColor)
-        }
-        if (textColor) {
-          frameRef.current.style.setProperty('--template-text-color', textColor)
-        }
-      }
-    }
-    
-    applyThemeToFrame()
-    const timer = setTimeout(applyThemeToFrame, 100)
-    return () => clearTimeout(timer)
-  }, [])
-
-  // Interceptar cliques em links quando o editor está habilitado
-  useEffect(() => {
-    if (!enabled || isPreview) return
-
-    const handleLinkClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement
-      const link = target.closest('a')
-      
-      if (link) {
-        e.preventDefault()
-        e.stopPropagation()
-        return false
-      }
-    }
-
-    const frameElement = frameRef.current
-    if (frameElement) {
-      frameElement.addEventListener('click', handleLinkClick, true)
-      return () => {
-        frameElement.removeEventListener('click', handleLinkClick, true)
-      }
-    }
-  }, [enabled, isPreview])
-
-  // Mapear preview mode para dispositivos da biblioteca
-  const getDeviceConfig = () => {
-    switch (previewMode) {
-      case 'tablet':
-        return { device: 'iPad Mini' as const, color: 'silver' as const }
-      case 'desktop':
-        return { device: 'MacBook Pro' as const }
-      default:
-        return { device: 'MacBook Pro' as const }
-    }
-  }
-
-  const deviceConfig = getDeviceConfig()
 
   return (
     <>
       <EditorTopbar isPreview={isPreview} />
       <div className="flex-1 flex overflow-hidden bg-white">
         {!isPreview && (
-          <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto h-full flex flex-col">
+          <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
             <TemplateSelector onTemplateSelect={onTemplateSelect} selectedTemplate={selectedTemplate} />
           </div>
         )}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden bg-gray-50 flex items-start justify-center p-4 md:p-10">
-          {layoutJson ? (
-            <DeviceFrameset {...deviceConfig}>
-              <div 
-                ref={frameRef}
-                className="w-full"
-                style={{ 
-                  fontFamily: 'var(--font-body, "Montserrat", system-ui, sans-serif)',
-                  backgroundColor: 'hsl(var(--background, 0 0% 100%))',
-                  color: 'hsl(var(--foreground, 0 0% 12%))',
-                  isolation: 'isolate', // Isolar do CSS do admin
-                  minHeight: '100vh', // Garantir altura mínima para scroll
-                }}
-              >
-                <RestrictedFrame data={layoutJson} />
-              </div>
-            </DeviceFrameset>
-          ) : (
-            <div className="p-8 text-center text-gray-500">
-              <p>Selecione um template para começar</p>
-            </div>
+        <div className="flex-1 overflow-hidden bg-gray-50">
+          {layoutJson && (
+            <IsolatedPreviewFrame
+              templateId={selectedTemplate}
+              layoutJson={layoutJson}
+            />
           )}
         </div>
       </div>
@@ -459,8 +351,8 @@ export default function EditorPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex items-center justify-center">
-          <div className="text-sm text-gray-500">Carregando editor...</div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+          <Spinner size="lg" />
         </div>
       }
     >

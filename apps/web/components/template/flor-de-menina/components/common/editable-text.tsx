@@ -200,9 +200,14 @@ export function EditableText({
   }, [content, fontFamily, color, isEditing])
 
   useEffect(() => {
-    if (!isSelected) {
+    if (!isSelected && isEditing) {
+      // Quando o nó é deselecionado durante edição, salvar automaticamente
+      console.log('[EditableText] Nó deselecionado durante edição, salvando automaticamente...')
+      handleSave()
+    } else if (!isSelected) {
       setIsEditing(false)
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isSelected])
 
   const handleDoubleClick = () => {
@@ -212,6 +217,13 @@ export function EditableText({
   }
 
   const handleSave = () => {
+    console.log('[EditableText] handleSave chamado!', {
+      isInEditor,
+      currentNodeId,
+      hasSetProp: !!setProp,
+      localContent: localContent?.substring(0, 50),
+    })
+    
     // IMPORTANTE: setProp atualiza APENAS o nó atual (instância específica)
     // Cada instância do componente tem seu próprio nó no Craft.js
     // O Craft.js gerencia cada nó separadamente
@@ -221,24 +233,78 @@ export function EditableText({
       console.log('[EditableText] Salvando props no nó:', currentNodeId, {
         id: nodeIdFromProps, // ID único passado como prop
         content: localContent,
+        contentLength: localContent?.length || 0,
         fontFamily: localFontFamily,
         color: localColor,
+        hasSetProp: !!setProp,
+        isInEditor,
       })
     }
     
-    setProp((props: EditableTextProps) => {
-      // Atualizar apenas as props que foram editadas
-      props.content = localContent
-      if (localFontFamily !== undefined) props.fontFamily = localFontFamily
-      if (localColor !== undefined) props.color = localColor
-      // Manter outras props existentes, incluindo o ID único
-      if (nodeIdProp !== undefined) props.id = nodeIdProp
-      if (fontSize !== undefined) props.fontSize = fontSize
-      if (fontWeight !== undefined) props.fontWeight = fontWeight
-      if (lineHeight !== undefined) props.lineHeight = lineHeight
-      if (letterSpacing !== undefined) props.letterSpacing = letterSpacing
-    })
-    setIsEditing(false)
+    if (!setProp || typeof setProp !== 'function') {
+      console.error('[EditableText] setProp não está disponível!', {
+        isInEditor,
+        currentNodeId,
+        hasNodeActions: !!nodeActions,
+        nodeActionsType: typeof nodeActions,
+      })
+      setIsEditing(false)
+      return
+    }
+    
+    try {
+      console.log('[EditableText] Chamando setProp...')
+      setProp((props: EditableTextProps) => {
+        // Atualizar apenas as props que foram editadas
+        const oldContent = props.content
+        props.content = localContent
+        if (localFontFamily !== undefined) props.fontFamily = localFontFamily
+        if (localColor !== undefined) props.color = localColor
+        // Manter outras props existentes, incluindo o ID único
+        if (nodeIdProp !== undefined) props.id = nodeIdProp
+        if (fontSize !== undefined) props.fontSize = fontSize
+        if (fontWeight !== undefined) props.fontWeight = fontWeight
+        if (lineHeight !== undefined) props.lineHeight = lineHeight
+        if (letterSpacing !== undefined) props.letterSpacing = letterSpacing
+        
+        console.log('[EditableText] Props atualizadas via setProp:', {
+          nodeId: currentNodeId,
+          oldContent: oldContent?.substring(0, 50),
+          newContent: localContent?.substring(0, 50),
+          contentChanged: oldContent !== localContent,
+        })
+      })
+      
+      console.log('[EditableText] setProp executado com sucesso')
+      
+      // Verificar se as props foram realmente atualizadas
+      setTimeout(() => {
+        if (isInEditor && editorQuery) {
+          try {
+            const serialized = editorQuery.serialize()
+            const parsed = JSON.parse(serialized)
+            const currentNode = parsed[currentNodeId || '']
+            if (currentNode) {
+              console.log('[EditableText] Verificação pós-save - conteúdo no serializado:', {
+                nodeId: currentNodeId,
+                contentInSerialized: currentNode.props?.content?.substring(0, 50),
+                matchesLocalContent: currentNode.props?.content === localContent,
+              })
+            } else {
+              console.warn('[EditableText] Nó não encontrado no serializado:', currentNodeId)
+            }
+          } catch (error) {
+            console.warn('[EditableText] Erro ao verificar serializado:', error)
+          }
+        }
+      }, 100)
+      
+      setIsEditing(false)
+      console.log('[EditableText] Modal fechado após salvar')
+    } catch (error) {
+      console.error('[EditableText] Erro ao salvar props:', error)
+      setIsEditing(false)
+    }
   }
 
   const handleCancel = () => {
@@ -331,6 +397,7 @@ export function EditableText({
         {/* Modal */}
         <div
           ref={modalRef}
+          data-modal="true"
           className={`${baseClasses} fixed z-[9999] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2`}
           style={style}
           onKeyDown={handleKeyDown}
@@ -345,9 +412,12 @@ export function EditableText({
             e.nativeEvent.stopImmediatePropagation()
           }}
         >
-          <div className="min-w-[320px] max-w-[500px] bg-white rounded-lg shadow-2xl border-2 border-blue-500 p-4 space-y-4">
+          <div 
+            className="min-w-[320px] max-w-[500px] bg-white rounded-lg shadow-2xl border-2 border-blue-500 p-4 space-y-4"
+            style={{ fontFamily: 'sans-serif' }}
+          >
             <div className="flex items-center justify-between pb-2 border-b border-gray-200">
-              <h3 className="text-sm font-semibold text-gray-900">Editar Texto</h3>
+              <h3 className="text-sm font-semibold text-gray-900" style={{ fontFamily: 'sans-serif' }}>Editar Texto</h3>
               <button
                 onClick={(e) => {
                   e.stopPropagation()
@@ -356,6 +426,7 @@ export function EditableText({
                 }}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
                 aria-label="Fechar"
+                style={{ fontFamily: 'sans-serif' }}
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -364,7 +435,10 @@ export function EditableText({
             </div>
 
           <div>
-            <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+            <label 
+              className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide"
+              style={{ fontFamily: 'sans-serif' }}
+            >
               Conteúdo
             </label>
             <textarea
@@ -372,6 +446,7 @@ export function EditableText({
               onChange={(e) => setLocalContent(e.target.value)}
               onKeyDown={handleTextareaKeyDown}
               className="w-full px-3 py-2.5 text-sm text-gray-900 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all placeholder:text-gray-400"
+              style={{ fontFamily: 'sans-serif' }}
               rows={4}
               autoFocus
             />
@@ -379,13 +454,17 @@ export function EditableText({
 
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+              <label 
+                className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide"
+                style={{ fontFamily: 'sans-serif' }}
+              >
                 Fonte
               </label>
               <select
                 value={localFontFamily}
                 onChange={(e) => setLocalFontFamily(e.target.value)}
                 className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all"
+                style={{ fontFamily: 'sans-serif' }}
               >
                 <option value="">Padrão</option>
                 <option value="var(--font-display)">Cormorant Garamond (Display)</option>
@@ -398,7 +477,10 @@ export function EditableText({
               </select>
             </div>
             <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide">
+              <label 
+                className="block text-xs font-semibold text-gray-700 mb-2 uppercase tracking-wide"
+                style={{ fontFamily: 'sans-serif' }}
+              >
                 Cor
               </label>
               <div className="flex gap-2">
@@ -407,11 +489,13 @@ export function EditableText({
                   value={localColor || '#000000'}
                   onChange={(e) => setLocalColor(e.target.value)}
                   className="w-10 h-10 border-2 border-gray-300 rounded-md cursor-pointer hover:border-blue-500 transition-colors"
+                  style={{ fontFamily: 'sans-serif' }}
                 />
                 <select
                   value={localColor}
                   onChange={(e) => setLocalColor(e.target.value)}
                   className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white transition-all"
+                  style={{ fontFamily: 'sans-serif' }}
                 >
                   <option value="">Padrão</option>
                   <option value="hsl(var(--foreground))">Foreground</option>
@@ -429,8 +513,8 @@ export function EditableText({
           </div>
 
           <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500">
-              <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs font-mono">Ctrl+Enter</kbd> para salvar
+            <p className="text-xs text-gray-500" style={{ fontFamily: 'sans-serif' }}>
+              <kbd className="px-1.5 py-0.5 bg-gray-100 rounded text-xs" style={{ fontFamily: 'sans-serif' }}>Ctrl+Enter</kbd> para salvar
             </p>
             <div className="flex gap-2">
               <button
@@ -439,17 +523,28 @@ export function EditableText({
                   e.preventDefault()
                   handleCancel()
                 }}
+                data-modal-button="true"
                 className="px-4 py-1.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors"
+                style={{ fontFamily: 'sans-serif' }}
               >
                 Cancelar
               </button>
               <button
                 onClick={(e) => {
+                  console.log('[EditableText] Botão Salvar clicado!', {
+                    event: e,
+                    target: e.target,
+                    currentTarget: e.currentTarget,
+                  })
                   e.stopPropagation()
                   e.preventDefault()
+                  console.log('[EditableText] Chamando handleSave...')
                   handleSave()
                 }}
+                data-modal-button="true"
+                type="button"
                 className="px-4 py-1.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+                style={{ fontFamily: 'sans-serif', pointerEvents: 'auto', cursor: 'pointer' }}
               >
                 Salvar
               </button>
@@ -494,6 +589,7 @@ export function EditableText({
       style,
       onDoubleClick: handleDoubleClick,
       title: isSelected && isInEditor ? 'Duplo clique para editar' : '',
+      'data-editable-text': isInEditor ? 'true' : undefined,
     },
     displayContent
   )
@@ -615,3 +711,4 @@ function EditableTextSettings() {
     </div>
   )
 }
+

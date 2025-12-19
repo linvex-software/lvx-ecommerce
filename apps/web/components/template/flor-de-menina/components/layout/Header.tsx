@@ -10,19 +10,9 @@ import { useSafeNode } from "../../lib/hooks/use-safe-node";
 import { EditableText } from "../common/editable-text";
 import { Element, useEditor } from '@craftjs/core';
 import { useStoreTheme } from '@/lib/hooks/use-store-theme';
-import { useQuery } from '@tanstack/react-query';
 import { useStoreSettings } from '@/lib/hooks/use-store-settings';
 import React from 'react';
-
-interface Category {
-  id: string
-  name: string
-  slug: string
-}
-
-interface CategoriesResponse {
-  categories: Category[]
-}
+import { DynamicMenu } from '../../../../menu/dynamic-menu';
 
 // Componente helper para renderizar texto editável ou texto simples
 function EditableTextOrPlain({
@@ -41,16 +31,25 @@ function EditableTextOrPlain({
   const Tag = tag as keyof JSX.IntrinsicElements;
 
   // Se estiver no contexto do Craft.js, usar Element
-  if (isInCraftContext) {
-    return (
-      <Element
-        id={id}
-        is={EditableText}
-        tag={tag}
-        className={className}
-        content={content}
-      />
-    );
+  // Usar useMemo para evitar re-renderizações desnecessárias
+  const editableContent = React.useMemo(() => {
+    if (isInCraftContext) {
+      return (
+        <Element
+          id={id}
+          is={EditableText}
+          tag={tag}
+          className={className}
+          content={content}
+        />
+      );
+    }
+    return null;
+  }, [isInCraftContext, id, tag, className, content]);
+
+  // Se estiver no contexto do Craft.js, usar Element
+  if (isInCraftContext && editableContent) {
+    return editableContent;
   }
 
   // Fora do contexto do Craft.js - renderizar texto simples
@@ -155,72 +154,20 @@ export function Header() {
     })();
   }, []);
 
-  // Verificar se está no contexto do Craft.js uma vez
-  let isInCraftContext = false;
-  try {
-    useEditor();
-    isInCraftContext = true;
-  } catch {
-    isInCraftContext = false;
-  }
-
-  // Função helper para buscar categorias (funciona em web e admin)
-  const fetchCategories = async (): Promise<CategoriesResponse> => {
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'
-    const storeId = process.env.NEXT_PUBLIC_STORE_ID
-
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
+  // Verificar se está no contexto do Craft.js usando hook de forma segura
+  const [isInCraftContext, setIsInCraftContext] = React.useState(false);
+  
+  React.useEffect(() => {
+    // Verificar se está no contexto do Craft.js de forma segura
+    try {
+      useEditor();
+      setIsInCraftContext(true);
+    } catch {
+      setIsInCraftContext(false);
     }
+  }, []);
 
-    if (storeId) {
-      headers['x-store-id'] = storeId
-    }
-
-    const response = await fetch(`${API_URL}/categories`, { headers })
-
-    if (!response.ok) {
-      throw new Error(`API Error: ${response.statusText}`)
-    }
-
-    return response.json()
-  }
-
-  // Buscar categorias da API
-  const { data: categoriesData } = useQuery<CategoriesResponse>({
-    queryKey: ['categories'],
-    queryFn: fetchCategories,
-  })
-
-  // Gerar links de navegação dinamicamente
-  const navLinks = useMemo(() => {
-    const staticLinks = [
-      { name: "Novidades", href: "/produtos?filter=new", id: "node_header_nav_1" },
-    ]
-
-    // Adicionar categorias da API (máximo 5 para não sobrecarregar o menu)
-    const categoryLinks = (categoriesData?.categories || []).slice(0, 5).map((cat, index) => ({
-      name: cat.name,
-      href: `/produtos?category_id=${cat.id}`,
-      id: `node_header_nav_category_${cat.id}`, // Usar ID da categoria para garantir unicidade
-    }))
-
-    // Adicionar link estático no final
-    const finalLinks = [
-      { name: "Natal & Festas", href: "/produtos?filter=featured", id: "node_header_nav_featured" },
-    ]
-
-    return [...staticLinks, ...categoryLinks, ...finalLinks]
-  }, [categoriesData])
-
-  // Verificar se está no contexto do Craft.js
-  let craftContextAvailable = false;
-  try {
-    useEditor();
-    craftContextAvailable = true;
-  } catch {
-    craftContextAvailable = false;
-  }
+  // Menu dinâmico será carregado pelo DynamicMenu
 
   return (
     <header
@@ -260,24 +207,9 @@ export function Header() {
             )}
           </Link>
 
-          {/* Desktop Navigation */}
+          {/* Desktop Navigation - Menu Dinâmico */}
           <nav className="hidden xl:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <Link
-                key={link.id}
-                href={link.href}
-                className="text-sm font-body tracking-wide text-foreground/80 hover:text-primary transition-colors duration-200 relative group"
-              >
-                <EditableTextOrPlain
-                  id={link.id}
-                  content={link.name}
-                  tag="span"
-                  className=""
-                  isInCraftContext={isInCraftContext}
-                />
-                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
-              </Link>
-            ))}
+            <DynamicMenu className="flex items-center gap-8" isMobile={false} />
           </nav>
 
           {/* Actions - Desktop only */}
@@ -371,22 +303,12 @@ export function Header() {
         )}
       >
         <nav className="flex flex-col p-6 gap-4 bg-white" style={{ transform: 'translateY(-10px)' }}>
-          {navLinks.map((link) => (
-            <Link
-              key={link.id}
-              href={link.href}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-lg font-body py-3 border-b border-border text-foreground hover:text-primary transition-colors"
-            >
-              <EditableTextOrPlain
-                id={link.id}
-                content={link.name}
-                tag="span"
-                className=""
-                isInCraftContext={isInCraftContext}
-              />
-            </Link>
-          ))}
+          {/* Menu Dinâmico Mobile */}
+          <DynamicMenu 
+            className="flex flex-col gap-0" 
+            isMobile={true}
+            onItemClick={() => setIsMobileMenuOpen(false)}
+          />
 
           {/* Mobile Actions - com separadores iguais aos outros itens */}
           <button

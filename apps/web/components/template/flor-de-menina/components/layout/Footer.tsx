@@ -136,22 +136,46 @@ export function Footer() {
             <ul className="space-y-3 font-body text-sm">
               <li>
                 <Link href="/produtos" className="text-secondary/70 hover:text-primary transition-colors">
-                  Todos os Produtos
+                  <Element
+                    id={`${nodeId}_nav_link_1`}
+                    is={EditableText}
+                    tag="span"
+                    className=""
+                    content="Todos os Produtos"
+                  />
                 </Link>
               </li>
               <li>
                 <Link href="/produtos?filter=new" className="text-secondary/70 hover:text-primary transition-colors">
-                  Novidades
+                  <Element
+                    id={`${nodeId}_nav_link_2`}
+                    is={EditableText}
+                    tag="span"
+                    className=""
+                    content="Novidades"
+                  />
                 </Link>
               </li>
               <li>
                 <Link href="/produtos?filter=bestseller" className="text-secondary/70 hover:text-primary transition-colors">
-                  Mais Vendidos
+                  <Element
+                    id={`${nodeId}_nav_link_3`}
+                    is={EditableText}
+                    tag="span"
+                    className=""
+                    content="Mais Vendidos"
+                  />
                 </Link>
               </li>
               <li>
                 <Link href="/sobre" className="text-secondary/70 hover:text-primary transition-colors">
-                  Sobre Nós
+                  <Element
+                    id={`${nodeId}_nav_link_4`}
+                    is={EditableText}
+                    tag="span"
+                    className=""
+                    content="Sobre Nós"
+                  />
                 </Link>
               </li>
             </ul>
@@ -171,22 +195,46 @@ export function Footer() {
             <ul className="space-y-3 font-body text-sm">
               <li>
                 <Link href="/politica-troca" className="text-secondary/70 hover:text-primary transition-colors">
-                  Política de Troca
+                  <Element
+                    id={`${nodeId}_help_link_1`}
+                    is={EditableText}
+                    tag="span"
+                    className=""
+                    content="Política de Troca"
+                  />
                 </Link>
               </li>
               <li>
                 <Link href="/frete" className="text-secondary/70 hover:text-primary transition-colors">
-                  Frete e Entregas
+                  <Element
+                    id={`${nodeId}_help_link_2`}
+                    is={EditableText}
+                    tag="span"
+                    className=""
+                    content="Frete e Entregas"
+                  />
                 </Link>
               </li>
               <li>
                 <Link href="/guia-tamanhos" className="text-secondary/70 hover:text-primary transition-colors">
-                  Guia de Tamanhos
+                  <Element
+                    id={`${nodeId}_help_link_3`}
+                    is={EditableText}
+                    tag="span"
+                    className=""
+                    content="Guia de Tamanhos"
+                  />
                 </Link>
               </li>
               <li>
                 <Link href="/faq" className="text-secondary/70 hover:text-primary transition-colors">
-                  Perguntas Frequentes
+                  <Element
+                    id={`${nodeId}_help_link_4`}
+                    is={EditableText}
+                    tag="span"
+                    className=""
+                    content="Perguntas Frequentes"
+                  />
                 </Link>
               </li>
             </ul>
