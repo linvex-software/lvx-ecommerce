@@ -40,10 +40,83 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick }: D
     return true
   }
 
-  const renderItem = (item: NavbarItem, level: number = 0): React.ReactNode => {
+  function renderCategoryItem(
+    item: NavbarItem,
+    level: number,
+    hasChildren: boolean,
+    isExpanded: boolean
+  ) {
+    const config = item.config || {}
+    const displayType = config.displayType || 'list'
+
+    if (isMobile) {
+      return (
+        <div key={item.id} className="border-b border-border">
+          <button
+            onClick={() => toggleExpanded(item.id)}
+            className="w-full flex items-center justify-between text-base font-body py-3 text-foreground hover:text-primary transition-colors"
+          >
+            <span>{item.label}</span>
+            {hasChildren && (
+              <ChevronRight
+                className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
+              />
+            )}
+          </button>
+          {hasChildren && isExpanded && (
+            <div className="pl-4 pb-2 space-y-1">
+              {item.children!.map((child) => {
+                const childHasChildren = !!(child.children && child.children.length > 0)
+                const childIsExpanded = expandedItems.has(child.id)
+                if (child.type === 'category') {
+                  return renderCategoryItem(child, level + 1, childHasChildren, childIsExpanded)
+                }
+                return renderItem(child, level + 1)
+              })}
+            </div>
+          )}
+        </div>
+      )
+    }
+
+    // Desktop: renderizar baseado no displayType
+    if (displayType === 'mega-menu' && hasChildren) {
+      return (
+        <div key={item.id} className="relative group">
+          <button className="text-sm font-body tracking-wide text-foreground/80 hover:text-primary transition-colors duration-200 relative flex items-center gap-1">
+            <span>{item.label}</span>
+            <ChevronDown className="h-4 w-4" />
+            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
+          </button>
+          <div className="absolute left-0 top-full mt-2 min-w-[200px] max-w-[min(300px,calc(100vw-2rem))] bg-white border border-border rounded-lg shadow-xl py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+            {item.children!.map((child, index) => (
+              <div key={child.id}>
+                <Link
+                  href={child.url || '#'}
+                  onClick={isMobile ? onItemClick : undefined}
+                  className="block px-4 py-2.5 text-sm font-body text-foreground hover:text-primary hover:bg-muted/60 transition-colors duration-150"
+                >
+                  {child.label}
+                </Link>
+                {index < item.children!.length - 1 && (
+                  <div className="border-b border-border/50" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )
+    }
+
+    // Default: dropdown simples
+    return renderSubmenuItem(item, level, hasChildren, isExpanded)
+  }
+
+  function renderItem(item: NavbarItem, level: number = 0): React.ReactNode {
+
     if (!isItemVisible(item)) return null
 
-    const hasChildren = item.children && item.children.length > 0
+    const hasChildren = !!(item.children && item.children.length > 0)
     const isExpanded = expandedItems.has(item.id)
 
     // Renderizar baseado no tipo
@@ -130,71 +203,6 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick }: D
     }
   }
 
-  const renderCategoryItem = (
-    item: NavbarItem,
-    level: number,
-    hasChildren: boolean,
-    isExpanded: boolean
-  ) => {
-    const config = item.config || {}
-    const displayType = config.displayType || 'list'
-
-    if (isMobile) {
-      return (
-        <div key={item.id} className="border-b border-border">
-          <button
-            onClick={() => toggleExpanded(item.id)}
-            className="w-full flex items-center justify-between text-base font-body py-3 text-foreground hover:text-primary transition-colors"
-          >
-            <span>{item.label}</span>
-            {hasChildren && (
-              <ChevronRight
-                className={`h-4 w-4 transition-transform duration-200 ${isExpanded ? 'rotate-90' : ''}`}
-              />
-            )}
-          </button>
-          {hasChildren && isExpanded && (
-            <div className="pl-4 pb-2 space-y-1">
-              {item.children!.map((child) => renderItem(child, level + 1))}
-            </div>
-          )}
-        </div>
-      )
-    }
-
-    // Desktop: renderizar baseado no displayType
-    if (displayType === 'mega-menu' && hasChildren) {
-      return (
-        <div key={item.id} className="relative group">
-          <button className="text-sm font-body tracking-wide text-foreground/80 hover:text-primary transition-colors duration-200 relative flex items-center gap-1">
-            <span>{item.label}</span>
-            <ChevronDown className="h-4 w-4" />
-            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
-          </button>
-          <div className="absolute left-0 top-full mt-2 min-w-[200px] max-w-[min(300px,calc(100vw-2rem))] bg-white border border-border rounded-lg shadow-xl py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-            {item.children!.map((child, index) => (
-              <div key={child.id}>
-                <Link
-                  href={child.url || '#'}
-                  onClick={isMobile ? onItemClick : undefined}
-                  className="block px-4 py-2.5 text-sm font-body text-foreground hover:text-primary hover:bg-muted/60 transition-colors duration-150"
-                >
-                  {child.label}
-                </Link>
-                {index < item.children!.length - 1 && (
-                  <div className="border-b border-border/50" />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )
-    }
-
-    // Dropdown simples
-    return renderSubmenuItem(item, level, hasChildren, isExpanded)
-  }
-
   const renderSubmenuItem = (
     item: NavbarItem,
     level: number,
@@ -217,7 +225,14 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick }: D
           </button>
           {hasChildren && isExpanded && (
             <div className="pl-4 pb-2 space-y-1">
-              {item.children!.map((child) => renderItem(child, level + 1))}
+              {item.children!.map((child) => {
+                const childHasChildren = !!(child.children && child.children.length > 0)
+                const childIsExpanded = expandedItems.has(child.id)
+                if (child.type === 'category') {
+                  return renderCategoryItem(child, level + 1, childHasChildren, childIsExpanded)
+                }
+                return renderItem(child, level + 1)
+              })}
             </div>
           )}
         </div>
@@ -263,30 +278,31 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick }: D
   const renderCustomBlock = (item: NavbarItem, level: number) => {
     const config = item.config || {}
     const blockType = config.blockType || 'banner'
+    const imageUrl = config.blockData?.imageUrl
 
     switch (blockType) {
       case 'banner':
         return (
           <div key={item.id} className="px-3 py-2">
-            {config.blockData?.imageUrl && (
+            {typeof imageUrl === 'string' ? (
               <img
-                src={config.blockData.imageUrl as string}
+                src={imageUrl}
                 alt={item.label}
                 className="max-w-xs rounded-md"
               />
-            )}
+            ) : null}
           </div>
         )
       case 'image':
         return (
           <div key={item.id} className="px-3 py-2">
-            {config.blockData?.imageUrl && (
+            {typeof imageUrl === 'string' ? (
               <img
-                src={config.blockData.imageUrl as string}
+                src={imageUrl}
                 alt={item.label}
                 className="max-w-xs rounded-md"
               />
-            )}
+            ) : null}
           </div>
         )
       default:

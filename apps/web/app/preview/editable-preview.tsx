@@ -22,9 +22,7 @@ function EditablePreviewContent({
   onLayoutChange 
 }: EditablePreviewProps) {
   // Use useEditor with collector to track state changes
-  const { actions, query, updatedNodeIds } = useEditor((state) => ({
-    updatedNodeIds: state.events.updated
-  }))
+  const { actions, query } = useEditor()
   const [isLoading, setIsLoading] = useState(true)
   const [safeData, setSafeData] = useState<string | undefined>(undefined)
   const isMounted = useRef(false)
@@ -120,7 +118,7 @@ function EditablePreviewContent({
           console.warn('[EditablePreview] Layout limpo está vazio! Usando layout original sem validação.')
           // Se a validação removeu tudo, usar o layout original
           if (isMounted.current) {
-            actions.deserialize(layoutToUse)
+            actions.deserialize(JSON.stringify(layoutToUse))
             lastSerialized.current = query.serialize()
             setSafeData(JSON.stringify(layoutToUse))
             setIsLoading(false)
@@ -132,7 +130,7 @@ function EditablePreviewContent({
         
         // 4. Deserializar no Craft.js (Frame renderiza automaticamente do estado)
         if (isMounted.current) {
-          actions.deserialize(cleaned)
+          actions.deserialize(JSON.stringify(cleaned))
           lastSerialized.current = query.serialize()
           setSafeData(JSON.stringify(cleaned))
           setIsLoading(false)
@@ -149,7 +147,7 @@ function EditablePreviewContent({
       } else {
         if (isMounted.current) {
           const defaultLayout = createSafeDefaultLayout()
-          actions.deserialize(defaultLayout)
+          actions.deserialize(JSON.stringify(defaultLayout))
           lastSerialized.current = query.serialize()
           setSafeData(JSON.stringify(defaultLayout))
           setIsLoading(false)
@@ -173,7 +171,7 @@ function EditablePreviewContent({
           console.log('[EditablePreview] Recebendo atualização de layout do pai')
           isUpdatingFromParent.current = true
           const cleaned = validateAndCleanLayout(layout, resolver)
-          actions.deserialize(cleaned)
+          actions.deserialize(JSON.stringify(cleaned))
           lastSerialized.current = query.serialize()
           setSafeData(JSON.stringify(cleaned))
           
@@ -282,9 +280,9 @@ function EditablePreviewContent({
         
         if (!hasValidContent) {
           console.warn('[EditablePreview] Layout limpo está vazio após mudança! Usando layout original.')
-          actions.deserialize(parsed)
+          actions.deserialize(JSON.stringify(parsed))
         } else {
-          actions.deserialize(cleaned)
+          actions.deserialize(JSON.stringify(cleaned))
         }
         
         lastSerialized.current = query.serialize()
@@ -309,7 +307,7 @@ function EditablePreviewContent({
     // Ignorar mudanças que vieram do pai
     if (isUpdatingFromParent.current) return
     // Ignorar se não houver atualizações
-    if (!updatedNodeIds || updatedNodeIds.length === 0) return
+    // Removed updatedNodeIds tracking - always serialize on changes
 
     if (isMounted.current) {
       try {
@@ -322,7 +320,7 @@ function EditablePreviewContent({
         console.warn('[EditablePreview] Erro ao serializar layout:', error)
       }
     }
-  }, [updatedNodeIds, query, onLayoutChange])
+  }, [query, onLayoutChange])
 
   // Desabilitar todos os links no preview (apenas visualização, não interação)
   // IMPORTANTE: Este hook deve ser chamado sempre, antes de qualquer return condicional

@@ -226,15 +226,16 @@ export function EditableImage({
 
   const buttonClass = buttonPositions[buttonPosition]
 
-  // Separar style de imgProps para evitar conflito
-  const { style: imgStyle, ...restImgProps } = imgProps
+  // Separar style de imgProps para evitar conflito (style já foi extraído nas props)
+  const restImgProps = { ...imgProps }
+  delete (restImgProps as any).style
 
   return (
     <div className="relative w-full h-full" style={style}>
       <img
         src={localImageUrl}
         className={className}
-        style={{ width: '100%', height: '100%', ...imgStyle }}
+        style={{ width: '100%', height: '100%' }}
         {...restImgProps}
       />
       
@@ -254,9 +255,7 @@ export function EditableImage({
             onClick={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              if (typeof e.stopImmediatePropagation === 'function') {
-                e.stopImmediatePropagation()
-              } else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+              if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
                 e.nativeEvent.stopImmediatePropagation()
               }
               console.log('[EditableImage] Botão de alterar imagem clicado', { 
@@ -270,9 +269,7 @@ export function EditableImage({
             onMouseDown={(e) => {
               e.preventDefault()
               e.stopPropagation()
-              if (typeof e.stopImmediatePropagation === 'function') {
-                e.stopImmediatePropagation()
-              } else if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
+              if (e.nativeEvent && typeof e.nativeEvent.stopImmediatePropagation === 'function') {
                 e.nativeEvent.stopImmediatePropagation()
               }
             }}

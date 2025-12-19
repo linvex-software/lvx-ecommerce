@@ -61,7 +61,11 @@ export function SelectedProductsBlock({ pageId, pageSlug }: SelectedProductsBloc
   if (isLoading) {
     return (
       <div
-        ref={(ref) => connect(drag(ref as HTMLElement))}
+        ref={(ref) => {
+          if (ref) {
+            connect(drag(ref))
+          }
+        }}
         className="p-8"
       >
         <div className="text-center">
@@ -75,7 +79,11 @@ export function SelectedProductsBlock({ pageId, pageSlug }: SelectedProductsBloc
   if (products.length === 0) {
     return (
       <div
-        ref={(ref) => connect(drag(ref as HTMLElement))}
+        ref={(ref) => {
+          if (ref) {
+            connect(drag(ref))
+          }
+        }}
         className="p-8 text-center"
       >
         <p className="text-sm text-gray-500">
@@ -90,7 +98,11 @@ export function SelectedProductsBlock({ pageId, pageSlug }: SelectedProductsBloc
 
   return (
     <div
-      ref={(ref) => connect(drag(ref as HTMLElement))}
+      ref={(ref) => {
+        if (ref) {
+          connect(drag(ref))
+        }
+      }}
       className="p-8"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -103,7 +115,8 @@ export function SelectedProductsBlock({ pageId, pageSlug }: SelectedProductsBloc
               slug: product.slug,
               base_price: product.basePrice,
               main_image: product.mainImage || null,
-            }}
+            } as any}
+            onAddToCart={() => {}}
           />
         ))}
       </div>

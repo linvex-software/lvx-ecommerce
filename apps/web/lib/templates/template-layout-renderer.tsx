@@ -76,7 +76,7 @@ export function TemplateLayoutRenderer({ templateId, initialLayoutJson }: Templa
                   })
                 }
                 
-                if (node?.nodes) {
+                if (node?.nodes && savedLayout) {
                   for (const childId of node.nodes) {
                     const childNode = savedLayout[childId]
                     if (childNode) {

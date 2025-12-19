@@ -231,14 +231,14 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
       // O id do Element é usado pelo Craft.js para criar o Linked Node
       // O id dentro das props é usado pelo EditableText para identificar qual nó ele representa
       // Garantir que o id seja passado para o EditableText através das props
+      const { id: _, ...propsWithoutId } = defaultProps
       return (
         <Element
           key={id}
           is={EditableText}
           id={id}
           canvas={false}
-          {...defaultProps}
-          id={id} // Passar id explicitamente para o EditableText (sobrescreve se já existir)
+          {...propsWithoutId}
         />
       );
     }

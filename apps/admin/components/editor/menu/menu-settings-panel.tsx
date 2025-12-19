@@ -198,10 +198,11 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
           
           // Tentar encontrar por pageId primeiro
           if (formData.config?.pageId) {
+            const pageId = formData.config.pageId
             const foundById = pagesData.pages.find((p: any) => 
-              p.id === formData.config.pageId || 
-              p.pageId === formData.config.pageId ||
-              p.categoryId === formData.config.pageId
+              p.id === pageId || 
+              p.pageId === pageId ||
+              p.categoryId === pageId
             )
             if (foundById) return foundById.id
           }

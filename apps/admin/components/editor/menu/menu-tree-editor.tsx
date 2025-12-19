@@ -111,9 +111,10 @@ export function MenuTreeEditor({
         const addToItem = (items: NavbarItem[]): NavbarItem[] => {
           return items.map(item => {
             if (item.id === targetItem.id) {
+              const newChild: NavbarItem = Object.assign({}, draggedItem, { parentId: item.id })
               return {
                 ...item,
-                children: [...(item.children || []), { ...draggedItem!, parentId: item.id }],
+                children: [...(item.children || []), newChild],
               }
             }
             if (item.children) {
@@ -128,7 +129,8 @@ export function MenuTreeEditor({
         return addToItem(newItems)
       } else {
         // Adicionar como item raiz
-        return [...newItems, { ...draggedItem, parentId: null }]
+        const newRootItem: NavbarItem = Object.assign({}, draggedItem, { parentId: null })
+        return [...newItems, newRootItem]
       }
     }
 
