@@ -1,11 +1,12 @@
 'use client'
 
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import Link from "next/link";
-import { ImagePlus } from "lucide-react";
 import { Button } from "../ui/button";
 import { useSafeNode } from "../../lib/hooks/use-safe-node";
 import { EditableText } from "../common/editable-text";
+import { EditableImage } from "../common/editable-image";
+import { EditableButton } from "../common/editable-button";
 import { useNode, Element } from '@craftjs/core';
 
 // Componente para editar links que sincroniza com props do HeroBanner
@@ -102,8 +103,12 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
     backgroundImage?: string;
     cta1Text?: string;
     cta1Link?: string;
+    cta1BackgroundColor?: string;
+    cta1TextColor?: string;
     cta2Text?: string;
     cta2Link?: string;
+    cta2BackgroundColor?: string;
+    cta2TextColor?: string;
   } = {};
   let nodeActions: { setProp: (callback: (props: any) => void) => void } | null = null;
   
@@ -112,16 +117,24 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
       backgroundImage: node.data.props.backgroundImage || '',
       cta1Text: node.data.props.cta1Text || 'Ver Coleção',
       cta1Link: node.data.props.cta1Link || '/produtos?filter=featured',
+      cta1BackgroundColor: node.data.props.cta1BackgroundColor || '',
+      cta1TextColor: node.data.props.cta1TextColor || '',
       cta2Text: node.data.props.cta2Text || 'Explorar Tudo',
       cta2Link: node.data.props.cta2Link || '/produtos',
+      cta2BackgroundColor: node.data.props.cta2BackgroundColor || '',
+      cta2TextColor: node.data.props.cta2TextColor || '',
     }));
     const fullNode = useNode();
     craftProps = {
       backgroundImage: node.backgroundImage,
       cta1Text: node.cta1Text,
       cta1Link: node.cta1Link,
+      cta1BackgroundColor: node.cta1BackgroundColor,
+      cta1TextColor: node.cta1TextColor,
       cta2Text: node.cta2Text,
       cta2Link: node.cta2Link,
+      cta2BackgroundColor: node.cta2BackgroundColor,
+      cta2TextColor: node.cta2TextColor,
     };
     nodeActions = fullNode.actions;
   } catch (e) {
@@ -129,7 +142,44 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
   }
   
   const setProp = nodeActions?.setProp || (() => {});
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Escutar atualizações dos botões editáveis e sincronizar com as props do HeroBanner
+  React.useEffect(() => {
+    if (!isInEditor) return
+    
+    const handleButtonUpdate = (event: CustomEvent) => {
+      const { buttonId, text, backgroundColor, textColor } = event.detail
+      
+      if (buttonId === 'node_hero_cta1_button') {
+        setProp((props: any) => {
+          props.cta1Text = text
+          if (backgroundColor) props.cta1BackgroundColor = backgroundColor
+          if (textColor) props.cta1TextColor = textColor
+        })
+      } else if (buttonId === 'node_hero_cta2_button') {
+        setProp((props: any) => {
+          props.cta2Text = text
+          if (backgroundColor) props.cta2BackgroundColor = backgroundColor
+          if (textColor) props.cta2TextColor = textColor
+        })
+      }
+    }
+    
+    window.addEventListener('editable-button-updated' as any, handleButtonUpdate as EventListener)
+    
+    return () => {
+      window.removeEventListener('editable-button-updated' as any, handleButtonUpdate as EventListener)
+    }
+  }, [isInEditor, setProp])
+  
+  // Sincronizar props dos botões editáveis com as props do HeroBanner quando as props do HeroBanner mudarem
+  // Isso garante que mudanças feitas no HeroBanner sejam refletidas nos botões
+  React.useEffect(() => {
+    if (!isInEditor || !nodeActions) return
+    
+    // As props já estão sendo passadas para o Element, então o Craft.js cuida da sincronização
+    // Este effect é apenas para garantir que mudanças externas sejam refletidas
+  }, [craftProps.cta1Text, craftProps.cta1BackgroundColor, craftProps.cta1TextColor, craftProps.cta2Text, craftProps.cta2BackgroundColor, craftProps.cta2TextColor, isInEditor, nodeActions])
   
   // Obter nodes filhos do Craft.js quando estiver no editor
   let nodeData: { childNodes: string[] } | null = null;
@@ -169,19 +219,26 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
   // No editor, usa o node filho do Craft.js (do children prop). Fora do editor, usa children do layout salvo ou valores padrão
   const renderEditableText = React.useCallback((id: string, defaultProps: any) => {
     // Usar o mapa de children (funciona tanto no editor quanto fora)
+    // Isso é usado quando os nodes já existem no Craft.js (do layout salvo ou já criados)
     if (childNodesMap.has(id)) {
       return childNodesMap.get(id)!;
     }
     
-    // Se estiver no editor e não encontrou no mapa, criar novo node
+    // Se estiver no editor e não encontrou no mapa, criar um novo Element
+    // Cada Element com ID único cria um nó separado no Craft.js
+    // Isso garante que cada texto tenha seu próprio estado isolado
     if (isInEditor) {
-      const { id: _, ...propsWithoutId } = defaultProps;
+      // O id do Element é usado pelo Craft.js para criar o Linked Node
+      // O id dentro das props é usado pelo EditableText para identificar qual nó ele representa
+      // Garantir que o id seja passado para o EditableText através das props
       return (
-        <Element 
-          is={EditableText} 
-          id={id} 
+        <Element
+          key={id}
+          is={EditableText}
+          id={id}
           canvas={false}
-          {...propsWithoutId}
+          {...defaultProps}
+          id={id} // Passar id explicitamente para o EditableText (sobrescreve se já existir)
         />
       );
     }
@@ -197,38 +254,6 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
   }, [isInEditor, childNodesMap]);
 
 
-  // Função para lidar com upload de imagem de fundo
-  const handleBackgroundImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione apenas arquivos de imagem (JPG, PNG, GIF).');
-      return;
-    }
-
-    // Validar tamanho (máximo 10MB para base64)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 10MB. Por favor, escolha uma imagem menor.');
-      return;
-    }
-
-    // Converter para base64 (data URL) ao invés de blob URL
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const imageUrl = e.target?.result as string;
-      
-      // Atualizar props do Craft.js
-      setProp((props: any) => {
-        props.backgroundImage = imageUrl;
-      });
-    };
-    reader.onerror = () => {
-      alert('Erro ao processar imagem. Tente novamente.');
-    };
-    reader.readAsDataURL(file);
-  };
 
   // Obter URL da imagem de fundo (do Craft.js ou padrão)
   const defaultBackgroundImage = "https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=1920&h=1080&fit=crop";
@@ -244,36 +269,21 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
     >
       {/* Background Image */}
       <div className="absolute inset-0">
-        <img
+        <EditableImage
           src={backgroundImageUrl}
           alt="Coleção de Natal"
           className="w-full h-full object-cover md:blur-0 blur-[10px]"
+          imageProp="backgroundImage"
+          buttonPosition="top-right"
+          onImageChange={(url) => {
+            if (nodeActions) {
+              nodeActions.setProp((props: any) => {
+                props.backgroundImage = url;
+              });
+            }
+          }}
         />
         <div className="absolute inset-0 bg-gradient-to-r from-charcoal/70 via-charcoal/40 to-transparent" />
-        
-        {/* Botão de upload - apenas no editor */}
-        {isInEditor && isInEditorRoute && (
-          <>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={handleBackgroundImageUpload}
-            />
-            <button
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                fileInputRef.current?.click();
-              }}
-              className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all z-10 group/btn"
-              title="Alterar imagem de fundo"
-            >
-              <ImagePlus className="w-5 h-5 text-gray-700 group-hover/btn:text-primary transition-colors" />
-            </button>
-          </>
-        )}
       </div>
 
       {/* Content - Wrapper principal */}
@@ -311,26 +321,68 @@ export function HeroBanner({ children: craftChildren }: { children?: React.React
           </div>
           <div className="flex flex-col gap-4 md:flex-row md:gap-4">
             {/* Primeiro Botão CTA */}
-            <Button asChild size="xl" className="w-full md:w-auto">
+            <Button 
+              asChild 
+              size="xl" 
+              className="w-full md:w-auto"
+              style={{
+                ...(craftProps.cta1BackgroundColor && { backgroundColor: craftProps.cta1BackgroundColor }),
+                ...(craftProps.cta1TextColor && { color: craftProps.cta1TextColor }),
+              }}
+            >
               <Link href={craftProps.cta1Link || '/produtos?filter=featured'}>
-                {renderEditableText("node_hero_cta1_text", {
-                  tag: "span",
-                  className: "",
-                  content: craftProps.cta1Text || "Ver Coleção"
-                })}
+                <Element
+                  is={EditableButton}
+                  id="node_hero_cta1_button"
+                  text={craftProps.cta1Text || "Ver Coleção"}
+                  backgroundColor={craftProps.cta1BackgroundColor || ''}
+                  textColor={craftProps.cta1TextColor || ''}
+                  asChild
+                  onUpdate={(props) => {
+                    if (nodeActions) {
+                      nodeActions.setProp((p: any) => {
+                        p.cta1Text = props.text
+                        if (props.backgroundColor) p.cta1BackgroundColor = props.backgroundColor
+                        if (props.textColor) p.cta1TextColor = props.textColor
+                      })
+                    }
+                  }}
+                />
               </Link>
             </Button>
             {/* Segundo Botão CTA */}
-            <Button asChild size="xl" variant="elegant" className="w-full md:w-auto">
+            <Button 
+              asChild 
+              size="xl" 
+              variant="elegant" 
+              className="w-full md:w-auto"
+              style={{
+                ...(craftProps.cta2BackgroundColor && { backgroundColor: craftProps.cta2BackgroundColor }),
+                ...(craftProps.cta2TextColor && { color: craftProps.cta2TextColor }),
+                ...(craftProps.cta2BackgroundColor && { borderColor: craftProps.cta2BackgroundColor }),
+              }}
+            >
               <Link 
-                className='border-primary hover:bg-primary hover:text-white' 
+                className={craftProps.cta2BackgroundColor ? '' : 'border-primary hover:bg-primary hover:text-white'}
                 href={craftProps.cta2Link || '/produtos'}
               >
-                {renderEditableText("node_hero_cta2_text", {
-                  tag: "span",
-                  className: "",
-                  content: craftProps.cta2Text || "Explorar Tudo"
-                })}
+                <Element
+                  is={EditableButton}
+                  id="node_hero_cta2_button"
+                  text={craftProps.cta2Text || "Explorar Tudo"}
+                  backgroundColor={craftProps.cta2BackgroundColor || ''}
+                  textColor={craftProps.cta2TextColor || ''}
+                  asChild
+                  onUpdate={(props) => {
+                    if (nodeActions) {
+                      nodeActions.setProp((p: any) => {
+                        p.cta2Text = props.text
+                        if (props.backgroundColor) p.cta2BackgroundColor = props.backgroundColor
+                        if (props.textColor) p.cta2TextColor = props.textColor
+                      })
+                    }
+                  }}
+                />
               </Link>
             </Button>
           </div>
@@ -397,8 +449,12 @@ function HeroBannerSettings() {
     props: {
       cta1Text?: string
       cta1Link?: string
+      cta1BackgroundColor?: string
+      cta1TextColor?: string
       cta2Text?: string
       cta2Link?: string
+      cta2BackgroundColor?: string
+      cta2TextColor?: string
     }
   } | null = null
 
@@ -407,8 +463,12 @@ function HeroBannerSettings() {
       props: {
         cta1Text: node.data.props.cta1Text || 'Ver Coleção',
         cta1Link: node.data.props.cta1Link || '/produtos?filter=featured',
+        cta1BackgroundColor: node.data.props.cta1BackgroundColor || '',
+        cta1TextColor: node.data.props.cta1TextColor || '',
         cta2Text: node.data.props.cta2Text || 'Explorar Tudo',
         cta2Link: node.data.props.cta2Link || '/produtos',
+        cta2BackgroundColor: node.data.props.cta2BackgroundColor || '',
+        cta2TextColor: node.data.props.cta2TextColor || '',
       },
     }))
     nodeData = {
@@ -449,6 +509,26 @@ function HeroBannerSettings() {
               placeholder="/produtos?filter=featured"
             />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Cor de Fundo</label>
+              <input
+                type="color"
+                value={props.cta1BackgroundColor || '#C2185B'}
+                onChange={(e) => setProp((props: any) => (props.cta1BackgroundColor = e.target.value))}
+                className="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Cor do Texto</label>
+              <input
+                type="color"
+                value={props.cta1TextColor || '#FFFFFF'}
+                onChange={(e) => setProp((props: any) => (props.cta1TextColor = e.target.value))}
+                className="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
+              />
+            </div>
+          </div>
         </div>
 
         {/* Segundo Botão */}
@@ -474,6 +554,26 @@ function HeroBannerSettings() {
               placeholder="/produtos"
             />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Cor de Fundo</label>
+              <input
+                type="color"
+                value={props.cta2BackgroundColor || '#FFFFFF'}
+                onChange={(e) => setProp((props: any) => (props.cta2BackgroundColor = e.target.value))}
+                className="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Cor do Texto</label>
+              <input
+                type="color"
+                value={props.cta2TextColor || '#C2185B'}
+                onChange={(e) => setProp((props: any) => (props.cta2TextColor = e.target.value))}
+                className="w-full h-10 border border-gray-300 rounded-md cursor-pointer"
+              />
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -486,8 +586,12 @@ HeroBanner.craft = {
     backgroundImage: '', // URL da imagem de fundo
     cta1Text: 'Ver Coleção',
     cta1Link: '/produtos?filter=featured',
+    cta1BackgroundColor: '#C2185B',
+    cta1TextColor: '#FFFFFF',
     cta2Text: 'Explorar Tudo',
     cta2Link: '/produtos',
+    cta2BackgroundColor: '#FFFFFF',
+    cta2TextColor: '#C2185B',
   },
   // IMPORTANTE: Tornar o HeroBanner um canvas para que os EditableText dentro dele
   // sejam tratados como nós filhos individuais, cada um com suas próprias props

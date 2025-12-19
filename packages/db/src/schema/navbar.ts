@@ -14,8 +14,11 @@ export const navbarItems = pgTable('navbar_items', {
   
   // Identificação e tipo
   label: text('label').notNull(),
-  type: text('type').notNull().$type<'internal' | 'external' | 'submenu'>(),
-  url: text('url'), // Obrigatório se type for internal ou external
+  type: text('type').notNull().$type<
+    'link' | 'internal' | 'external' | 'submenu' | 
+    'category' | 'collection' | 'page' | 'dynamic-list' | 'custom-block'
+  >(),
+  url: text('url'), // Obrigatório se type for internal, external ou link
   target: text('target').$type<'_self' | '_blank'>().default('_self'),
   icon: text('icon'), // Nome do ícone (lucide-react)
   
@@ -25,6 +28,42 @@ export const navbarItems = pgTable('navbar_items', {
   
   // Relacionamento pai-filho (para submenus)
   parentId: uuid('parent_id'),
+  
+  // Configurações específicas por tipo (JSONB)
+  config: jsonb('config').$type<{
+    // Para category
+    showAll?: boolean
+    selectedCategories?: string[]
+    sortBy?: 'alphabetical' | 'manual' | 'featured'
+    maxDepth?: number
+    displayType?: 'list' | 'columns' | 'mega-menu'
+    showImages?: boolean
+    onlyActive?: boolean
+    onlyWithProducts?: boolean
+    showInMenu?: boolean
+    
+    // Para collection
+    collectionId?: string
+    collectionType?: 'tag' | 'custom'
+    
+    // Para dynamic-list
+    listType?: 'featured' | 'on-sale' | 'best-sellers' | 'new-arrivals'
+    limit?: number
+    
+    // Para page
+    pageId?: string
+    
+    // Para custom-block
+    blockType?: 'banner' | 'image' | 'product-card' | 'cta'
+    blockData?: Record<string, unknown>
+  }>(),
+  
+  // Controle de visibilidade por breakpoint (JSONB)
+  visibility: jsonb('visibility').$type<{
+    desktop?: boolean
+    tablet?: boolean
+    mobile?: boolean
+  }>(),
   
   // Estilos (JSON)
   style: jsonb('style').$type<{

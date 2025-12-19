@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { NavbarController } from '../admin/navbar-controller'
 import { NavbarRepository } from '../../../infra/db/repositories/navbar-repository'
+import { CategoryRepository } from '../../../infra/db/repositories/category-repository'
 import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
 
 /**
@@ -11,7 +12,8 @@ export async function registerStoreNavbarRoutes(
   app: FastifyInstance
 ): Promise<void> {
   const navbarRepository = new NavbarRepository()
-  const navbarController = new NavbarController(navbarRepository)
+  const categoryRepository = new CategoryRepository()
+  const navbarController = new NavbarController(navbarRepository, categoryRepository)
 
   // GET /store/navbar - Busca itens da navbar (público)
   app.get(

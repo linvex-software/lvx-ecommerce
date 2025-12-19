@@ -49,12 +49,24 @@ function cleanNode(
 
   const resolvedName = node.type?.resolvedName
 
+  // Se não tem resolvedName, pode ser um elemento HTML nativo ou ROOT
+  // ROOT e elementos HTML nativos (div, span, etc.) devem ser preservados
+  if (!resolvedName) {
+    // Se for ROOT ou um elemento que não precisa de resolvedName, preservar
+    if (nodeId === 'ROOT') {
+      return node
+    }
+    // Para outros nós sem resolvedName, verificar se é um elemento HTML válido
+    // Por enquanto, preservar todos os nós sem resolvedName
+    return node
+  }
+
   // Se o componente não existe no resolver, retornar null
-  if (resolvedName && !isValidComponent(resolvedName, resolver)) {
+  if (!isValidComponent(resolvedName, resolver)) {
     // Log apenas uma vez por componente único para evitar spam
     if (!visited.has(`warn_${resolvedName}`)) {
       console.warn(
-        `[LayoutValidator] Componente inválido removido: "${resolvedName}"`
+        `[LayoutValidator] Componente inválido removido: "${resolvedName}" (não encontrado no resolver)`
       )
       visited.add(`warn_${resolvedName}`)
     }
@@ -113,6 +125,68 @@ export function validateAndCleanLayout(
     return createSafeDefaultLayout()
   }
 
+  // Se o resolver estiver vazio, retornar o layout original sem validação
+  // Isso evita remover todos os nós quando o resolver ainda não foi carregado
+  const resolverKeys = Object.keys(resolver)
+  if (resolverKeys.length === 0) {
+    console.warn('[LayoutValidator] Resolver vazio - retornando layout original sem validação')
+    return craftLayout
+  }
+
+  // Debug: log do resolver e do primeiro nó
+  const firstNodeId = craftLayout.ROOT.nodes?.[0]
+  const firstNode = firstNodeId ? craftLayout[firstNodeId] : null
+  const firstNodeType = firstNode?.type?.resolvedName
+  
+  // Coletar todos os tipos únicos de componentes no layout
+  const componentTypes = new Set<string>()
+  const collectTypes = (nodeId: string, node: CraftNode | undefined, visited: Set<string> = new Set()) => {
+    if (!node || visited.has(nodeId)) return
+    visited.add(nodeId)
+    
+    if (node.type?.resolvedName) {
+      componentTypes.add(node.type.resolvedName)
+    }
+    
+    if (node.nodes) {
+      for (const childId of node.nodes) {
+        collectTypes(childId, craftLayout[childId], visited)
+      }
+    }
+  }
+  
+  collectTypes('ROOT', craftLayout.ROOT)
+  
+  // Verificar quais componentes do layout estão no resolver
+  const missingComponents = Array.from(componentTypes).filter(type => !(type in resolver))
+  const foundComponents = Array.from(componentTypes).filter(type => type in resolver)
+  
+  console.log('[LayoutValidator] Validando layout:', {
+    resolverKeys: resolverKeys.slice(0, 20),
+    resolverCount: resolverKeys.length,
+    layoutComponentTypes: Array.from(componentTypes),
+    foundComponents,
+    missingComponents,
+    firstNodeType,
+    firstNodeInResolver: firstNodeType ? firstNodeType in resolver : null
+  })
+  
+  // Se muitos componentes estão faltando, pode ser que o resolver não foi carregado corretamente
+  // Se TODOS os componentes do layout estão faltando, retornar o layout original
+  if (missingComponents.length > 0 && missingComponents.length === componentTypes.size) {
+    console.warn('[LayoutValidator] NENHUM componente do layout está no resolver! Retornando layout original.')
+    console.warn('[LayoutValidator] Componentes faltando:', missingComponents)
+    console.warn('[LayoutValidator] Resolver tem apenas:', resolverKeys.filter(k => !['div', 'span', 'p', 'a', 'img', 'button', 'input', 'textarea', 'select', 'option', 'form', 'label', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'section', 'article', 'header', 'footer', 'nav', 'main', 'aside'].includes(k)))
+    return craftLayout
+  }
+  
+  // Se a maioria dos componentes está faltando (>80%), também retornar o layout original
+  const missingPercentage = (missingComponents.length / componentTypes.size) * 100
+  if (missingPercentage > 80) {
+    console.warn(`[LayoutValidator] ${missingPercentage.toFixed(0)}% dos componentes estão faltando no resolver! Retornando layout original.`)
+    return craftLayout
+  }
+
   // Limpar o layout recursivamente
   const cleanedLayout: CraftLayout = {}
   const visited = new Set<string>()
@@ -137,7 +211,8 @@ export function validateAndCleanLayout(
     if (cleanedNode) {
       cleanedLayout[nodeId] = cleanedNode
     } else {
-      console.warn(`[LayoutValidator] Nó ${nodeId} removido por ser inválido`)
+      const nodeType = node?.type?.resolvedName
+      console.warn(`[LayoutValidator] Nó ${nodeId} removido por ser inválido (tipo: ${nodeType || 'sem tipo'})`)
     }
   }
 

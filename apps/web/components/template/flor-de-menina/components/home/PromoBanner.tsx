@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Button } from "../ui/button";
 import { useSafeNode } from "../../lib/hooks/use-safe-node";
 import { EditableText } from "../common/editable-text";
+import { EditableButton } from "../common/editable-button";
 import { Element, useNode } from '@craftjs/core';
 
 export function PromoBanner() {
@@ -55,11 +56,10 @@ export function PromoBanner() {
         <Button asChild size="xl" variant="gold">
           <Link href="/produtos?filter=sale">
             <Element
-              id={`${nodeId}_cta`}
-              is={EditableText}
-              tag="span"
-              className=""
-              content="Aproveitar Ofertas"
+              id={`${nodeId}_cta_button`}
+              is={EditableButton}
+              text="Aproveitar Ofertas"
+              asChild
             />
           </Link>
         </Button>

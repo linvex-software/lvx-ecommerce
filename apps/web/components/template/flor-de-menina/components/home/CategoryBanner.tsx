@@ -2,35 +2,14 @@
 
 import React, { useRef, useState, useEffect } from "react";
 import Link from "next/link";
-import { ImagePlus, ChevronLeft, ChevronRight, Settings, X, Search } from "lucide-react";
+import { ChevronLeft, ChevronRight, Settings, X, Search } from "lucide-react";
 import { useSafeNode } from "../../lib/hooks/use-safe-node";
 import { EditableText } from "../common/editable-text";
+import { EditableImage } from "../common/editable-image";
 import { useNode, Element } from '@craftjs/core';
 import { useQuery } from '@tanstack/react-query';
 import { createPortal } from 'react-dom';
 
-// Componente para botão de upload de imagem
-function ImageUploadButton({ 
-  onUpload, 
-  className = "absolute top-2 right-2" 
-}: { 
-  onUpload: () => void
-  className?: string 
-}) {
-  return (
-    <button
-      onClick={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        onUpload();
-      }}
-      className={`${className} w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all z-10 group/btn`}
-      title="Alterar imagem"
-    >
-      <ImagePlus className="w-5 h-5 text-gray-700 group-hover/btn:text-primary transition-colors" />
-    </button>
-  );
-}
 
 interface Category {
   id: string
@@ -59,28 +38,16 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
   const [canScrollLeft, setCanScrollLeft] = useState(false);
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
   
-  // Verificar se está no editor através da URL
-  const [isInEditorRoute, setIsInEditorRoute] = React.useState(false);
-  
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsInEditorRoute(window.location.pathname.includes('/editor'));
-    }
-  }, []);
-  
-  // Obter props do Craft.js
+  // Obter props do Craft.js PRIMEIRO
   let craftProps: { 
     categoryImages?: string[];
     selectedCategoryIds?: string[];
   } = {};
   let nodeActions: { setProp: (callback: (props: any) => void) => void } | null = null;
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [mounted, setMounted] = useState(false);
-  
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  let hasCraftContext = false;
   
   try {
     const node = useNode((node) => ({
@@ -93,6 +60,7 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
       selectedCategoryIds: node.selectedCategoryIds,
     };
     nodeActions = fullNode.actions;
+    hasCraftContext = true;
     console.log('[CategoryBanner] Props do Craft.js obtidas:', {
       selectedCategoryIds: craftProps.selectedCategoryIds,
       categoryImagesCount: craftProps.categoryImages?.length || 0,
@@ -101,7 +69,48 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
   } catch (e) {
     // Não está no contexto do editor - tentar obter props do layout salvo
     console.log('[CategoryBanner] Não está no contexto do Craft.js, tentando obter props do layout salvo');
+    hasCraftContext = false;
   }
+  
+  // Verificar se está no editor - usar múltiplas verificações para garantir
+  const [isInEditorMode, setIsInEditorMode] = React.useState(false);
+  
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  React.useEffect(() => {
+    // Verificar se está no editor
+    if (typeof window === 'undefined') {
+      setIsInEditorMode(false) // SSR nunca está no editor
+      return
+    }
+    
+    const urlParams = new URLSearchParams(window.location.search)
+    const isEditable = urlParams.get('editable') === 'true'
+    const isInIframe = window.self !== window.top
+    const pathname = window.location.pathname
+    const isPreviewPage = pathname === '/preview'
+    
+    // Está no editor APENAS se TODAS as condições forem atendidas:
+    // 1. Está na página /preview
+    // 2. Tem editable=true na URL
+    // 3. Está em iframe (dentro do editor)
+    // 4. Tem contexto do Craft.js (hasCraftContext)
+    // Isso garante que os botões NÃO apareçam na loja pública
+    const shouldBeInEditor = isPreviewPage && isEditable && isInIframe && hasCraftContext
+    
+    setIsInEditorMode(shouldBeInEditor)
+    
+    console.log('[CategoryBanner] Verificação do editor:', {
+      isPreviewPage,
+      isEditable,
+      isInIframe,
+      hasCraftContext,
+      shouldBeInEditor,
+      pathname
+    })
+  }, [hasCraftContext])
   
   const setProp = nodeActions?.setProp || (() => {});
   
@@ -110,6 +119,16 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
       props.selectedCategoryIds = ids;
     });
   };
+  
+  // Debug: verificar se está no editor
+  useEffect(() => {
+    console.log('[CategoryBanner] Estado do editor:', {
+      isInEditor,
+      hasCraftContext,
+      isInEditorMode,
+      mounted
+    });
+  }, [isInEditor, hasCraftContext, isInEditorMode, mounted]);
 
   // Função helper para obter storeId (funciona em web e admin)
   const getStoreId = (): string | null => {
@@ -341,40 +360,16 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
     );
   }, [isInEditor, childNodesMap]);
 
-  // Função para lidar com upload de imagem
-  const handleImageUpload = (categoryIndex: number, event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    // Validar tipo de arquivo
-    if (!file.type.startsWith('image/')) {
-      alert('Por favor, selecione apenas arquivos de imagem (JPG, PNG, GIF).');
-      return;
-    }
-
-    // Validar tamanho (máximo 10MB para base64)
-    if (file.size > 10 * 1024 * 1024) {
-      alert('A imagem deve ter no máximo 10MB. Por favor, escolha uma imagem menor.');
-      return;
-    }
-
-    // Converter para base64 (data URL) ao invés de blob URL
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const imageUrl = e.target?.result as string;
-      
-      // Atualizar props do Craft.js
-      setProp((props: any) => {
-        const currentImages = props.categoryImages || [];
-        const newImages = [...currentImages];
-        newImages[categoryIndex] = imageUrl;
-        props.categoryImages = newImages;
-      });
-    };
-    reader.onerror = () => {
-      alert('Erro ao processar imagem. Tente novamente.');
-    };
-    reader.readAsDataURL(file);
+  // Função para lidar com mudança de imagem de categoria
+  const handleCategoryImageChange = (categoryIndex: number, newUrl: string) => {
+    console.log('[CategoryBanner] Mudando imagem da categoria', { categoryIndex, newUrl, hasCraftContext, isInEditor });
+    setProp((props: any) => {
+      const currentImages = props.categoryImages || [];
+      const newImages = [...currentImages];
+      newImages[categoryIndex] = newUrl;
+      props.categoryImages = newImages;
+      console.log('[CategoryBanner] Imagens atualizadas:', newImages);
+    });
   };
 
   // Obter URL da imagem (do Craft.js ou padrão)
@@ -430,16 +425,6 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
       : 1 - Math.pow(-2 * t + 2, 3) / 2;
   };
 
-  // Criar refs para os inputs de upload de imagem (um por categoria)
-  const fileInputRefs = React.useRef<Map<number, HTMLInputElement>>(new Map());
-  
-  const setFileInputRef = (index: number) => (el: HTMLInputElement | null) => {
-    if (el) {
-      fileInputRefs.current.set(index, el);
-    } else {
-      fileInputRefs.current.delete(index);
-    }
-  };
 
   // Função de scroll suave customizada
   const smoothScrollTo = (element: HTMLElement, target: number, duration: number = 600) => {
@@ -545,7 +530,7 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
   };
 
   // Renderizar modal de configurações apenas no editor
-  const settingsModal = showSettingsModal && isInEditor && isInEditorRoute && mounted ? (
+  const settingsModal = showSettingsModal && isInEditorMode && mounted ? (
     <CategoryBannerSettings
       selectedCategoryIds={craftProps.selectedCategoryIds || []}
       onCategoryIdsChange={handleCategoryIdsChange}
@@ -559,17 +544,28 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
       {settingsModal}
     <section ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }} className="py-16 bg-cream relative">
       {/* Botão para abrir configurações - apenas no editor */}
-      {isInEditor && isInEditorRoute && mounted && (
+      {isInEditorMode && mounted && (
         <button
+          data-modal-button="true"
+          type="button"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('[CategoryBanner] Botão de configurações clicado');
             setShowSettingsModal(true);
           }}
-          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all z-10 group/btn"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all z-[100] group/btn"
           title="Configurar categorias (máximo 3)"
+          style={{ pointerEvents: 'auto', cursor: 'pointer' }}
         >
-          <Settings className="w-5 h-5 text-gray-700 group-hover/btn:text-primary transition-colors" />
+          <Settings 
+            className="w-5 h-5 text-gray-700 group-hover/btn:text-primary transition-colors pointer-events-none" 
+            style={{ pointerEvents: 'none' }}
+          />
         </button>
       )}
       <div className="container mx-auto px-4">
@@ -628,35 +624,45 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
                 className="category-card group relative aspect-[3/4] overflow-hidden animate-fade-up flex-shrink-0 w-full min-w-[280px] md:min-w-0 md:w-[calc((100%-48px)/3)] md:max-w-[calc((100%-48px)/3)] transition-all duration-500 ease-in-out"
                 style={{ animationDelay: `${index * 150}ms` }}
               >
-                <Link
-                  href={category.href}
-                  className="block w-full h-full"
-                >
-                  <img
-                    src={imageUrl}
-                    alt={category.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent" />
-                </Link>
-                
-                {/* Botão de upload - apenas no editor */}
-                {isInEditor && isInEditorRoute && (
-                  <>
-                    <input
-                      ref={setFileInputRef(index)}
-                      type="file"
-                      accept="image/*"
-                      className="hidden"
-                      onChange={(e) => handleImageUpload(index, e)}
-                    />
-                    <ImageUploadButton
-                      onUpload={() => fileInputRefs.current.get(index)?.click()}
-                      className="absolute top-2 right-2 z-20"
-                    />
-                  </>
-                )}
-                <div className="absolute bottom-0 left-0 right-0 p-6 text-center">
+                <div className="relative w-full h-full">
+                  {isInEditorMode ? (
+                    // No editor, não usar Link para não bloquear edição
+                    <div className="block w-full h-full relative">
+                      <EditableImage
+                        src={imageUrl}
+                        alt={category.name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        buttonPosition="top-right"
+                        imageProp={`categoryImage_${index}`}
+                        onImageChange={(url) => {
+                          console.log('[CategoryBanner] Imagem alterada via EditableImage', { index, url });
+                          handleCategoryImageChange(index, url);
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent pointer-events-none" />
+                    </div>
+                  ) : (
+                    // Fora do editor, usar Link normalmente
+                    <Link
+                      href={category.href}
+                      className="block w-full h-full"
+                    >
+                      <EditableImage
+                        src={imageUrl}
+                        alt={category.name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                        buttonPosition="top-right"
+                        imageProp={`categoryImage_${index}`}
+                        onImageChange={(url) => {
+                          console.log('[CategoryBanner] Imagem alterada via EditableImage', { index, url });
+                          handleCategoryImageChange(index, url);
+                        }}
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent pointer-events-none" />
+                    </Link>
+                  )}
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-6 text-center z-10">
                   <h3 className="font-display text-2xl text-white mb-2">
                     {category.name}
                   </h3>
@@ -809,19 +815,54 @@ function CategoryBannerSettings({
     }
   };
 
+  // Fechar ao clicar fora do modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    // Adicionar listener após um pequeno delay para evitar fechar imediatamente ao abrir
+    const timeout = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeout);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  // Fechar ao pressionar Escape
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, onClose]);
+
   const modalContent = (
     <>
       {/* Overlay */}
       <div 
         className="fixed inset-0 z-[9998] bg-black/50"
-        onClick={(e) => {
-          e.stopPropagation();
-          onClose();
-        }}
+        onClick={onClose}
       />
       {/* Modal */}
       <div
         ref={modalRef}
+        data-modal="true"
         className="fixed z-[9999] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] bg-white rounded-lg shadow-2xl border-2 border-blue-500 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
@@ -923,10 +964,21 @@ function CategoryBannerSettings({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <p className="text-xs text-gray-500 text-center">
+        <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+          <p className="text-xs text-gray-500">
             {selectedCategoryIds.length} de 3 categoria(s) selecionada(s). As categorias aparecerão na ordem selecionada.
           </p>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onClose();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium"
+            data-modal-button="true"
+          >
+            OK
+          </button>
         </div>
       </div>
     </>

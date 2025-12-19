@@ -16,11 +16,46 @@ export function PixQrCode({ qrCode, qrCodeBase64, ticketUrl }: PixQrCodeProps) {
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(qrCode)
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
+      // Verificar se Clipboard API está disponível
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(qrCode)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+      } else {
+        // Fallback para navegadores mais antigos ou quando Clipboard API está bloqueada
+        const textArea = document.createElement('textarea')
+        textArea.value = qrCode
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        document.body.appendChild(textArea)
+        textArea.select()
+        try {
+          document.execCommand('copy')
+          setCopied(true)
+          setTimeout(() => setCopied(false), 2000)
+        } catch (err) {
+          console.error('Erro ao copiar código:', err)
+        } finally {
+          document.body.removeChild(textArea)
+        }
+      }
     } catch (error) {
       console.error('Erro ao copiar código:', error)
+      // Tentar fallback mesmo em caso de erro
+      try {
+        const textArea = document.createElement('textarea')
+        textArea.value = qrCode
+        textArea.style.position = 'fixed'
+        textArea.style.left = '-999999px'
+        document.body.appendChild(textArea)
+        textArea.select()
+        document.execCommand('copy')
+        setCopied(true)
+        setTimeout(() => setCopied(false), 2000)
+        document.body.removeChild(textArea)
+      } catch (fallbackError) {
+        console.error('Erro no fallback de cópia:', fallbackError)
+      }
     }
   }
 

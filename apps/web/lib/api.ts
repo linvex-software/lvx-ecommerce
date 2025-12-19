@@ -1,4 +1,4 @@
-import { useAuthStore } from '@/lib/store/useAuthStore'
+import { useAuthStore } from './store/useAuthStore'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'
 

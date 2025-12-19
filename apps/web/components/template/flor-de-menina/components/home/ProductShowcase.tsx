@@ -67,6 +67,7 @@ export function ProductShowcase({
   let nodeActions: { setProp: (callback: (props: any) => void) => void } | null = null;
   let isSelected = false;
   let isInEditor = false;
+  let hasCraftContext = false;
   
   try {
     const node = useNode((node) => ({
@@ -79,6 +80,7 @@ export function ProductShowcase({
     nodeActions = fullNode.actions;
     isSelected = node.isSelected;
     isInEditor = true;
+    hasCraftContext = true;
     console.log('[ProductShowcase] Props do Craft.js obtidas:', {
       selectedProductIds: craftProps.selectedProductIds,
       nodeId,
@@ -87,6 +89,7 @@ export function ProductShowcase({
   } catch (e) {
     // Não está no contexto do editor - tentar obter props do layout salvo
     console.log('[ProductShowcase] Não está no contexto do Craft.js, tentando obter props do layout salvo');
+    hasCraftContext = false;
   }
   
   useEffect(() => {
@@ -212,17 +215,44 @@ export function ProductShowcase({
   // Estado para controlar abertura do modal
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   
-  // Verificar se está no editor através da URL
-  const [isInEditorRoute, setIsInEditorRoute] = useState(false);
+  // Verificar se está no editor - usar múltiplas verificações para garantir
+  const [isInEditorMode, setIsInEditorMode] = useState(false);
   
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setIsInEditorRoute(window.location.pathname.includes('/editor'));
+    // Verificar se está no editor
+    if (typeof window === 'undefined') {
+      setIsInEditorMode(false) // SSR nunca está no editor
+      return
     }
-  }, []);
+    
+    const urlParams = new URLSearchParams(window.location.search)
+    const isEditable = urlParams.get('editable') === 'true'
+    const isInIframe = window.self !== window.top
+    const pathname = window.location.pathname
+    const isPreviewPage = pathname === '/preview'
+    
+    // Está no editor APENAS se TODAS as condições forem atendidas:
+    // 1. Está na página /preview
+    // 2. Tem editable=true na URL
+    // 3. Está em iframe (dentro do editor)
+    // 4. Tem contexto do Craft.js (hasCraftContext)
+    // Isso garante que os botões NÃO apareçam na loja pública
+    const shouldBeInEditor = isPreviewPage && isEditable && isInIframe && hasCraftContext
+    
+    setIsInEditorMode(shouldBeInEditor)
+    
+    console.log('[ProductShowcase] Verificação do editor:', {
+      isPreviewPage,
+      isEditable,
+      isInIframe,
+      hasCraftContext,
+      shouldBeInEditor,
+      pathname
+    })
+  }, [hasCraftContext])
 
   // Renderizar modal de configurações apenas no editor
-  const settingsModal = showSettingsModal && isInEditor && isInEditorRoute && mounted ? (
+  const settingsModal = showSettingsModal && isInEditorMode && mounted ? (
     <ProductShowcaseSettings
       selectedProductIds={craftProps.selectedProductIds || []}
       onProductIdsChange={(ids) => {
@@ -240,17 +270,28 @@ export function ProductShowcase({
       {settingsModal}
     <section ref={(ref: HTMLElement | null) => { if (ref) connect(ref); }} className="py-16 lg:py-24 relative">
       {/* Botão para abrir configurações - apenas no editor */}
-      {isInEditor && isInEditorRoute && (
+      {isInEditorMode && mounted && (
         <button
+          data-modal-button="true"
+          type="button"
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
+            console.log('[ProductShowcase] Botão de configurações clicado');
             setShowSettingsModal(true);
           }}
-          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all z-10 group/btn"
+          onMouseDown={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+          }}
+          className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center transition-all z-[100] group/btn"
           title="Configurar produtos"
+          style={{ pointerEvents: 'auto', cursor: 'pointer' }}
         >
-          <Settings className="w-5 h-5 text-gray-700 group-hover/btn:text-primary transition-colors" />
+          <Settings 
+            className="w-5 h-5 text-gray-700 group-hover/btn:text-primary transition-colors pointer-events-none" 
+            style={{ pointerEvents: 'none' }}
+          />
         </button>
       )}
       <div className="container mx-auto px-4">
@@ -342,15 +383,9 @@ function ProductShowcaseSettings({
     
     console.log('[ProductShowcaseSettings] Modal aberto, iniciando carregamento de produtos...');
     
-    // Verificar se está no editor
+    // Verificar se está no editor - se o modal está aberto, significa que está no editor
+    // O modal só é renderizado quando isInEditorMode é true
     if (typeof window === 'undefined') {
-      setIsLoading(false);
-      return;
-    }
-    
-    const isInEditor = window.location.pathname.includes('/editor');
-    if (!isInEditor) {
-      console.log('[ProductShowcaseSettings] Não está no editor, não carregando produtos');
       setIsLoading(false);
       return;
     }
@@ -460,16 +495,54 @@ function ProductShowcaseSettings({
     }
   };
 
+  // Fechar ao clicar fora do modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    // Adicionar listener após um pequeno delay para evitar fechar imediatamente ao abrir
+    const timeout = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeout);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  // Fechar ao pressionar Escape
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, onClose]);
+
   const modalContent = (
     <>
       {/* Overlay */}
       <div 
         className="fixed inset-0 z-[9998] bg-black/50"
-        style={{ pointerEvents: 'none' }}
+        onClick={onClose}
       />
       {/* Modal */}
       <div
         ref={modalRef}
+        data-modal="true"
         className="fixed z-[9999] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-4xl max-h-[90vh] bg-white rounded-lg shadow-2xl border-2 border-blue-500 overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
         onMouseDown={(e) => e.stopPropagation()}
@@ -584,10 +657,21 @@ function ProductShowcaseSettings({
         </div>
 
         {/* Footer */}
-        <div className="p-4 border-t border-gray-200 bg-gray-50">
-          <p className="text-xs text-gray-500 text-center">
+        <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-between">
+          <p className="text-xs text-gray-500">
             {selectedProductIds.length} produto(s) selecionado(s). Os produtos aparecerão na ordem selecionada.
           </p>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onClose();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium"
+            data-modal-button="true"
+          >
+            OK
+          </button>
         </div>
       </div>
     </>

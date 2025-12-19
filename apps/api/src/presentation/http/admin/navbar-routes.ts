@@ -1,6 +1,7 @@
 import type { FastifyInstance, FastifyRequest, FastifyReply } from 'fastify'
 import { NavbarController } from './navbar-controller'
 import { NavbarRepository } from '../../../infra/db/repositories/navbar-repository'
+import { CategoryRepository } from '../../../infra/db/repositories/category-repository'
 import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
 import { requireAuth, requireRole } from '../../../infra/http/middlewares/auth'
 
@@ -8,7 +9,8 @@ export async function registerAdminNavbarRoutes(
   app: FastifyInstance
 ): Promise<void> {
   const navbarRepository = new NavbarRepository()
-  const navbarController = new NavbarController(navbarRepository)
+  const categoryRepository = new CategoryRepository()
+  const navbarController = new NavbarController(navbarRepository, categoryRepository)
 
   // GET /admin/navbar - Listar todos os itens
   app.get(
@@ -79,6 +81,30 @@ export async function registerAdminNavbarRoutes(
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       await navbarController.updateOrder(request, reply)
+    }
+  )
+
+  // GET /admin/menu/categories - Listar categorias disponíveis
+  app.get(
+    '/admin/menu/categories',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin'])],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await navbarController.getCategories(request, reply)
+    }
+  )
+
+  // GET /admin/menu/pages - Listar páginas institucionais
+  app.get(
+    '/admin/menu/pages',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin'])],
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await navbarController.getPages(request, reply)
     }
   )
 }

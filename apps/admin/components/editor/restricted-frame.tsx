@@ -3,6 +3,9 @@
 /**
  * Frame Restrito
  * 
+ * @deprecated Este componente está deprecated. Use IsolatedPreviewFrame para isolamento completo via iframe.
+ * Mantido apenas para compatibilidade temporária durante a migração.
+ * 
  * Wrapper do Frame do Craft.js que desabilita drag & drop e adicionar/remover componentes
  * Aplica os mesmos estilos globais da web para garantir consistência visual
  */

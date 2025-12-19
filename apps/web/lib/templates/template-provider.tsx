@@ -31,23 +31,25 @@ export function TemplateProvider({
   const [config, setConfig] = useState<TemplateConfig | null>(initialConfig || null)
   const [isLoading, setIsLoading] = useState(!initialConfig)
 
-  // Carregar estilos compartilhados do template (CÓPIA EXATA de template1)
-  // Este é o ÚNICO lugar onde os estilos do template são carregados
+  // Carregar estilos do template dinamicamente
   useEffect(() => {
-    if (templateId === 'flor-de-menina' && typeof document !== 'undefined') {
-      // Carregar CSS compartilhado do template (cópia exata de template1/flor-de-menina-boutique/src/index.css)
-      const link = document.createElement('link')
-      link.href = '/templates/flor-de-menina/styles.css'
-      link.rel = 'stylesheet'
-      link.id = 'template-shared-styles'
-      document.head.appendChild(link)
+    if (typeof document === 'undefined') return
 
-      return () => {
-        const linkElement = document.getElementById('template-shared-styles')
-        if (linkElement) {
-          document.head.removeChild(linkElement)
-        }
+    const loadStyles = async () => {
+      try {
+        const { loadAllTemplateStyles } = await import('./template-loader')
+        await loadAllTemplateStyles(templateId)
+      } catch (error) {
+        console.error(`Error loading template styles for ${templateId}:`, error)
       }
+    }
+
+    loadStyles()
+
+    return () => {
+      // Remover estilos ao desmontar ou trocar template
+      const { removeTemplateStyles } = require('./template-loader')
+      removeTemplateStyles(templateId)
     }
   }, [templateId])
   

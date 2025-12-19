@@ -11,6 +11,7 @@ import { NavbarEditor } from '@/components/editor/NavbarEditor'
 import { craftJsonToBlocks, blocksToCraftJson } from '@/lib/utils/craft-converter'
 import type { Block } from '@/components/blocks/types'
 import type { NavbarItem } from '@/lib/types/navbar'
+import { Spinner } from '@/components/ui/ios-spinner'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'
 
@@ -157,8 +158,8 @@ export default function HomepageEditorPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-screen">
-        <div className="text-sm text-muted-foreground">Carregando editor...</div>
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+        <Spinner size="lg" />
       </div>
     )
   }
