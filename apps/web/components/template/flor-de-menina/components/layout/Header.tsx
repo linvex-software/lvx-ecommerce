@@ -13,6 +13,7 @@ import { useStoreTheme } from '@/lib/hooks/use-store-theme';
 import { useQuery } from '@tanstack/react-query';
 import { useStoreSettings } from '@/lib/hooks/use-store-settings';
 import React from 'react';
+import { CategoriesDropdown } from './CategoriesDropdown';
 
 interface Category {
   id: string
@@ -192,26 +193,13 @@ export function Header() {
     queryFn: fetchCategories,
   })
 
-  // Gerar links de navegação dinamicamente
+  // Gerar links de navegação dinamicamente (sem categorias, pois agora temos o dropdown)
   const navLinks = useMemo(() => {
-    const staticLinks = [
+    return [
       { name: "Novidades", href: "/produtos?filter=new", id: "node_header_nav_1" },
-    ]
-
-    // Adicionar categorias da API (máximo 5 para não sobrecarregar o menu)
-    const categoryLinks = (categoriesData?.categories || []).slice(0, 5).map((cat, index) => ({
-      name: cat.name,
-      href: `/produtos?category_id=${cat.id}`,
-      id: `node_header_nav_category_${cat.id}`, // Usar ID da categoria para garantir unicidade
-    }))
-
-    // Adicionar link estático no final
-    const finalLinks = [
       { name: "Natal & Festas", href: "/produtos?filter=featured", id: "node_header_nav_featured" },
     ]
-
-    return [...staticLinks, ...categoryLinks, ...finalLinks]
-  }, [categoriesData])
+  }, [])
 
   // Verificar se está no contexto do Craft.js
   let craftContextAvailable = false;
@@ -278,6 +266,13 @@ export function Header() {
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover:w-full" />
               </Link>
             ))}
+            {/* Dropdown de Categorias */}
+            {categoriesData?.categories && categoriesData.categories.length > 0 && (
+              <CategoriesDropdown 
+                categories={categoriesData.categories} 
+                isMobile={false}
+              />
+            )}
           </nav>
 
           {/* Actions - Desktop only */}
@@ -387,6 +382,17 @@ export function Header() {
               />
             </Link>
           ))}
+
+          {/* Dropdown de Categorias no Mobile */}
+          {categoriesData?.categories && categoriesData.categories.length > 0 && (
+            <div className="border-b border-border pb-3">
+              <CategoriesDropdown 
+                categories={categoriesData.categories} 
+                isMobile={true}
+                className="w-full"
+              />
+            </div>
+          )}
 
           {/* Mobile Actions - com separadores iguais aos outros itens */}
           <button
