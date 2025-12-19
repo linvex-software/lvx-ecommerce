@@ -54,6 +54,7 @@ import { registerTemplateSettingsRoutes } from './presentation/http/settings/tem
 import { registerPaymentRoutes } from './presentation/http/payments/payment-routes'
 import { registerAdminPaymentMethodRoutes } from './presentation/http/admin/payment-method-routes'
 import { registerAdminReviewRoutes } from './presentation/http/admin/review-routes'
+import { registerUploadRoutes } from './presentation/http/admin/upload-routes'
 
 async function buildServer() {
   const app = Fastify({
@@ -209,6 +210,7 @@ async function buildServer() {
   await registerPaymentRoutes(app)
   await registerAdminPaymentMethodRoutes(app)
   await registerAdminReviewRoutes(app)
+  await registerUploadRoutes(app)
 
   return app
 }

@@ -5,6 +5,7 @@ import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
+import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -261,6 +262,9 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
   }
 
   const handleFormSubmit = async (data: ProductFormData) => {
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/82e2bda5-de42-49f5-a3db-2e7cfbf454f0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product-form.tsx:263',message:'handleFormSubmit ENTRY',data:{hasData:!!data,dataKeys:Object.keys(data||{}),isLoading},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+    // #endregion
     // Converter dígitos para número antes de enviar
     // Priorizar: 1) estado priceDigits (mais atualizado), 2) data do form, 3) watch do form
     const watchedPriceDigits = watch('priceDigits' as any)
@@ -300,8 +304,27 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
     // Filtrar variantes vazias (sem tamanho e sem cor)
     const validVariants = variants.filter((v) => v.size || v.color)
 
-    // Filtrar imagens com URL válida
-    const validImages = images.filter((img) => img.image_url.trim() !== '')
+    // Filtrar imagens com URL válida (não data URLs)
+    const validImages = images.filter((img) => {
+      const url = img.image_url.trim()
+      // Rejeitar data URLs (base64) - apenas URLs reais do R2
+      return url !== '' && !url.startsWith('data:')
+    })
+    
+    // Validar se há pelo menos uma imagem válida
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/82e2bda5-de42-49f5-a3db-2e7cfbf454f0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product-form.tsx:307',message:'Image validation check',data:{validImagesCount:validImages.length,imagesCount:images.length,validImages:validImages.map(i=>i.image_url.substring(0,50))},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    if (validImages.length === 0 && images.length > 0) {
+      // Se havia imagens mas todas são data URLs, significa que o upload ainda não terminou
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/82e2bda5-de42-49f5-a3db-2e7cfbf454f0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product-form.tsx:310',message:'Throwing error: images still uploading',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'C'})}).catch(()=>{});
+      // #endregion
+      toast.error('Aguarde o upload das imagens', {
+        description: 'As imagens ainda estão sendo enviadas. Aguarde alguns segundos e tente novamente.'
+      })
+      throw new Error('Imagens ainda sendo enviadas')
+    }
 
     // Filtrar SEO vazio
     const hasSEO =
@@ -357,13 +380,44 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
       formPriceDigits_usado: formPriceDigits
     })
 
-    await onSubmit(submitData as any)
+    try {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/82e2bda5-de42-49f5-a3db-2e7cfbf454f0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product-form.tsx:360',message:'About to call onSubmit',data:{submitDataKeys:Object.keys(submitData),hasImages:!!submitData.images,imagesCount:submitData.images?.length},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      await onSubmit(submitData as any)
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/82e2bda5-de42-49f5-a3db-2e7cfbf454f0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product-form.tsx:363',message:'onSubmit completed successfully',data:{},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+    } catch (error) {
+      // #region agent log
+      fetch('http://127.0.0.1:7243/ingest/82e2bda5-de42-49f5-a3db-2e7cfbf454f0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product-form.tsx:365',message:'handleFormSubmit ERROR',data:{errorMessage:error instanceof Error?error.message:String(error)},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'B'})}).catch(()=>{});
+      // #endregion
+      console.error('[ProductForm] Erro ao submeter formulário:', error)
+      // O erro será tratado pelo hook (useCreateProduct)
+      throw error
+    }
   }
 
   const watchedName = watch('name')
 
+  const formOnSubmit = (e: React.FormEvent) => {
+    // #region agent log
+    const errorKeys = Object.keys(errors)
+    const errorDetails = errorKeys.reduce((acc, key) => {
+      acc[key] = errors[key as keyof typeof errors]?.message || 'error'
+      return acc
+    }, {} as Record<string, string>)
+    fetch('http://127.0.0.1:7243/ingest/82e2bda5-de42-49f5-a3db-2e7cfbf454f0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product-form.tsx:366',message:'Form onSubmit event fired',data:{isLoading,hasErrors:errorKeys.length>0,errorsCount:errorKeys.length,errorDetails,formValues:{name:watch('name'),priceDigits:watch('priceDigits' as any)}},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    const result = handleSubmit(handleFormSubmit)(e)
+    // #region agent log
+    fetch('http://127.0.0.1:7243/ingest/82e2bda5-de42-49f5-a3db-2e7cfbf454f0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product-form.tsx:375',message:'handleSubmit returned',data:{resultType:typeof result,isPromise:result instanceof Promise},timestamp:Date.now(),sessionId:'debug-session',runId:'run2',hypothesisId:'C'})}).catch(()=>{});
+    // #endregion
+    return result
+  }
+  
   return (
-    <form onSubmit={handleSubmit(handleFormSubmit)} className="space-y-8">
+    <form onSubmit={formOnSubmit} className="space-y-8">
       {/* Layout responsivo: 2 colunas no desktop, 1 coluna no mobile/tablet */}
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Coluna principal (esquerda) - 2/3 da largura no desktop */}
@@ -680,7 +734,16 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
           >
             Cancelar
           </Button>
-          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+          <Button 
+            type="submit" 
+            disabled={isLoading} 
+            className="w-full sm:w-auto"
+            onClick={(e) => {
+              // #region agent log
+              fetch('http://127.0.0.1:7243/ingest/82e2bda5-de42-49f5-a3db-2e7cfbf454f0',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'product-form.tsx:689',message:'Submit button clicked',data:{isLoading,buttonType:'submit',disabled:isLoading},timestamp:Date.now(),sessionId:'debug-session',runId:'run1',hypothesisId:'A'})}).catch(()=>{});
+              // #endregion
+            }}
+          >
             {isLoading ? 'Salvando...' : product ? 'Atualizar produto' : 'Criar produto'}
           </Button>
         </div>

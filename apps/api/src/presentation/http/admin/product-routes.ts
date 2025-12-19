@@ -61,12 +61,12 @@ export async function registerAdminProductRoutes(
     }
   )
 
-  // POST /admin/products - Cria produto (apenas admin)
+  // POST /admin/products - Cria produto (admin ou operador)
   app.post(
     '/admin/products',
     {
       onRequest: [requireAuth, tenantMiddleware],
-      preHandler: [requireRole(['admin'])]
+      preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       await productController.create(request, reply)

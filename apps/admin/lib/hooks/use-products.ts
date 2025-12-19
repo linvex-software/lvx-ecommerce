@@ -214,6 +214,15 @@ export function useCreateProduct() {
         description: `${product.name} foi adicionado ao catálogo.`
       })
       router.push('/products')
+    },
+    onError: (error: any) => {
+      console.error('[useCreateProduct] Erro ao criar produto:', error)
+      const errorMessage = error?.response?.data?.error || error?.message || 'Erro ao criar produto'
+      const errorDetails = error?.response?.data?.details || error?.response?.data?.message
+      
+      toast.error('Erro ao criar produto', {
+        description: errorDetails || errorMessage
+      })
     }
   })
 }

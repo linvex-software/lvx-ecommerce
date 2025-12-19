@@ -1,10 +1,11 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Upload, X, Image as ImageIcon } from 'lucide-react'
+import { Upload, X, Image as ImageIcon, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@white-label/ui'
 import { cn } from '@white-label/ui'
+import { useImageUpload } from '@/lib/hooks/use-image-upload'
 
 interface ImageUploadProps {
   value?: string | null
@@ -15,8 +16,8 @@ interface ImageUploadProps {
 
 export function ImageUpload({ value, onChange, disabled, aspectRatio = 'square' }: ImageUploadProps) {
   const [isDragging, setIsDragging] = useState(false)
-  const [isUploading, setIsUploading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { uploadImage, isUploading } = useImageUpload()
 
   const handleFileSelect = async (file: File) => {
     if (!file.type.startsWith('image/')) {
@@ -26,30 +27,33 @@ export function ImageUpload({ value, onChange, disabled, aspectRatio = 'square' 
       return
     }
 
-    setIsUploading(true)
-
-    try {
-      // Por enquanto, criar uma URL local para preview
-      // Em produção, fazer upload para S3/R2 e obter URL
-      const reader = new FileReader()
-      reader.onloadend = () => {
-        const result = reader.result as string
-        onChange(result)
-        setIsUploading(false)
-      }
-      reader.onerror = () => {
-        setIsUploading(false)
-        toast.error('Erro ao processar imagem', {
-          description: 'Não foi possível processar a imagem. Tente novamente com outro arquivo.'
-        })
-      }
-      reader.readAsDataURL(file)
-    } catch (error) {
-      // Erro ao processar imagem
-      setIsUploading(false)
-      toast.error('Erro ao processar imagem', {
-        description: 'Não foi possível processar a imagem. Tente novamente.'
+    // Validar tamanho (máximo 5MB)
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      toast.error('Arquivo muito grande', {
+        description: 'A imagem deve ter no máximo 5MB. Por favor, escolha uma imagem menor.'
       })
+      return
+    }
+
+    // Criar preview local enquanto faz upload
+    const reader = new FileReader()
+    reader.onloadend = () => {
+      const previewUrl = reader.result as string
+      // Mostrar preview temporário
+      onChange(previewUrl)
+    }
+    reader.readAsDataURL(file)
+
+    // Fazer upload para R2
+    try {
+      const uploadedUrl = await uploadImage(file)
+      // Substituir preview pela URL real do R2
+      onChange(uploadedUrl)
+    } catch (error) {
+      // Se falhar, remover preview temporário
+      onChange(null)
+      // Erro já foi tratado no hook
     }
   }
 
@@ -125,7 +129,7 @@ export function ImageUpload({ value, onChange, disabled, aspectRatio = 'square' 
         <div className="flex flex-col items-center justify-center p-8 text-center">
           {isUploading ? (
             <>
-              <div className="mb-4 h-12 w-12 animate-pulse rounded-full bg-gray-200" />
+              <Loader2 className="mb-4 h-12 w-12 animate-spin text-gray-400" />
               <p className="text-sm font-medium text-gray-600">Enviando...</p>
             </>
           ) : (
@@ -137,13 +141,13 @@ export function ImageUpload({ value, onChange, disabled, aspectRatio = 'square' 
                 Clique ou arraste uma imagem
               </p>
               <p className="mb-4 text-xs text-gray-500">
-                PNG, JPG ou GIF até 10MB
+                PNG, JPG ou GIF até 5MB
               </p>
               <Button
                 type="button"
                 variant="outline"
                 onClick={handleClick}
-                disabled={disabled}
+                disabled={disabled || isUploading}
                 className="gap-2"
               >
                 <Upload className="h-4 w-4" />

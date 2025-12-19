@@ -21,12 +21,12 @@ export async function registerAdminCouponRoutes(app: FastifyInstance): Promise<v
     }
   )
 
-  // POST /admin/coupons - Cria cupom (apenas admin)
+  // POST /admin/coupons - Cria cupom (admin ou operador)
   app.post(
     '/admin/coupons',
     {
       onRequest: [requireAuth, tenantMiddleware],
-      preHandler: [requireRole(['admin'])]
+      preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       await couponController.create(request, reply)

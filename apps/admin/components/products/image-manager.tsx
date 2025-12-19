@@ -1,11 +1,12 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import { Plus, Trash2, MoveUp, MoveDown, Upload } from 'lucide-react'
+import { Plus, Trash2, MoveUp, MoveDown, Upload, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@white-label/ui'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { useImageUpload } from '@/lib/hooks/use-image-upload'
 
 export interface ProductImage {
   image_url: string
@@ -20,6 +21,8 @@ interface ImageManagerProps {
 
 export function ImageManager({ images, onChange }: ImageManagerProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const { uploadImage, isUploading } = useImageUpload()
+  const [uploadingIndex, setUploadingIndex] = useState<number | null>(null)
 
   const validateImageFile = (file: File): boolean => {
     if (!file.type.startsWith('image/')) {
@@ -39,50 +42,119 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
     return true
   }
 
-  const processImageFile = (file: File, callback: (imageUrl: string) => void) => {
+  const processImageFile = async (file: File, callback: (imageUrl: string) => void, index?: number) => {
     if (!validateImageFile(file)) {
       return
     }
 
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      const imageUrl = event.target?.result as string
-      callback(imageUrl)
+    // Se for atualização de imagem existente, mostrar loading
+    if (index !== undefined) {
+      setUploadingIndex(index)
     }
-    reader.readAsDataURL(file)
+
+    // Criar preview local enquanto faz upload (apenas para nova imagem)
+    let previewUrl: string | null = null
+    if (index === undefined) {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        previewUrl = event.target?.result as string
+        // Adicionar com preview temporário
+        const maxPosition = images.length > 0 ? Math.max(...images.map((img) => img.position || 0)) : -1
+        onChange([
+          ...images,
+          {
+            image_url: previewUrl,
+            position: maxPosition + 1,
+            is_main: images.length === 0
+          }
+        ])
+      }
+      reader.readAsDataURL(file)
+    }
+
+    // Fazer upload para R2
+    try {
+      const uploadedUrl = await uploadImage(file)
+
+      // Atualizar com URL real do R2
+      if (index !== undefined) {
+        // Atualizar imagem existente
+        const updated = [...images]
+        updated[index] = {
+          ...updated[index],
+          image_url: uploadedUrl
+        }
+        onChange(updated)
+      } else {
+        // Substituir preview temporário pela URL real
+        // Usar o estado atual de images diretamente
+        const previewIndex = images.findIndex((img) => img.image_url === previewUrl)
+        const maxPosition = images.length > 0 ? Math.max(...images.map((img) => img.position || 0)) : -1
+
+        let newImages: ProductImage[]
+        if (previewIndex >= 0) {
+          // Substituir preview
+          newImages = [...images]
+          newImages[previewIndex] = {
+            image_url: uploadedUrl,
+            position: maxPosition,
+            is_main: images.length === 1 // Se for a primeira imagem
+          }
+        } else {
+          // Se não encontrou preview, adicionar nova
+          newImages = [
+            ...images,
+            {
+              image_url: uploadedUrl,
+              position: maxPosition + 1,
+              is_main: images.length === 0
+            }
+          ]
+        }
+        onChange(newImages)
+      }
+
+      callback(uploadedUrl)
+    } catch (error) {
+      // Se falhar o upload, remover preview temporário se for nova imagem
+      if (index === undefined && previewUrl) {
+        const newImages = images.filter((img) => img.image_url !== previewUrl)
+        onChange(newImages)
+      }
+      // Erro já foi tratado no hook
+    } finally {
+      if (index !== undefined) {
+        setUploadingIndex(null)
+      }
+    }
   }
 
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    event.preventDefault()
+    event.stopPropagation()
+    
     const file = event.target.files?.[0]
     if (!file) return
 
-    if (!validateImageFile(file)) {
-      return
-    }
-
-    // Converter para data URL (base64)
-    const reader = new FileReader()
-    reader.onload = (e) => {
-      const imageUrl = e.target?.result as string
-      const maxPosition = images.length > 0 ? Math.max(...images.map((img) => img.position || 0)) : -1
-      onChange([
-        ...images,
-        {
-          image_url: imageUrl,
-          position: maxPosition + 1,
-          is_main: images.length === 0
-        }
-      ])
-    }
-    reader.readAsDataURL(file)
-
-    // Resetar o input para permitir selecionar o mesmo arquivo novamente
-    if (fileInputRef.current) {
-      fileInputRef.current.value = ''
+    try {
+      await processImageFile(file, () => {
+        // Upload concluído
+      })
+    } catch (error) {
+      // Erro já foi tratado no processImageFile e no hook
+      // Apenas garantir que não propague
+      console.error('[ImageManager] Erro ao processar arquivo:', error)
+    } finally {
+      // Resetar o input para permitir selecionar o mesmo arquivo novamente
+      if (fileInputRef.current) {
+        fileInputRef.current.value = ''
+      }
     }
   }
 
-  const handleAddImageClick = () => {
+  const handleAddImageClick = (e?: React.MouseEvent) => {
+    e?.preventDefault()
+    e?.stopPropagation()
     fileInputRef.current?.click()
   }
 
@@ -151,9 +223,25 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
               Selecione imagens para o produto
             </p>
             <div className="mt-4">
-              <Button type="button" variant="outline" size="sm" onClick={handleAddImageClick} className="gap-2">
-                <Upload className="h-4 w-4" />
-                Selecionar imagem
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddImageClick}
+                disabled={isUploading}
+                className="gap-2"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Enviando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="h-4 w-4" />
+                    Selecionar imagem
+                  </>
+                )}
               </Button>
             </div>
           </div>
@@ -225,24 +313,42 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => {
+                        onClick={async (e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
                           const input = document.createElement('input')
                           input.type = 'file'
                           input.accept = 'image/*'
-                          input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0]
+                          input.onchange = async (event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            const file = (event.target as HTMLInputElement).files?.[0]
                             if (!file) return
 
-                            processImageFile(file, (imageUrl) => {
-                              updateImage(index, 'image_url', imageUrl)
-                            })
+                            try {
+                              await processImageFile(file, (imageUrl) => {
+                                updateImage(index, 'image_url', imageUrl)
+                              }, index)
+                            } catch (error) {
+                              console.error('[ImageManager] Erro ao processar arquivo:', error)
+                            }
                           }
                           input.click()
                         }}
+                        disabled={isUploading && uploadingIndex === index}
                         className="w-full gap-2"
                       >
-                        <Upload className="h-4 w-4" />
-                        Trocar imagem
+                        {isUploading && uploadingIndex === index ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            Trocar imagem
+                          </>
+                        )}
                       </Button>
                     </>
                   ) : (
@@ -252,24 +358,42 @@ export function ImageManager({ images, onChange }: ImageManagerProps) {
                         type="button"
                         variant="outline"
                         size="sm"
-                        onClick={() => {
+                        onClick={async (e) => {
+                          e.preventDefault()
+                          e.stopPropagation()
                           const input = document.createElement('input')
                           input.type = 'file'
                           input.accept = 'image/*'
-                          input.onchange = (e) => {
-                            const file = (e.target as HTMLInputElement).files?.[0]
+                          input.onchange = async (event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            const file = (event.target as HTMLInputElement).files?.[0]
                             if (!file) return
 
-                            processImageFile(file, (imageUrl) => {
-                              updateImage(index, 'image_url', imageUrl)
-                            })
+                            try {
+                              await processImageFile(file, (imageUrl) => {
+                                updateImage(index, 'image_url', imageUrl)
+                              }, index)
+                            } catch (error) {
+                              console.error('[ImageManager] Erro ao processar arquivo:', error)
+                            }
                           }
                           input.click()
                         }}
+                        disabled={isUploading && uploadingIndex === index}
                         className="gap-2"
                       >
-                        <Upload className="h-4 w-4" />
-                        Selecionar imagem
+                        {isUploading && uploadingIndex === index ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            Enviando...
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            Selecionar imagem
+                          </>
+                        )}
                       </Button>
                     </div>
                   )}

@@ -52,12 +52,12 @@ export async function registerAdminCategoryRoutes(
     }
   )
 
-  // POST /admin/categories - Cria categoria (apenas admin)
+  // POST /admin/categories - Cria categoria (admin ou operador)
   app.post(
     '/admin/categories',
     {
       onRequest: [requireAuth, tenantMiddleware],
-      preHandler: [requireRole(['admin'])]
+      preHandler: [requireRole(['admin', 'operador'])]
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       await categoryController.create(request as FastifyRequest<{ Body: { name: string; slug?: string; parent_id?: string | null } }>, reply)
