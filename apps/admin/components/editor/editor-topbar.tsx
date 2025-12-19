@@ -59,8 +59,8 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
           const serialized = await serializedPromise
           layoutJson = JSON.parse(serialized)
           console.log('[EditorTopbar] Layout recebido do iframe:', {
-            nodeCount: Object.keys(layoutJson).length,
-            hasRoot: !!layoutJson.ROOT,
+            nodeCount: layoutJson ? Object.keys(layoutJson).length : 0,
+            hasRoot: !!layoutJson?.ROOT,
           })
         } catch (error) {
           console.warn('[EditorTopbar] Erro ao obter layout do iframe, tentando local:', error)
