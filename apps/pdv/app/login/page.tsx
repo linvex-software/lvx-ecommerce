@@ -47,7 +47,34 @@ export default function LoginPage() {
       router.push('/')
       router.refresh()
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Erro ao fazer login. Verifique suas credenciais.')
+      // Melhor tratamento de erros
+      let errorMessage = 'Erro ao fazer login. Verifique suas credenciais.'
+      
+      if (err.response) {
+        // Erro da API
+        const status = err.response.status
+        const data = err.response.data
+        
+        if (status === 401) {
+          errorMessage = data?.error || 'Email ou senha incorretos.'
+        } else if (status === 405) {
+          errorMessage = 'Método não permitido. Verifique a configuração da API.'
+        } else if (status === 404) {
+          errorMessage = 'Rota não encontrada. Verifique a URL da API.'
+        } else if (status >= 500) {
+          errorMessage = 'Erro no servidor. Tente novamente mais tarde.'
+        } else {
+          errorMessage = data?.error || `Erro ${status}: ${data?.message || 'Erro desconhecido'}`
+        }
+      } else if (err.request) {
+        // Requisição foi feita mas não houve resposta
+        errorMessage = 'Não foi possível conectar à API. Verifique sua conexão e a configuração da API.'
+      } else {
+        // Erro ao configurar a requisição
+        errorMessage = 'Erro ao processar a requisição. Tente novamente.'
+      }
+      
+      setError(errorMessage)
     } finally {
       setIsLoading(false)
     }

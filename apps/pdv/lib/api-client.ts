@@ -14,6 +14,15 @@ export const apiClient = axios.create({
 // Interceptor para adicionar token
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
+    // Validar que a baseURL está configurada corretamente
+    if (!config.baseURL || config.baseURL.includes('vercel.app') && !config.baseURL.includes('api')) {
+      // Se a baseURL aponta para o Next.js em vez da API, isso pode causar problemas
+      // Mas não vamos modificar aqui, apenas logar em desenvolvimento
+      if (process.env.NODE_ENV === 'development') {
+        console.warn('[API Client] baseURL pode estar incorreta:', config.baseURL)
+      }
+    }
+
     // Obter token do localStorage
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('accessToken')
@@ -54,8 +63,12 @@ apiClient.interceptors.response.use(
   async (error: AxiosError<{ error?: string }>) => {
     const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
 
+    // Não tentar refresh em rotas de autenticação (login, refresh)
+    const isAuthRoute = originalRequest.url?.includes('/auth/login') || 
+                        originalRequest.url?.includes('/auth/refresh')
+
     // Se for 401 e não for a rota de refresh/login, tentar refresh
-    if (error.response?.status === 401 && !originalRequest._retry) {
+    if (error.response?.status === 401 && !originalRequest._retry && !isAuthRoute) {
       if (isRefreshing) {
         // Se já está fazendo refresh, adicionar à fila
         return new Promise((resolve, reject) => {
