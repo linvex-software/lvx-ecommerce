@@ -60,59 +60,111 @@ export class LandingController {
    * GET /admin/dynamic-pages - Listar todas as páginas dinâmicas
    */
   async list(request: FastifyRequest, reply: FastifyReply) {
+    // Log inicial para debug
+    console.log('[LandingController.list] Iniciando listagem de páginas', {
+      storeId: request.storeId,
+      userId: request.user?.id,
+      userStoreId: (request.user as any)?.storeId,
+      hasAuth: !!request.headers.authorization
+    })
+
     try {
       const storeId = request.storeId
 
       if (!storeId) {
-        console.error('[LandingController.list] storeId não encontrado na requisição', {
+        const errorDetails = {
           user: request.user,
+          userStoreId: (request.user as any)?.storeId,
           headers: {
             authorization: request.headers.authorization ? 'present' : 'missing',
             'x-store-id': request.headers['x-store-id'] || 'missing'
           }
-        })
+        }
+        console.error('[LandingController.list] storeId não encontrado na requisição', errorDetails)
         return reply.status(400).send({ 
           error: 'Store ID is required',
-          message: 'Store ID não foi fornecido. Verifique se o tenantMiddleware foi executado corretamente.'
+          message: 'Store ID não foi fornecido. Verifique se o tenantMiddleware foi executado corretamente.',
+          details: process.env.NODE_ENV !== 'production' ? errorDetails : undefined
         })
       }
 
+      console.log('[LandingController.list] Buscando páginas para storeId:', storeId)
       const pages = await this.landingRepository.listByStore(storeId)
+      console.log('[LandingController.list] Páginas encontradas:', pages.length)
 
       // Serializar datas para ISO strings para garantir compatibilidade JSON
-      const serializedPages = pages.map(page => ({
-        ...page,
-        createdAt: page.createdAt instanceof Date 
-          ? page.createdAt.toISOString() 
-          : typeof page.createdAt === 'string' 
-            ? page.createdAt 
-            : new Date(page.createdAt).toISOString(),
-        updatedAt: page.updatedAt instanceof Date 
-          ? page.updatedAt.toISOString() 
-          : typeof page.updatedAt === 'string' 
-            ? page.updatedAt 
-            : new Date(page.updatedAt).toISOString(),
-      }))
+      let serializedPages
+      try {
+        serializedPages = pages.map((page, index) => {
+          try {
+            return {
+              id: page.id,
+              storeId: page.storeId,
+              title: page.title,
+              slug: page.slug,
+              published: page.published,
+              contentJson: page.contentJson,
+              createdAt: page.createdAt instanceof Date 
+                ? page.createdAt.toISOString() 
+                : typeof page.createdAt === 'string' 
+                  ? page.createdAt 
+                  : new Date(page.createdAt as any).toISOString(),
+              updatedAt: page.updatedAt instanceof Date 
+                ? page.updatedAt.toISOString() 
+                : typeof page.updatedAt === 'string' 
+                  ? page.updatedAt 
+                  : new Date(page.updatedAt as any).toISOString(),
+            }
+          } catch (serializeError) {
+            console.error(`[LandingController.list] Erro ao serializar página ${index}:`, {
+              pageId: page.id,
+              error: serializeError instanceof Error ? serializeError.message : 'Unknown error',
+              pageData: page
+            })
+            throw serializeError
+          }
+        })
+      } catch (serializeError) {
+        console.error('[LandingController.list] Erro ao serializar páginas:', serializeError)
+        throw new Error(`Failed to serialize pages: ${serializeError instanceof Error ? serializeError.message : 'Unknown error'}`)
+      }
 
+      console.log('[LandingController.list] Retornando resposta com', serializedPages.length, 'páginas')
       return reply.status(200).send({ pages: serializedPages })
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       const errorStack = error instanceof Error ? error.stack : undefined
+      const errorName = error instanceof Error ? error.name : 'UnknownError'
       
+      // Log detalhado do erro
       console.error('[LandingController.list] Error listing dynamic pages:', {
+        name: errorName,
         message: errorMessage,
         stack: errorStack,
         storeId: request.storeId,
-        user: request.user,
-        error: error
+        userId: request.user?.id,
+        userStoreId: (request.user as any)?.storeId,
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : error
       })
       
-      return reply.status(500).send({ 
-        error: 'Failed to list dynamic pages',
-        message: process.env.NODE_ENV === 'production' 
-          ? 'An error occurred while listing pages' 
-          : errorMessage
-      })
+      // Tentar enviar resposta de erro
+      try {
+        return reply.status(500).send({ 
+          error: 'Failed to list dynamic pages',
+          message: process.env.NODE_ENV === 'production' 
+            ? 'An error occurred while listing pages' 
+            : errorMessage,
+          ...(process.env.NODE_ENV !== 'production' && errorStack ? { stack: errorStack } : {})
+        })
+      } catch (replyError) {
+        // Se falhar ao enviar resposta, logar o erro
+        console.error('[LandingController.list] Erro ao enviar resposta de erro:', replyError)
+        throw error // Re-throw o erro original
+      }
     }
   }
 

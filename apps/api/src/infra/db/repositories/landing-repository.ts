@@ -137,6 +137,8 @@ export class LandingRepository {
       throw new Error('storeId is required for listByStore')
     }
 
+    console.log('[LandingRepository.listByStore] Iniciando query para storeId:', storeId)
+
     try {
       const pages = await db
         .select()
@@ -144,23 +146,60 @@ export class LandingRepository {
         .where(eq(schema.landingPages.store_id, storeId))
         .orderBy(desc(schema.landingPages.created_at))
 
-      return pages.map((page) => {
+      console.log('[LandingRepository.listByStore] Query executada com sucesso. Páginas encontradas:', pages.length)
+
+      if (pages.length === 0) {
+        console.log('[LandingRepository.listByStore] Nenhuma página encontrada para storeId:', storeId)
+        return []
+      }
+
+      const mappedPages = pages.map((page, index) => {
         try {
-          return this.mapToDomain(page)
+          const mapped = this.mapToDomain(page)
+          console.log(`[LandingRepository.listByStore] Página ${index + 1} mapeada:`, {
+            id: mapped.id,
+            title: mapped.title,
+            slug: mapped.slug
+          })
+          return mapped
         } catch (error) {
           console.error('[LandingRepository.listByStore] Error mapping page to domain:', {
             pageId: page.id,
+            index,
             error: error instanceof Error ? error.message : 'Unknown error',
-            pageData: page
+            errorStack: error instanceof Error ? error.stack : undefined,
+            pageData: {
+              id: page.id,
+              store_id: page.store_id,
+              title: page.title,
+              slug: page.slug,
+              published: page.published,
+              created_at: page.created_at,
+              updated_at: page.updated_at,
+              content_json_type: typeof page.content_json
+            }
           })
           throw error
         }
       })
+
+      console.log('[LandingRepository.listByStore] Todas as páginas mapeadas com sucesso')
+      return mappedPages
     } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorStack = error instanceof Error ? error.stack : undefined
+      const errorName = error instanceof Error ? error.name : 'UnknownError'
+      
       console.error('[LandingRepository.listByStore] Database error:', {
         storeId,
-        error: error instanceof Error ? error.message : 'Unknown error',
-        stack: error instanceof Error ? error.stack : undefined
+        errorName,
+        errorMessage,
+        errorStack,
+        error: error instanceof Error ? {
+          name: error.name,
+          message: error.message,
+          stack: error.stack
+        } : error
       })
       throw error
     }
