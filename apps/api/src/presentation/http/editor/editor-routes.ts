@@ -33,6 +33,7 @@ export async function registerEditorRoutes(
   )
 
   // POST /editor/layout - Salvar layout (admin autenticado)
+  // bodyLimit aumentado para 10MB especificamente nesta rota para layouts grandes
   app.post<{
     Body: {
       layout_json: Record<string, unknown>
@@ -40,6 +41,7 @@ export async function registerEditorRoutes(
   }>(
     '/editor/layout',
     {
+      bodyLimit: 10 * 1024 * 1024, // 10MB - limite específico para esta rota
       onRequest: [requireAuth, tenantMiddleware]
     },
     async (

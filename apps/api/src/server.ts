@@ -31,6 +31,7 @@ import multipart from '@fastify/multipart'
 import swagger from '@fastify/swagger'
 import jwt from '@fastify/jwt'
 import cookie from '@fastify/cookie'
+import { gunzipSync } from 'zlib'
 import { registerAuthRoutes } from './presentation/http/auth/auth-routes'
 import { registerAdminCouponRoutes } from './presentation/http/admin/coupon-routes'
 import { registerAdminProductRoutes } from './presentation/http/admin/product-routes'
@@ -63,6 +64,7 @@ import { registerStoreLandingRoutes } from './presentation/http/store/landing-ro
 async function buildServer() {
   const app = Fastify({
     logger: true,
+    bodyLimit: 10 * 1024 * 1024, // 10MB - aumenta limite para permitir layouts grandes
     querystringParser: (str) => {
       // Parse query string supporting arrays (e.g., sizes=G&sizes=GG)
       const params = new URLSearchParams(str)
@@ -88,6 +90,7 @@ async function buildServer() {
   // Parser customizado para application/json
   // Retorna JSON parseado normalmente, mas também armazena raw body como Buffer
   // Isso permite validação HMAC em webhooks sem quebrar outras rotas
+  // Também suporta descompressão gzip automática quando Content-Encoding: gzip
   app.addContentTypeParser(
     'application/json',
     { parseAs: 'buffer' },
@@ -101,11 +104,61 @@ async function buildServer() {
           return {}
         }
 
+        // Verificar se o body está comprimido
+        // Detecta por Content-Encoding header ou pelos bytes mágicos do gzip (1f 8b)
+        const contentEncoding = req.headers['content-encoding']
+        const contentType = req.headers['content-type']
+        const isGzipHeader = contentEncoding === 'gzip' || contentType === 'application/gzip'
+        const isGzipMagic = body.length >= 2 && body[0] === 0x1f && body[1] === 0x8b
+        
+        let bodyToParse = body
+
+        if (isGzipHeader || isGzipMagic) {
+          try {
+            // Descomprimir o body gzip
+            bodyToParse = gunzipSync(body)
+          } catch (decompressError) {
+            // Se falhar ao descomprimir, tentar parsear como JSON normal
+            // (pode ser que o header esteja errado ou seja um payload não comprimido)
+            app.log.warn({
+              error: decompressError instanceof Error ? decompressError.message : 'Unknown error',
+              contentEncoding,
+              contentType,
+              bodyLength: body.length
+            }, 'Falha ao descomprimir body gzip, tentando como JSON normal')
+          }
+        }
+
         // Parsear e retornar JSON (para não quebrar outras rotas)
-        const json = JSON.parse(body.toString('utf-8')) as Record<string, unknown>
+        const json = JSON.parse(bodyToParse.toString('utf-8')) as Record<string, unknown>
         return json
       } catch (error) {
         // Se falhar ao fazer parse, retornar objeto vazio (pode ser body vazio)
+        if (body.length === 0) {
+          return {}
+        }
+        throw error as Error
+      }
+    }
+  )
+
+  // Parser para application/gzip (quando Content-Type é explicitamente gzip)
+  app.addContentTypeParser(
+    'application/gzip',
+    { parseAs: 'buffer' },
+    async (req: FastifyRequest & { rawBody?: Buffer }, body: Buffer) => {
+      try {
+        req.rawBody = body
+
+        if (body.length === 0) {
+          return {}
+        }
+
+        // Descomprimir o body gzip
+        const decompressed = gunzipSync(body)
+        const json = JSON.parse(decompressed.toString('utf-8')) as Record<string, unknown>
+        return json
+      } catch (error) {
         if (body.length === 0) {
           return {}
         }

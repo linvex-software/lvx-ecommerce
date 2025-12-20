@@ -101,6 +101,20 @@ export class EditorController {
         return
       }
 
+      // Log para debug: verificar se o body foi comprimido
+      const contentEncoding = request.headers['content-encoding']
+      const contentType = request.headers['content-type']
+      const rawBodySize = (request as any).rawBody?.length || 0
+      const layoutJsonSize = JSON.stringify(request.body).length
+      
+      request.log.info({
+        contentEncoding,
+        contentType,
+        rawBodySize,
+        layoutJsonSize,
+        compressionRatio: rawBodySize > 0 ? ((1 - layoutJsonSize / rawBodySize) * 100).toFixed(1) + '%' : 'N/A'
+      }, 'Saving layout')
+
       const { layout_json } = request.body
 
       if (!layout_json) {

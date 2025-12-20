@@ -4,6 +4,7 @@ import { useEditor } from '@craftjs/core'
 import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
 import { apiClient } from '@/lib/api-client'
+import { optimizeLayout, getOptimizationStats } from '@/lib/utils/layout-optimizer'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Menu, Undo2, Redo2, Eye, ChevronDown, Settings, ArrowLeft } from 'lucide-react'
@@ -129,12 +130,26 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
         editableTexts: editableTextNodes.slice(0, 5) // Primeiros 5 para debug
       })
 
+      // Otimizar layout antes de salvar (remove campos desnecessários)
+      const optimizedLayout = optimizeLayout(layoutJson) as Record<string, unknown>
+      
+      // Log de estatísticas de otimização
+      const stats = getOptimizationStats(layoutJson, optimizedLayout)
+      if (stats.reduction > 0) {
+        console.log('[EditorTopbar] Layout otimizado:', {
+          originalSize: `${(stats.originalSize / 1024).toFixed(2)} KB`,
+          optimizedSize: `${(stats.optimizedSize / 1024).toFixed(2)} KB`,
+          reduction: `${(stats.reduction / 1024).toFixed(2)} KB`,
+          reductionPercent: `${stats.reductionPercent}%`
+        })
+      }
+
       const response = await apiClient.post<{
         success: boolean
         layout_json: Record<string, unknown>
         updated_at: string
       }>('/editor/layout', {
-        layout_json: layoutJson
+        layout_json: optimizedLayout
       })
 
       console.log('[EditorTopbar] Layout salvo com sucesso:', {

@@ -1,4 +1,5 @@
 import axios, { type AxiosError, type AxiosResponse, type InternalAxiosRequestConfig } from 'axios'
+import { compressJson, exceedsSizeLimit } from './utils/compression'
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3333'
 
@@ -11,6 +12,49 @@ export const apiClient = axios.create({
   withCredentials: true // Importante para cookies HttpOnly
 })
 
+// Interceptor para comprimir payloads grandes automaticamente
+apiClient.interceptors.request.use(
+  (config: InternalAxiosRequestConfig) => {
+    // Apenas comprimir requisições POST/PUT/PATCH com body
+    if (
+      config.data &&
+      (config.method === 'post' || config.method === 'put' || config.method === 'patch') &&
+      typeof config.data === 'object' &&
+      !(config.data instanceof Blob) &&
+      !(config.data instanceof ArrayBuffer) &&
+      !(config.data instanceof FormData)
+    ) {
+      // Verificar se o payload excede 500KB
+      if (exceedsSizeLimit(config.data, 500 * 1024)) {
+        try {
+          // Comprimir o payload
+          const compressed = compressJson(config.data)
+          
+          // Converter ArrayBuffer para Blob para enviar como binary
+          const blob = new Blob([compressed], { type: 'application/gzip' })
+          
+          // Atualizar config para enviar o blob comprimido
+          config.data = blob
+          config.headers = config.headers || {}
+          config.headers['Content-Type'] = 'application/gzip'
+          config.headers['Content-Encoding'] = 'gzip'
+          
+          // Configurar para não transformar o Blob (enviar como binary)
+          config.transformRequest = []
+        } catch (error) {
+          console.error('[apiClient] Erro ao comprimir payload:', error)
+          // Em caso de erro, continuar sem compressão
+        }
+      }
+    }
+
+    return config
+  },
+  (error: unknown) => {
+    return Promise.reject(error)
+  }
+)
+
 // Interceptor para adicionar token (storeId vem do JWT, não precisa enviar no header)
 apiClient.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
@@ -19,6 +63,7 @@ apiClient.interceptors.request.use(
       const token = localStorage.getItem('accessToken')
 
       if (token) {
+        config.headers = config.headers || {}
         config.headers.Authorization = `Bearer ${token}`
       }
     }
