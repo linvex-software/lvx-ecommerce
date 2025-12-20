@@ -7,6 +7,118 @@ import type {
   SetPageProductsInput
 } from '../../../domain/landing/landing-types'
 
+/**
+ * Analisa um erro e retorna uma mensagem específica baseada no tipo de erro
+ */
+function getErrorMessage(error: unknown): { message: string; code?: string; details?: unknown } {
+  if (!(error instanceof Error)) {
+    return { message: 'Erro desconhecido ao processar a requisição' }
+  }
+
+  const errorName = error.name
+  const errorMessage = error.message.toLowerCase()
+
+  // Erros de conexão com banco de dados
+  if (
+    errorName === 'ConnectionError' ||
+    errorName === 'ConnectionRefusedError' ||
+    errorMessage.includes('connection') ||
+    errorMessage.includes('connect econnrefused') ||
+    errorMessage.includes('timeout')
+  ) {
+    return {
+      message: 'Erro de conexão com o banco de dados. Tente novamente em alguns instantes.',
+      code: 'DATABASE_CONNECTION_ERROR',
+      details: process.env.NODE_ENV !== 'production' ? { original: error.message } : undefined
+    }
+  }
+
+  // Erros de query SQL
+  if (
+    errorName === 'QueryError' ||
+    errorName === 'DatabaseError' ||
+    errorMessage.includes('syntax error') ||
+    errorMessage.includes('invalid') ||
+    errorMessage.includes('column') ||
+    errorMessage.includes('table')
+  ) {
+    return {
+      message: 'Erro ao consultar o banco de dados. Verifique os logs para mais detalhes.',
+      code: 'DATABASE_QUERY_ERROR',
+      details: process.env.NODE_ENV !== 'production' ? { original: error.message } : undefined
+    }
+  }
+
+  // Erros de serialização/JSON
+  if (
+    errorMessage.includes('serialize') ||
+    errorMessage.includes('json') ||
+    errorMessage.includes('circular') ||
+    errorMessage.includes('invalid date') ||
+    errorMessage.includes('toisostring')
+  ) {
+    return {
+      message: 'Erro ao processar os dados. Algum campo pode estar em formato inválido.',
+      code: 'SERIALIZATION_ERROR',
+      details: process.env.NODE_ENV !== 'production' ? { original: error.message } : undefined
+    }
+  }
+
+  // Erros de validação
+  if (errorName === 'ValidationError' || errorMessage.includes('validation')) {
+    return {
+      message: 'Erro de validação nos dados fornecidos.',
+      code: 'VALIDATION_ERROR',
+      details: process.env.NODE_ENV !== 'production' ? { original: error.message } : undefined
+    }
+  }
+
+  // Erros de permissão/acesso
+  if (
+    errorName === 'UnauthorizedError' ||
+    errorMessage.includes('unauthorized') ||
+    errorMessage.includes('permission') ||
+    errorMessage.includes('access denied')
+  ) {
+    return {
+      message: 'Você não tem permissão para realizar esta ação.',
+      code: 'UNAUTHORIZED_ERROR',
+      details: process.env.NODE_ENV !== 'production' ? { original: error.message } : undefined
+    }
+  }
+
+  // Erros de timeout
+  if (errorName === 'TimeoutError' || errorMessage.includes('timeout')) {
+    return {
+      message: 'A operação demorou muito para ser concluída. Tente novamente.',
+      code: 'TIMEOUT_ERROR',
+      details: process.env.NODE_ENV !== 'production' ? { original: error.message } : undefined
+    }
+  }
+
+  // Erros de memória
+  if (errorName === 'RangeError' || errorMessage.includes('memory') || errorMessage.includes('heap')) {
+    return {
+      message: 'Erro ao processar dados muito grandes. Tente reduzir a quantidade de dados.',
+      code: 'MEMORY_ERROR',
+      details: process.env.NODE_ENV !== 'production' ? { original: error.message } : undefined
+    }
+  }
+
+  // Erro genérico com mensagem original (apenas em desenvolvimento)
+  return {
+    message: process.env.NODE_ENV === 'production'
+      ? 'Ocorreu um erro ao processar sua requisição. Tente novamente mais tarde.'
+      : error.message || 'Erro desconhecido',
+    code: 'INTERNAL_ERROR',
+    details: process.env.NODE_ENV !== 'production' ? { 
+      original: error.message,
+      name: errorName,
+      stack: error.stack 
+    } : undefined
+  }
+}
+
 const createDynamicPageSchema = z.object({
   title: z.string().min(1).max(200),
   slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
@@ -132,9 +244,10 @@ export class LandingController {
       console.log('[LandingController.list] Retornando resposta com', serializedPages.length, 'páginas')
       return reply.status(200).send({ pages: serializedPages })
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorInfo = getErrorMessage(error)
       const errorStack = error instanceof Error ? error.stack : undefined
       const errorName = error instanceof Error ? error.name : 'UnknownError'
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       
       // Log detalhado do erro
       console.error('[LandingController.list] Error listing dynamic pages:', {
@@ -144,6 +257,7 @@ export class LandingController {
         storeId: request.storeId,
         userId: request.user?.id,
         userStoreId: (request.user as any)?.storeId,
+        errorCode: errorInfo.code,
         error: error instanceof Error ? {
           name: error.name,
           message: error.message,
@@ -151,13 +265,13 @@ export class LandingController {
         } : error
       })
       
-      // Tentar enviar resposta de erro
+      // Tentar enviar resposta de erro com mensagem específica
       try {
         return reply.status(500).send({ 
           error: 'Failed to list dynamic pages',
-          message: process.env.NODE_ENV === 'production' 
-            ? 'An error occurred while listing pages' 
-            : errorMessage,
+          message: errorInfo.message,
+          code: errorInfo.code,
+          ...(errorInfo.details ? { details: errorInfo.details } : {}),
           ...(process.env.NODE_ENV !== 'production' && errorStack ? { stack: errorStack } : {})
         })
       } catch (replyError) {
