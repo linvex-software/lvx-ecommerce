@@ -28,31 +28,21 @@ function EditableTextOrPlain({
   className?: string
   isInCraftContext?: boolean
 }) {
-  const Tag = tag as keyof JSX.IntrinsicElements;
-
-  // Se estiver no contexto do Craft.js, usar Element
-  // Usar useMemo para evitar re-renderizações desnecessárias
-  const editableContent = React.useMemo(() => {
-    if (isInCraftContext) {
-      return (
-        <Element
-          id={id}
-          is={EditableText}
-          tag={tag}
-          className={className}
-          content={content}
-        />
-      );
-    }
-    return null;
-  }, [isInCraftContext, id, tag, className, content]);
-
-  // Se estiver no contexto do Craft.js, usar Element
-  if (isInCraftContext && editableContent) {
-    return editableContent;
+  // Se estiver no contexto do Craft.js, usar Element diretamente
+  if (isInCraftContext) {
+    return (
+      <Element
+        id={id}
+        is={EditableText}
+        tag={tag}
+        className={className}
+        content={content}
+      />
+    );
   }
 
   // Fora do contexto do Craft.js - renderizar texto simples
+  const Tag = tag as keyof JSX.IntrinsicElements;
   return <Tag className={className}>{content}</Tag>;
 }
 
@@ -154,18 +144,8 @@ export function Header() {
     })();
   }, []);
 
-  // Verificar se está no contexto do Craft.js usando hook de forma segura
-  const [isInCraftContext, setIsInCraftContext] = React.useState(false);
-  
-  React.useEffect(() => {
-    // Verificar se está no contexto do Craft.js de forma segura
-    try {
-      useEditor();
-      setIsInCraftContext(true);
-    } catch {
-      setIsInCraftContext(false);
-    }
-  }, []);
+  // Usar isInEditor do useSafeNode para verificar se está no editor
+  // isInEditor já está disponível do hook useSafeNode
 
   // Menu dinâmico será carregado pelo DynamicMenu
 
@@ -185,7 +165,7 @@ export function Header() {
           content="FRETE GRÁTIS PARA COMPRAS ACIMA DE R$ 299"
           tag="span"
           className=""
-          isInCraftContext={isInCraftContext}
+          isInCraftContext={isInEditor}
         />
       </div>
 

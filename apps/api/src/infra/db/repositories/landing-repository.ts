@@ -140,11 +140,11 @@ export class LandingRepository {
     console.log('[LandingRepository.listByStore] Iniciando query para storeId:', storeId)
 
     try {
-      const pages = await db
-        .select()
-        .from(schema.landingPages)
-        .where(eq(schema.landingPages.store_id, storeId))
-        .orderBy(desc(schema.landingPages.created_at))
+    const pages = await db
+      .select()
+      .from(schema.landingPages)
+      .where(eq(schema.landingPages.store_id, storeId))
+      .orderBy(desc(schema.landingPages.created_at))
 
       console.log('[LandingRepository.listByStore] Query executada com sucesso. Páginas encontradas:', pages.length)
 
@@ -356,13 +356,13 @@ export class LandingRepository {
         throw new Error(`Failed to parse updated_at: ${error instanceof Error ? error.message : 'Unknown error'}`)
       }
 
-      return {
-        id: row.id,
-        storeId: row.store_id,
-        title: row.title,
-        slug: row.slug,
-        published: row.published,
-        contentJson: row.content_json as Record<string, unknown> | null || undefined,
+    return {
+      id: row.id,
+      storeId: row.store_id,
+      title: row.title,
+      slug: row.slug,
+      published: row.published,
+      contentJson: row.content_json as Record<string, unknown> | null || undefined,
         createdAt,
         updatedAt,
       }

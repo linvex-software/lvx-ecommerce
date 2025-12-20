@@ -8,3 +8,4 @@ SET "visibility" = '{"desktop": true, "tablet": true, "mobile": true}'::jsonb
 WHERE "visibility" IS NULL;
 
 
+

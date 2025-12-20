@@ -7,168 +7,6 @@ import type {
   SetPageProductsInput
 } from '../../../domain/landing/landing-types'
 
-/**
- * Analisa um erro e retorna uma mensagem específica baseada no tipo de erro
- * Sempre retorna código de erro e mensagem descritiva, mesmo em produção
- */
-function getErrorMessage(error: unknown): { message: string; code: string; details?: unknown } {
-  if (!(error instanceof Error)) {
-    return { 
-      message: 'Erro desconhecido ao processar a requisição',
-      code: 'UNKNOWN_ERROR'
-    }
-  }
-
-  const errorName = error.name
-  const errorMessage = error.message.toLowerCase()
-  const fullMessage = error.message
-
-  // Erros de conexão com banco de dados (PostgreSQL/Drizzle)
-  if (
-    errorName === 'ConnectionError' ||
-    errorName === 'ConnectionRefusedError' ||
-    errorMessage.includes('connection') ||
-    errorMessage.includes('connect econnrefused') ||
-    errorMessage.includes('getaddrinfo') ||
-    errorMessage.includes('connection refused') ||
-    errorMessage.includes('connection timeout') ||
-    errorMessage.includes('connect timeout')
-  ) {
-    return {
-      message: 'Erro de conexão com o banco de dados. Tente novamente em alguns instantes.',
-      code: 'DATABASE_CONNECTION_ERROR',
-      details: {
-        hint: 'Verifique se o banco de dados está acessível',
-        ...(process.env.NODE_ENV !== 'production' ? { original: fullMessage } : {})
-      }
-    }
-  }
-
-  // Erros de query SQL (PostgreSQL/Drizzle)
-  if (
-    errorName === 'QueryError' ||
-    errorName === 'DatabaseError' ||
-    errorName === 'PostgresError' ||
-    errorMessage.includes('syntax error') ||
-    errorMessage.includes('invalid') ||
-    errorMessage.includes('column') ||
-    errorMessage.includes('table') ||
-    errorMessage.includes('relation') ||
-    errorMessage.includes('does not exist') ||
-    errorMessage.includes('duplicate key') ||
-    errorMessage.includes('unique constraint')
-  ) {
-    return {
-      message: 'Erro ao consultar o banco de dados. Verifique os logs do servidor para mais detalhes.',
-      code: 'DATABASE_QUERY_ERROR',
-      details: {
-        hint: 'Pode ser um problema com a estrutura do banco de dados ou query inválida',
-        ...(process.env.NODE_ENV !== 'production' ? { original: fullMessage } : {})
-      }
-    }
-  }
-
-  // Erros de serialização/JSON
-  if (
-    errorMessage.includes('serialize') ||
-    errorMessage.includes('json') ||
-    errorMessage.includes('circular') ||
-    errorMessage.includes('invalid date') ||
-    errorMessage.includes('toisostring') ||
-    errorMessage.includes('cannot convert') ||
-    errorMessage.includes('date parsing')
-  ) {
-    return {
-      message: 'Erro ao processar os dados. Algum campo pode estar em formato inválido.',
-      code: 'SERIALIZATION_ERROR',
-      details: {
-        hint: 'Verifique se os campos de data estão no formato correto',
-        ...(process.env.NODE_ENV !== 'production' ? { original: fullMessage } : {})
-      }
-    }
-  }
-
-  // Erros de validação
-  if (errorName === 'ValidationError' || errorMessage.includes('validation') || errorMessage.includes('zod')) {
-    return {
-      message: 'Erro de validação nos dados fornecidos.',
-      code: 'VALIDATION_ERROR',
-      details: {
-        hint: 'Os dados enviados não atendem aos requisitos esperados',
-        ...(process.env.NODE_ENV !== 'production' ? { original: fullMessage } : {})
-      }
-    }
-  }
-
-  // Erros de permissão/acesso
-  if (
-    errorName === 'UnauthorizedError' ||
-    errorMessage.includes('unauthorized') ||
-    errorMessage.includes('permission') ||
-    errorMessage.includes('access denied') ||
-    errorMessage.includes('forbidden')
-  ) {
-    return {
-      message: 'Você não tem permissão para realizar esta ação.',
-      code: 'UNAUTHORIZED_ERROR',
-      details: {
-        hint: 'Verifique se você está autenticado e tem as permissões necessárias',
-        ...(process.env.NODE_ENV !== 'production' ? { original: fullMessage } : {})
-      }
-    }
-  }
-
-  // Erros de timeout
-  if (errorName === 'TimeoutError' || errorMessage.includes('timeout') || errorMessage.includes('timed out')) {
-    return {
-      message: 'A operação demorou muito para ser concluída. Tente novamente.',
-      code: 'TIMEOUT_ERROR',
-      details: {
-        hint: 'A requisição excedeu o tempo limite. Tente novamente ou reduza a quantidade de dados.',
-        ...(process.env.NODE_ENV !== 'production' ? { original: fullMessage } : {})
-      }
-    }
-  }
-
-  // Erros de memória
-  if (errorName === 'RangeError' || errorMessage.includes('memory') || errorMessage.includes('heap') || errorMessage.includes('out of memory')) {
-    return {
-      message: 'Erro ao processar dados muito grandes. Tente reduzir a quantidade de dados.',
-      code: 'MEMORY_ERROR',
-      details: {
-        hint: 'A operação requer mais memória do que está disponível',
-        ...(process.env.NODE_ENV !== 'production' ? { original: fullMessage } : {})
-      }
-    }
-  }
-
-  // Erros específicos do Drizzle ORM
-  if (errorMessage.includes('drizzle') || errorMessage.includes('orm')) {
-    return {
-      message: 'Erro no ORM ao processar a requisição. Verifique os logs do servidor.',
-      code: 'ORM_ERROR',
-      details: {
-        hint: 'Pode ser um problema com o mapeamento de dados ou query do ORM',
-        ...(process.env.NODE_ENV !== 'production' ? { original: fullMessage, name: errorName } : {})
-      }
-    }
-  }
-
-  // Erro genérico - sempre retornar código e mensagem útil
-  return {
-    message: `Erro ao processar a requisição: ${errorName || 'Erro desconhecido'}`,
-    code: 'INTERNAL_ERROR',
-    details: {
-      hint: 'Verifique os logs do servidor para mais detalhes',
-      errorType: errorName,
-      ...(process.env.NODE_ENV !== 'production' ? { 
-        original: fullMessage,
-        stack: error.stack 
-      } : {})
-    }
-  }
-}
-
 const createDynamicPageSchema = z.object({
   title: z.string().min(1).max(200),
   slug: z.string().min(1).max(200).regex(/^[a-z0-9-]+$/, 'Slug deve conter apenas letras minúsculas, números e hífens'),
@@ -294,10 +132,9 @@ export class LandingController {
       console.log('[LandingController.list] Retornando resposta com', serializedPages.length, 'páginas')
       return reply.status(200).send({ pages: serializedPages })
     } catch (error) {
-      const errorInfo = getErrorMessage(error)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       const errorStack = error instanceof Error ? error.stack : undefined
       const errorName = error instanceof Error ? error.name : 'UnknownError'
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       
       // Log detalhado do erro
       console.error('[LandingController.list] Error listing dynamic pages:', {
@@ -307,7 +144,6 @@ export class LandingController {
         storeId: request.storeId,
         userId: request.user?.id,
         userStoreId: (request.user as any)?.storeId,
-        errorCode: errorInfo.code,
         error: error instanceof Error ? {
           name: error.name,
           message: error.message,
@@ -315,38 +151,15 @@ export class LandingController {
         } : error
       })
       
-      // Tentar enviar resposta de erro com mensagem específica
-      // SEMPRE incluir código de erro e mensagem descritiva, mesmo em produção
+      // Tentar enviar resposta de erro
       try {
-        const errorResponse: {
-          error: string
-          message: string
-          code: string
-          details?: unknown
-          stack?: string
-        } = {
+        return reply.status(500).send({ 
           error: 'Failed to list dynamic pages',
-          message: errorInfo.message,
-          code: errorInfo.code || 'INTERNAL_ERROR',
-        }
-
-        // Sempre incluir details (mas sem informações sensíveis)
-        if (errorInfo.details) {
-          errorResponse.details = errorInfo.details
-        }
-
-        // Stack trace apenas em desenvolvimento
-        if (process.env.NODE_ENV !== 'production' && errorStack) {
-          errorResponse.stack = errorStack
-        }
-
-        console.error('[LandingController.list] Enviando resposta de erro:', {
-          code: errorResponse.code,
-          message: errorResponse.message,
-          hasDetails: !!errorResponse.details
+          message: process.env.NODE_ENV === 'production' 
+            ? 'An error occurred while listing pages' 
+            : errorMessage,
+          ...(process.env.NODE_ENV !== 'production' && errorStack ? { stack: errorStack } : {})
         })
-
-        return reply.status(500).send(errorResponse)
       } catch (replyError) {
         // Se falhar ao enviar resposta, logar o erro
         console.error('[LandingController.list] Erro ao enviar resposta de erro:', replyError)

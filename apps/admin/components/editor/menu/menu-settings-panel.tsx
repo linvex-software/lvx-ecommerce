@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Button } from '@white-label/ui'
 import { apiClient } from '@/lib/api-client'
+import { toast } from 'sonner'
 import type { NavbarItem, NavbarItemConfig, NavbarItemVisibility } from '@/lib/types/navbar'
 
 interface MenuSettingsPanelProps {
@@ -17,8 +18,13 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
   const [formData, setFormData] = useState<Partial<NavbarItem>>(item)
 
   useEffect(() => {
-    setFormData(item)
-  }, [item])
+    // Só atualizar se o item realmente mudou (por ID)
+    // Isso evita sobrescrever mudanças locais quando o item é atualizado
+    if (item.id !== formData.id) {
+      setFormData(item)
+    }
+    // Se for o mesmo item, não sobrescrever para preservar mudanças locais do usuário
+  }, [item.id])
 
   // Buscar categorias e páginas para os selects
   const { data: categoriesData } = useQuery({
@@ -38,16 +44,59 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
   })
 
   const handleUpdate = () => {
-    // Garantir que a URL está presente quando o tipo é 'page'
     const itemToSave = { ...formData }
-    if (itemToSave.type === 'page' && !itemToSave.url) {
-      console.warn('[MenuSettingsPanel] Tentando salvar item do tipo "page" sem URL')
-    }
-    console.log('[MenuSettingsPanel] Salvando item:', {
+    
+    console.log('[MenuSettingsPanel] handleUpdate chamado:', {
+      id: itemToSave.id,
       type: itemToSave.type,
       url: itemToSave.url,
-      config: itemToSave.config
+      config: itemToSave.config,
+      label: itemToSave.label,
+      selectedOptionId: formData.config?.pageId
     })
+    
+    // Validar que se tipo é 'page', a URL deve estar presente e não ser apenas "/"
+    if (itemToSave.type === 'page') {
+      // Verificar se há uma página selecionada (pageId no config) OU se há uma URL válida
+      const hasPageSelected = itemToSave.config?.pageId
+      const hasValidUrl = itemToSave.url && itemToSave.url !== '/' && itemToSave.url.trim() !== ''
+      
+      console.log('[MenuSettingsPanel] Validação:', { hasPageSelected, hasValidUrl, url: itemToSave.url })
+      
+      if (!hasPageSelected && !hasValidUrl) {
+        toast.error('Por favor, selecione uma página no campo "Página / Categoria / Rota"')
+        return
+      }
+      
+      // Se tem pageId mas não tem URL válida, tentar buscar a URL da página selecionada
+      if (hasPageSelected && !hasValidUrl) {
+        const selectedPage = pagesData?.pages?.find((p: any) => {
+          return p.id === `dynamic-page-${itemToSave.config?.pageId}` ||
+                 p.pageId === itemToSave.config?.pageId ||
+                 p.id === itemToSave.config?.pageId
+        })
+        
+        if (selectedPage) {
+          const slug = selectedPage.slug?.startsWith('/') 
+            ? selectedPage.slug 
+            : `/${selectedPage.slug}`
+          itemToSave.url = slug
+          console.log('[MenuSettingsPanel] URL recuperada da página selecionada:', slug)
+        } else {
+          toast.error('Não foi possível encontrar a URL da página selecionada. Por favor, selecione novamente.')
+          return
+        }
+      }
+    }
+    
+    console.log('[MenuSettingsPanel] Salvando item final:', {
+      id: itemToSave.id,
+      type: itemToSave.type,
+      url: itemToSave.url,
+      config: itemToSave.config,
+      label: itemToSave.label
+    })
+    
     onUpdate(itemToSave as NavbarItem)
   }
 
@@ -194,25 +243,30 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
       case 'page':
         // Encontrar qual opção corresponde à URL atual
         const findSelectedOptionId = () => {
-          if (!formData.url || !pagesData?.pages) return ''
+          if (!pagesData?.pages) return ''
           
-          // Tentar encontrar por pageId primeiro
+          // Tentar encontrar por pageId primeiro (mais confiável)
           if (formData.config?.pageId) {
             const pageId = formData.config.pageId
-            const foundById = pagesData.pages.find((p: any) => 
-              p.id === pageId || 
-              p.pageId === pageId ||
-              p.categoryId === pageId
-            )
+            const foundById = pagesData.pages.find((p: any) => {
+              // Pode ser o ID direto, pageId, ou categoryId
+              return p.id === pageId || 
+                     p.pageId === pageId ||
+                     p.categoryId === pageId ||
+                     // Para páginas dinâmicas, o ID no select é 'dynamic-page-${pageId}'
+                     (p.type === 'dynamic-page' && p.pageId === pageId)
+            })
             if (foundById) return foundById.id
           }
           
           // Tentar encontrar pela URL
-          const foundByUrl = pagesData.pages.find((p: any) => {
-            const pageSlug = p.slug?.startsWith('/') ? p.slug : `/${p.slug}`
-            return pageSlug === formData.url || p.slug === formData.url
-          })
-          if (foundByUrl) return foundByUrl.id
+          if (formData.url) {
+            const foundByUrl = pagesData.pages.find((p: any) => {
+              const pageSlug = p.slug?.startsWith('/') ? p.slug : `/${p.slug}`
+              return pageSlug === formData.url || p.slug === formData.url
+            })
+            if (foundByUrl) return foundByUrl.id
+          }
           
           return ''
         }
@@ -226,29 +280,72 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
               <select
                 value={selectedOptionId}
                 onChange={(e) => {
-                  const selectedOption = pagesData?.pages?.find((p: any) => p.id === e.target.value)
+                  const selectedValue = e.target.value
+                  console.log('[MenuSettingsPanel] Select onChange:', { 
+                    selectedValue, 
+                    pagesCount: pagesData?.pages?.length,
+                    currentUrl: formData.url,
+                    currentConfig: formData.config
+                  })
+                  
+                  if (!selectedValue) {
+                    // Se nenhuma opção foi selecionada, limpar tudo
+                    setFormData((prev) => ({ 
+                      ...prev, 
+                      url: '',
+                      config: {
+                        ...prev.config,
+                        pageId: undefined
+                      }
+                    }))
+                    return
+                  }
+                  
+                  const selectedOption = pagesData?.pages?.find((p: any) => p.id === selectedValue)
+                  console.log('[MenuSettingsPanel] Selected option:', selectedOption)
+                  
                   if (selectedOption) {
-                    // Garantir que o slug tenha a barra inicial para funcionar como rota Next.js
+                    // Garantir que o slug tenha a barra inicial
                     const slug = selectedOption.slug?.startsWith('/') 
                       ? selectedOption.slug 
                       : `/${selectedOption.slug}`
                     
-                    // SEMPRE atualizar a URL com o slug da opção selecionada
-                    // A URL é o que será usado no redirect, não o pageId
-                    setFormData({ ...formData, url: slug })
+                    console.log('[MenuSettingsPanel] Updating URL with slug:', slug, 'from option:', selectedOption.slug)
                     
+                    // Determinar o pageId baseado no tipo
+                    let pageId: string | undefined = undefined
                     if (selectedOption.type === 'page' || selectedOption.type === 'dynamic-page') {
-                      updateConfig({ pageId: selectedOption.pageId || selectedOption.id })
+                      // Para páginas dinâmicas, usar pageId se disponível, senão extrair do ID
+                      pageId = selectedOption.pageId || 
+                               (selectedOption.type === 'dynamic-page' && selectedOption.id.startsWith('dynamic-page-')
+                                 ? selectedOption.id.replace('dynamic-page-', '')
+                                 : selectedOption.id)
                     } else if (selectedOption.type === 'category') {
-                      updateConfig({ pageId: selectedOption.categoryId || selectedOption.id })
-                    } else {
-                      // Para rotas pré-definidas, limpar pageId
-                      updateConfig({ pageId: undefined })
+                      pageId = selectedOption.categoryId || selectedOption.id
                     }
+                    
+                    console.log('[MenuSettingsPanel] Updating with:', { slug, pageId, type: selectedOption.type })
+                    
+                    // Atualizar URL e config de forma síncrona em uma única chamada
+                    setFormData((prev) => ({
+                      ...prev,
+                      url: slug,
+                      config: {
+                        ...prev.config,
+                        pageId: pageId
+                      }
+                    }))
                   } else {
+                    console.warn('[MenuSettingsPanel] Selected option not found for value:', selectedValue)
                     // Se nenhuma opção foi encontrada, limpar tudo
-                    setFormData({ ...formData, url: '' })
-                    updateConfig({ pageId: undefined })
+                    setFormData((prev) => ({ 
+                      ...prev, 
+                      url: '',
+                      config: {
+                        ...prev.config,
+                        pageId: undefined
+                      }
+                    }))
                   }
                 }}
                 className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
@@ -264,19 +361,19 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
                 Você pode escolher entre rotas pré-definidas, categorias ou páginas institucionais
               </p>
             </div>
-            {formData.url && (
-              <div>
-                <Label>URL Final (usada no redirect)</Label>
-                <Input
-                  value={formData.url}
-                  readOnly
-                  className="bg-gray-50 font-mono text-sm"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Esta é a URL que será usada quando o usuário clicar no item do menu
-                </p>
-              </div>
-            )}
+            <div>
+              <Label>URL Final (usada no redirect)</Label>
+              <Input
+                value={formData.url || ''}
+                readOnly
+                className="bg-gray-50 font-mono text-sm"
+                placeholder="Selecione uma página acima"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Esta é a URL que será usada quando o usuário clicar no item do menu.
+                {!formData.url && ' Selecione uma página acima para preencher automaticamente.'}
+              </p>
+            </div>
           </div>
         )
 
