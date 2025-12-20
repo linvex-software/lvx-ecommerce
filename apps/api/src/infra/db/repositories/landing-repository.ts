@@ -133,13 +133,37 @@ export class LandingRepository {
    * Listar todas as páginas dinâmicas de uma loja
    */
   async listByStore(storeId: string): Promise<LandingPage[]> {
-    const pages = await db
-      .select()
-      .from(schema.landingPages)
-      .where(eq(schema.landingPages.store_id, storeId))
-      .orderBy(desc(schema.landingPages.created_at))
+    if (!storeId) {
+      throw new Error('storeId is required for listByStore')
+    }
 
-    return pages.map(this.mapToDomain)
+    try {
+      const pages = await db
+        .select()
+        .from(schema.landingPages)
+        .where(eq(schema.landingPages.store_id, storeId))
+        .orderBy(desc(schema.landingPages.created_at))
+
+      return pages.map((page) => {
+        try {
+          return this.mapToDomain(page)
+        } catch (error) {
+          console.error('[LandingRepository.listByStore] Error mapping page to domain:', {
+            pageId: page.id,
+            error: error instanceof Error ? error.message : 'Unknown error',
+            pageData: page
+          })
+          throw error
+        }
+      })
+    } catch (error) {
+      console.error('[LandingRepository.listByStore] Database error:', {
+        storeId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined
+      })
+      throw error
+    }
   }
 
   /**
@@ -233,15 +257,92 @@ export class LandingRepository {
    * Mapear linha do banco para formato de domínio
    */
   private mapToDomain(row: typeof schema.landingPages.$inferSelect): LandingPage {
-    return {
-      id: row.id,
-      storeId: row.store_id,
-      title: row.title,
-      slug: row.slug,
-      published: row.published,
-      contentJson: row.content_json as Record<string, unknown> | null || undefined,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+    try {
+      // Validar campos obrigatórios
+      if (!row.id) {
+        throw new Error('Page id is missing')
+      }
+      if (!row.store_id) {
+        throw new Error('Page store_id is missing')
+      }
+      if (!row.title) {
+        throw new Error('Page title is missing')
+      }
+      if (!row.slug) {
+        throw new Error('Page slug is missing')
+      }
+      if (typeof row.published !== 'boolean') {
+        throw new Error(`Page published is not a boolean: ${typeof row.published}`)
+      }
+      if (!row.created_at) {
+        throw new Error('Page created_at is missing')
+      }
+      if (!row.updated_at) {
+        throw new Error('Page updated_at is missing')
+      }
+
+      // Converter timestamps para Date de forma segura
+      let createdAt: Date
+      let updatedAt: Date
+
+      try {
+        if (row.created_at instanceof Date) {
+          createdAt = row.created_at
+        } else if (typeof row.created_at === 'string') {
+          createdAt = new Date(row.created_at)
+        } else {
+          createdAt = new Date(row.created_at as unknown as string | number)
+        }
+
+        if (isNaN(createdAt.getTime())) {
+          throw new Error(`Invalid created_at value: ${row.created_at}`)
+        }
+      } catch (error) {
+        throw new Error(`Failed to parse created_at: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+
+      try {
+        if (row.updated_at instanceof Date) {
+          updatedAt = row.updated_at
+        } else if (typeof row.updated_at === 'string') {
+          updatedAt = new Date(row.updated_at)
+        } else {
+          updatedAt = new Date(row.updated_at as unknown as string | number)
+        }
+
+        if (isNaN(updatedAt.getTime())) {
+          throw new Error(`Invalid updated_at value: ${row.updated_at}`)
+        }
+      } catch (error) {
+        throw new Error(`Failed to parse updated_at: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+
+      return {
+        id: row.id,
+        storeId: row.store_id,
+        title: row.title,
+        slug: row.slug,
+        published: row.published,
+        contentJson: row.content_json as Record<string, unknown> | null || undefined,
+        createdAt,
+        updatedAt,
+      }
+    } catch (error) {
+      console.error('[LandingRepository.mapToDomain] Error mapping row:', {
+        rowId: row.id,
+        error: error instanceof Error ? error.message : 'Unknown error',
+        rowData: {
+          id: row.id,
+          store_id: row.store_id,
+          title: row.title,
+          slug: row.slug,
+          published: row.published,
+          created_at: row.created_at,
+          updated_at: row.updated_at,
+          content_json_type: typeof row.content_json
+        }
+      })
+      throw error
     }
   }
 }

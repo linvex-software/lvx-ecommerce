@@ -61,14 +61,58 @@ export class LandingController {
    */
   async list(request: FastifyRequest, reply: FastifyReply) {
     try {
-      const storeId = (request as any).storeId as string
+      const storeId = request.storeId
+
+      if (!storeId) {
+        console.error('[LandingController.list] storeId não encontrado na requisição', {
+          user: request.user,
+          headers: {
+            authorization: request.headers.authorization ? 'present' : 'missing',
+            'x-store-id': request.headers['x-store-id'] || 'missing'
+          }
+        })
+        return reply.status(400).send({ 
+          error: 'Store ID is required',
+          message: 'Store ID não foi fornecido. Verifique se o tenantMiddleware foi executado corretamente.'
+        })
+      }
 
       const pages = await this.landingRepository.listByStore(storeId)
 
-      return reply.status(200).send({ pages })
+      // Serializar datas para ISO strings para garantir compatibilidade JSON
+      const serializedPages = pages.map(page => ({
+        ...page,
+        createdAt: page.createdAt instanceof Date 
+          ? page.createdAt.toISOString() 
+          : typeof page.createdAt === 'string' 
+            ? page.createdAt 
+            : new Date(page.createdAt).toISOString(),
+        updatedAt: page.updatedAt instanceof Date 
+          ? page.updatedAt.toISOString() 
+          : typeof page.updatedAt === 'string' 
+            ? page.updatedAt 
+            : new Date(page.updatedAt).toISOString(),
+      }))
+
+      return reply.status(200).send({ pages: serializedPages })
     } catch (error) {
-      console.error('Error listing dynamic pages:', error)
-      return reply.status(500).send({ error: 'Failed to list dynamic pages' })
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
+      const errorStack = error instanceof Error ? error.stack : undefined
+      
+      console.error('[LandingController.list] Error listing dynamic pages:', {
+        message: errorMessage,
+        stack: errorStack,
+        storeId: request.storeId,
+        user: request.user,
+        error: error
+      })
+      
+      return reply.status(500).send({ 
+        error: 'Failed to list dynamic pages',
+        message: process.env.NODE_ENV === 'production' 
+          ? 'An error occurred while listing pages' 
+          : errorMessage
+      })
     }
   }
 
