@@ -5,6 +5,9 @@
  * prevenindo erros de "Cannot find component <undefined /> in resolver map"
  */
 
+// Verificar se estamos em modo desenvolvimento
+const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development'
+
 interface CraftNode {
   type?: {
     resolvedName?: string
@@ -63,8 +66,8 @@ function cleanNode(
 
   // Se o componente não existe no resolver, retornar null
   if (!isValidComponent(resolvedName, resolver)) {
-    // Log apenas uma vez por componente único para evitar spam
-    if (!visited.has(`warn_${resolvedName}`)) {
+    // Log apenas em desenvolvimento e uma vez por componente único para evitar spam
+    if (isDev && !visited.has(`warn_${resolvedName}`)) {
       console.warn(
         `[LayoutValidator] Componente inválido removido: "${resolvedName}" (não encontrado no resolver)`
       )
@@ -129,15 +132,12 @@ export function validateAndCleanLayout(
   // Isso evita remover todos os nós quando o resolver ainda não foi carregado
   const resolverKeys = Object.keys(resolver)
   if (resolverKeys.length === 0) {
-    console.warn('[LayoutValidator] Resolver vazio - retornando layout original sem validação')
+    if (isDev) {
+      console.warn('[LayoutValidator] Resolver vazio - retornando layout original sem validação')
+    }
     return craftLayout
   }
 
-  // Debug: log do resolver e do primeiro nó
-  const firstNodeId = craftLayout.ROOT.nodes?.[0]
-  const firstNode = firstNodeId ? craftLayout[firstNodeId] : null
-  const firstNodeType = firstNode?.type?.resolvedName
-  
   // Coletar todos os tipos únicos de componentes no layout
   const componentTypes = new Set<string>()
   const collectTypes = (nodeId: string, node: CraftNode | undefined, visited: Set<string> = new Set()) => {
@@ -159,31 +159,24 @@ export function validateAndCleanLayout(
   
   // Verificar quais componentes do layout estão no resolver
   const missingComponents = Array.from(componentTypes).filter(type => !(type in resolver))
-  const foundComponents = Array.from(componentTypes).filter(type => type in resolver)
-  
-  console.log('[LayoutValidator] Validando layout:', {
-    resolverKeys: resolverKeys.slice(0, 20),
-    resolverCount: resolverKeys.length,
-    layoutComponentTypes: Array.from(componentTypes),
-    foundComponents,
-    missingComponents,
-    firstNodeType,
-    firstNodeInResolver: firstNodeType ? firstNodeType in resolver : null
-  })
   
   // Se muitos componentes estão faltando, pode ser que o resolver não foi carregado corretamente
   // Se TODOS os componentes do layout estão faltando, retornar o layout original
   if (missingComponents.length > 0 && missingComponents.length === componentTypes.size) {
-    console.warn('[LayoutValidator] NENHUM componente do layout está no resolver! Retornando layout original.')
-    console.warn('[LayoutValidator] Componentes faltando:', missingComponents)
-    console.warn('[LayoutValidator] Resolver tem apenas:', resolverKeys.filter(k => !['div', 'span', 'p', 'a', 'img', 'button', 'input', 'textarea', 'select', 'option', 'form', 'label', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'section', 'article', 'header', 'footer', 'nav', 'main', 'aside'].includes(k)))
+    if (isDev) {
+      console.warn('[LayoutValidator] NENHUM componente do layout está no resolver! Retornando layout original.')
+    }
     return craftLayout
   }
   
   // Se a maioria dos componentes está faltando (>80%), também retornar o layout original
-  const missingPercentage = (missingComponents.length / componentTypes.size) * 100
+  const missingPercentage = componentTypes.size > 0 
+    ? (missingComponents.length / componentTypes.size) * 100 
+    : 0
   if (missingPercentage > 80) {
-    console.warn(`[LayoutValidator] ${missingPercentage.toFixed(0)}% dos componentes estão faltando no resolver! Retornando layout original.`)
+    if (isDev) {
+      console.warn(`[LayoutValidator] ${missingPercentage.toFixed(0)}% dos componentes estão faltando no resolver! Retornando layout original.`)
+    }
     return craftLayout
   }
 
@@ -195,7 +188,9 @@ export function validateAndCleanLayout(
   const cleanedRoot = cleanNode('ROOT', craftLayout.ROOT, craftLayout, resolver, visited)
   if (!cleanedRoot) {
     // Se ROOT ficou inválido após limpeza, criar um novo
-    console.warn('[LayoutValidator] ROOT inválido após limpeza, usando layout padrão')
+    if (isDev) {
+      console.warn('[LayoutValidator] ROOT inválido após limpeza, usando layout padrão')
+    }
     return createSafeDefaultLayout()
   }
 
@@ -210,22 +205,22 @@ export function validateAndCleanLayout(
     const cleanedNode = cleanNode(nodeId, node, craftLayout, resolver, visited)
     if (cleanedNode) {
       cleanedLayout[nodeId] = cleanedNode
-    } else {
-      const nodeType = node?.type?.resolvedName
-      console.warn(`[LayoutValidator] Nó ${nodeId} removido por ser inválido (tipo: ${nodeType || 'sem tipo'})`)
     }
+    // Removido log de nós removidos - não é necessário em produção
   }
 
   // Verificar se o layout limpo ainda tem conteúdo válido
   if (!cleanedLayout.ROOT || Object.keys(cleanedLayout).length === 0) {
-    console.warn('[LayoutValidator] Layout vazio após limpeza, usando layout padrão')
+    if (isDev) {
+      console.warn('[LayoutValidator] Layout vazio após limpeza, usando layout padrão')
+    }
     return createSafeDefaultLayout()
   }
 
   // Verificar se ROOT tem nós válidos
   const validRootNodes = cleanedLayout.ROOT.nodes?.filter(nodeId => cleanedLayout[nodeId]) || []
   if (validRootNodes.length !== cleanedLayout.ROOT.nodes?.length) {
-    console.warn(`[LayoutValidator] Alguns nós do ROOT foram removidos: ${cleanedLayout.ROOT.nodes?.length || 0} -> ${validRootNodes.length}`)
+    // Silenciosamente ajustar os nós do ROOT sem log
     cleanedLayout.ROOT.nodes = validRootNodes
   }
 

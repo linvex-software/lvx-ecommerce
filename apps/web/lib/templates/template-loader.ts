@@ -7,6 +7,9 @@
 import type { TemplateConfig } from '../../../../templates/types'
 import React from 'react'
 
+// Verificar se estamos em modo desenvolvimento
+const isDev = typeof process !== 'undefined' && process.env.NODE_ENV === 'development'
+
 export interface TemplateMetadata {
   id: string
   name: string
@@ -149,11 +152,14 @@ export async function loadTemplateLayout(templateId: string): Promise<Record<str
       throw new Error(`Layout do template ${templateId} é inválido: falta ROOT`)
     }
     
-    console.log(`[loadTemplateLayout] Layout carregado para ${templateId}:`, {
-      hasRoot: !!layout.ROOT,
-      totalNodes: Object.keys(layout).length,
-      rootNodes: (layout.ROOT as any)?.nodes?.length || 0
-    })
+    // Log apenas em desenvolvimento
+    if (isDev) {
+      console.log(`[loadTemplateLayout] Layout carregado para ${templateId}:`, {
+        hasRoot: !!layout.ROOT,
+        totalNodes: Object.keys(layout).length,
+        rootNodes: (layout.ROOT as any)?.nodes?.length || 0
+      })
+    }
     
     return layout
   } catch (error) {
@@ -220,13 +226,16 @@ export async function loadTemplateComponents(templateId: string) {
         ...resolver,
         ...templateModule.componentResolver
       }
-      console.log('[loadTemplateComponents] Resolver criado com componentResolver:', {
-        totalKeys: Object.keys(finalResolver).length,
-        componentKeys: Object.keys(templateModule.componentResolver),
-        hasHeader: 'Header' in finalResolver,
-        hasFooter: 'Footer' in finalResolver,
-        hasHeroBanner: 'HeroBanner' in finalResolver
-      })
+      // Log apenas em desenvolvimento
+      if (isDev) {
+        console.log('[loadTemplateComponents] Resolver criado com componentResolver:', {
+          totalKeys: Object.keys(finalResolver).length,
+          componentKeys: Object.keys(templateModule.componentResolver),
+          hasHeader: 'Header' in finalResolver,
+          hasFooter: 'Footer' in finalResolver,
+          hasHeroBanner: 'HeroBanner' in finalResolver
+        })
+      }
       return finalResolver
     }
     
@@ -241,10 +250,13 @@ export async function loadTemplateComponents(templateId: string) {
     if (templateModule.EditableText) resolver.EditableText = templateModule.EditableText
     if (templateModule.EditableButton) resolver.EditableButton = templateModule.EditableButton
     
-    console.log('[loadTemplateComponents] Resolver criado a partir de exportações individuais:', {
-      totalKeys: Object.keys(resolver).length,
-      componentKeys: Object.keys(resolver).filter(k => !['div', 'span', 'p', 'a', 'img', 'button'].includes(k))
-    })
+    // Log apenas em desenvolvimento
+    if (isDev) {
+      console.log('[loadTemplateComponents] Resolver criado a partir de exportações individuais:', {
+        totalKeys: Object.keys(resolver).length,
+        componentKeys: Object.keys(resolver).filter(k => !['div', 'span', 'p', 'a', 'img', 'button'].includes(k))
+      })
+    }
     
     return resolver
   } catch (error) {
