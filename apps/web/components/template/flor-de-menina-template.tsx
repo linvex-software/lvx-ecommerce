@@ -14,13 +14,19 @@ import { ErrorBoundary } from '@/components/error-boundary'
 
 // Lazy load de componentes não críticos para melhorar FCP
 // Esses componentes não precisam estar no carregamento inicial
-const MiniCart = dynamic(() => import('./flor-de-menina/components/cart/MiniCart'), {
-  ssr: false,
-})
+const MiniCart = dynamic(
+  () => import('./flor-de-menina/components/cart/MiniCart').then((mod) => ({ default: mod.MiniCart })),
+  {
+    ssr: false,
+  }
+)
 
-const ScrollToTopButton = dynamic(() => import('./flor-de-menina/components/layout/ScrollToTopButton'), {
-  ssr: false,
-})
+const ScrollToTopButton = dynamic(
+  () => import('./flor-de-menina/components/layout/ScrollToTopButton').then((mod) => ({ default: mod.ScrollToTopButton })),
+  {
+    ssr: false,
+  }
+)
 
 export function FlorDeMeninaTemplate() {
   return (
