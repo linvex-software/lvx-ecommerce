@@ -31,12 +31,12 @@ export const MenuItemCategoryCraft = ({
       }}
       className={`
         inline-flex items-center gap-2 px-3 py-2 rounded-md transition-colors
-        ${isSelected ? 'bg-blue-100 ring-2 ring-blue-500' : 'hover:bg-gray-100'}
+        ${isSelected ? 'bg-primary/10 ring-2 ring-primary' : 'hover:bg-hover'}
       `}
     >
-      <span className="text-sm font-medium text-gray-900">{label}</span>
-      <ChevronDown className="h-4 w-4 text-gray-500" />
-      <span className="text-xs text-gray-400">(Categorias)</span>
+      <span className="text-sm font-medium text-text-primary">{label}</span>
+      <ChevronDown className="h-4 w-4 text-text-secondary" />
+      <span className="text-xs text-text-tertiary">(Categorias)</span>
     </div>
   )
 }
@@ -51,6 +51,12 @@ MenuItemCategoryCraft.craft = {
     },
   },
 }
+
+
+
+
+
+
 
 
 

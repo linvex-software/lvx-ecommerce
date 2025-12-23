@@ -25,6 +25,7 @@ export function IsolatedPreviewFrame({
   const iframeRef = useRef<HTMLIFrameElement>(null)
   const [isReady, setIsReady] = useState(false)
   const [layoutApplied, setLayoutApplied] = useState(false)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
   const { previewMode, dimensions } = usePreviewMode()
 
   // Obter URL do app web
@@ -58,18 +59,60 @@ export function IsolatedPreviewFrame({
 
   // Função para enviar mensagens ao iframe
   const sendToIframe = useCallback((action: string, data: Record<string, unknown>) => {
-    if (!iframeRef.current?.contentWindow || !isReady) return
+    if (!iframeRef.current?.contentWindow) {
+      console.warn('[IsolatedPreviewFrame] Tentando enviar mensagem mas iframe não está disponível:', action)
+      return
+    }
+    
+    if (!isReady) {
+      console.warn('[IsolatedPreviewFrame] Tentando enviar mensagem mas iframe não está pronto:', action)
+      return
+    }
 
+    const webUrl = getWebUrl()
+    console.log('[IsolatedPreviewFrame] Enviando mensagem para iframe:', action, { webUrl })
+    
     iframeRef.current.contentWindow.postMessage(
       { action, ...data },
-      getWebUrl()
+      webUrl
     )
+    
+    // Também tentar enviar com '*' como fallback se não funcionar
+    // Isso ajuda quando há problemas de CORS ou origem
+    setTimeout(() => {
+      if (iframeRef.current?.contentWindow) {
+        iframeRef.current.contentWindow.postMessage(
+          { action, ...data },
+          '*'
+        )
+      }
+    }, 100)
   }, [isReady, getWebUrl])
 
   // Aguardar iframe estar pronto
   useEffect(() => {
     const iframe = iframeRef.current
     if (!iframe) return
+
+    // Limpar timeout anterior se existir
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+
+    // Timeout de segurança: se após 10 segundos não recebermos LAYOUT_APPLIED, 
+    // assumimos que o layout foi aplicado para evitar loading infinito
+    // Reduzir para 5 segundos para resposta mais rápida
+    timeoutRef.current = setTimeout(() => {
+      setLayoutApplied((prev) => {
+        if (!prev && isReady && layoutJson) {
+          console.warn('[IsolatedPreviewFrame] Timeout (5s): assumindo que layout foi aplicado')
+          onLayoutApplied?.()
+          return true
+        }
+        return prev
+      })
+    }, 5000)
 
     const handleLoad = () => {
       // Usar requestAnimationFrame para garantir que o iframe está pronto
@@ -89,11 +132,32 @@ export function IsolatedPreviewFrame({
     }
 
     const handleMessage = (event: MessageEvent) => {
-      // Verificar origem para segurança
+      // Verificar origem para segurança (aceitar do web app, localhost e vercel.app)
       const webUrl = getWebUrl()
-      if (!event.origin.includes(new URL(webUrl).hostname)) return
+      let isValidOrigin = false
+      
+      try {
+        const webUrlObj = new URL(webUrl)
+        isValidOrigin = event.origin.includes(webUrlObj.hostname) || 
+                       event.origin.includes('vercel.app') ||
+                       event.origin.includes('localhost') || 
+                       event.origin.includes('127.0.0.1')
+      } catch {
+        // Se não conseguir fazer parse da URL, aceitar se for localhost ou vercel.app
+        isValidOrigin = event.origin.includes('localhost') || 
+                       event.origin.includes('127.0.0.1') ||
+                       event.origin.includes('vercel.app')
+      }
+
+      if (!isValidOrigin) {
+        console.log('[IsolatedPreviewFrame] Mensagem rejeitada de origem:', event.origin)
+        return
+      }
+
+      console.log('[IsolatedPreviewFrame] Mensagem recebida:', event.data.action, { origin: event.origin })
 
       if (event.data.action === 'PREVIEW_READY') {
+        console.log('[IsolatedPreviewFrame] Preview pronto recebido')
         setIsReady(true)
         onReady?.()
         
@@ -106,7 +170,12 @@ export function IsolatedPreviewFrame({
       
       // Confirmar que o layout foi aplicado no iframe
       if (event.data.action === 'LAYOUT_APPLIED') {
-        console.log('[IsolatedPreviewFrame] Layout aplicado no iframe')
+        console.log('[IsolatedPreviewFrame] Layout aplicado no iframe (confirmado)')
+        // Limpar timeout já que recebemos a confirmação
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current)
+          timeoutRef.current = null
+        }
         if (!layoutApplied) {
           setLayoutApplied(true)
           // Chamar callback imediatamente quando layout for aplicado
@@ -130,19 +199,50 @@ export function IsolatedPreviewFrame({
     return () => {
       iframe.removeEventListener('load', handleLoad)
       window.removeEventListener('message', handleMessage)
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
     }
-  }, [onReady, sendToIframe, layoutJson, getWebUrl])
+  }, [onReady, sendToIframe, layoutJson, getWebUrl, layoutApplied, isReady, onLayoutApplied])
 
   // Enviar layout quando iframe estiver pronto
   useEffect(() => {
     if (!isReady || !layoutJson) return
     
+    // Resetar timeout e flag quando layout mudar
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+      timeoutRef.current = null
+    }
+    setLayoutApplied(false)
+    
     // Sempre enviar via postMessage para garantir que o layout correto seja aplicado
     // Isso evita que o template padrão seja mostrado primeiro
     console.log('[IsolatedPreviewFrame] Enviando layout para iframe')
     sendToIframe('UPDATE_LAYOUT', { layout: layoutJson })
-    setLayoutApplied(false) // Resetar flag quando layout mudar
-  }, [layoutJson, isReady, sendToIframe])
+    
+    // Criar novo timeout para este layout
+    // Usar uma função que verifica o estado atual dentro do timeout
+    // Reduzir para 5 segundos para resposta mais rápida
+    timeoutRef.current = setTimeout(() => {
+      setLayoutApplied((prev) => {
+        if (!prev) {
+          console.warn('[IsolatedPreviewFrame] Timeout (5s) após mudança de layout: assumindo aplicado')
+          onLayoutApplied?.()
+          return true
+        }
+        return prev
+      })
+    }, 5000)
+    
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+        timeoutRef.current = null
+      }
+    }
+  }, [layoutJson, isReady, sendToIframe, onLayoutApplied])
   
   // Função para solicitar serialização do layout do iframe
   const requestLayoutSerialize = useCallback(() => {
@@ -187,18 +287,24 @@ export function IsolatedPreviewFrame({
 
   const previewUrl = getPreviewUrl()
 
-  // Não renderizar iframe até ter layoutJson válido
-  if (!layoutJson) {
-    return null
-  }
-
   // Não mostrar o iframe até que o layout tenha sido aplicado
   // Isso evita o flash do template padrão
   // MAS sempre renderizar o iframe (mesmo invisível) para receber mensagens
-  const shouldShowIframe = isReady && layoutApplied
+  // Se não tiver layoutJson, sempre mostrar loading
+  const shouldShowIframe = layoutJson && isReady && layoutApplied
 
   return (
-    <div className="w-full h-full flex items-center justify-center bg-gray-100 overflow-auto">
+    <div className="w-full h-full flex items-center justify-center bg-surface-2 overflow-auto relative">
+      {/* Loading enquanto preview não está pronto */}
+      {!shouldShowIframe && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-text-secondary">Carregando preview...</p>
+          </div>
+        </div>
+      )}
+      
       <div 
         className="flex-shrink-0 transition-all duration-300"
         style={{
@@ -213,9 +319,9 @@ export function IsolatedPreviewFrame({
         <iframe
           ref={iframeRef}
           src={previewUrl}
-          className="w-full h-full border-0 rounded-lg shadow-lg"
+          className="w-full h-full border-0 shadow-lg"
           title="Preview"
-          sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
+          sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation allow-modals"
           style={{
             width: `${dimensions.width}px`,
             height: `${dimensions.height}px`,

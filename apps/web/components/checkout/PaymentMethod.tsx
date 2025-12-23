@@ -1,76 +1,107 @@
 'use client'
 
-import { useCheckoutStore, PaymentMethod as PaymentMethodType } from "@/lib/store/useCheckoutStore";
-import { CreditCard, QrCode } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState } from 'react'
+import { MercadoPagoPayment } from './MercadoPagoPayment'
+import { fetchAPI } from '@/lib/api'
 
-const PaymentMethod = () => {
-    const { formData, setFormData } = useCheckoutStore();
+interface PaymentMethodProps {
+  orderId?: string
+  amount: number
+  payer: {
+    email: string
+    firstName?: string
+    lastName?: string
+    identification?: {
+      type: string
+      number: string
+    }
+  }
+  onPaymentSuccess: (result: PaymentResult) => void
+  onPaymentError: (error: string) => void
+  onCreateOrder?: () => Promise<{ id: string } | undefined>
+  isCreatingOrder?: boolean
+}
 
-    const handleMethodChange = (method: PaymentMethodType) => {
-        setFormData({ paymentMethod: method });
-    };
+interface PaymentResult {
+  transactionId: string
+  status: string
+  paymentResult: {
+    id: string
+    status: string
+    statusDetail: string
+    qrCode?: string
+    qrCodeBase64?: string
+    ticketUrl?: string
+  }
+}
 
+/**
+ * Componente wrapper que busca o gateway ativo e renderiza o componente correto
+ */
+export function PaymentMethod(props: PaymentMethodProps) {
+  const [activeProvider, setActiveProvider] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchActiveGateway = async () => {
+      try {
+        setIsLoading(true)
+        const response = await fetchAPI('/payments/active-gateway', { method: 'GET' })
+        
+        if (response?.provider) {
+          setActiveProvider(response.provider as string)
+        } else {
+          setError('Nenhum método de pagamento ativo configurado')
+        }
+      } catch (err: any) {
+        console.error('Erro ao buscar gateway ativo:', err)
+        setError(err?.message || 'Erro ao buscar método de pagamento')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    fetchActiveGateway()
+  }, [])
+
+  if (isLoading) {
     return (
-        <div className="space-y-6">
-            <h2 className="text-2xl font-bold">Pagamento</h2>
+      <div className="flex items-center justify-center py-8">
+        <div className="text-sm text-gray-500">Carregando método de pagamento...</div>
+      </div>
+    )
+  }
 
-            <div className="grid grid-cols-2 gap-4">
-                <button
-                    type="button"
-                    className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-all ${formData.paymentMethod === "pix"
-                            ? "border-foreground bg-secondary/50"
-                            : "border-border hover:border-foreground/50"
-                        }`}
-                    onClick={() => handleMethodChange("pix")}
-                >
-                    <QrCode className="w-8 h-8 mb-2" />
-                    <span className="font-medium">Pix</span>
-                </button>
-                <button
-                    type="button"
-                    className={`flex flex-col items-center justify-center p-4 border rounded-lg transition-all ${formData.paymentMethod === "card"
-                            ? "border-foreground bg-secondary/50"
-                            : "border-border hover:border-foreground/50"
-                        }`}
-                    onClick={() => handleMethodChange("card")}
-                >
-                    <CreditCard className="w-8 h-8 mb-2" />
-                    <span className="font-medium">Cartão de Crédito</span>
-                </button>
-            </div>
+  if (error) {
+    return (
+      <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+        <p className="text-sm text-red-800">{error}</p>
+      </div>
+    )
+  }
 
-            {formData.paymentMethod === "pix" && (
-                <div className="bg-secondary/20 p-4 rounded-lg text-sm text-muted-foreground">
-                    <p>O QR Code para pagamento será gerado após a finalização do pedido.</p>
-                    <p>Aprovação imediata.</p>
-                </div>
-            )}
+  // Renderizar componente baseado no provider ativo
+  if (activeProvider === 'mercadopago') {
+    return <MercadoPagoPayment {...props} />
+  }
 
-            {formData.paymentMethod === "card" && (
-                <div className="space-y-4 border p-4 rounded-lg border-border">
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Número do Cartão</label>
-                        <Input placeholder="0000 0000 0000 0000" />
-                    </div>
-                    <div className="space-y-2">
-                        <label className="text-sm font-medium">Nome no Cartão</label>
-                        <Input placeholder="Como está no cartão" />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">Validade</label>
-                            <Input placeholder="MM/AA" />
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium">CVV</label>
-                            <Input placeholder="123" />
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
-    );
-};
+  if (activeProvider === 'stripe') {
+    // TODO: Implementar StripePayment quando necessário
+    return (
+      <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+        <p className="text-sm text-yellow-800">
+          Stripe ainda não está implementado no frontend. Por favor, use Mercado Pago.
+        </p>
+      </div>
+    )
+  }
 
-export default PaymentMethod;
+  return (
+    <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+      <p className="text-sm text-red-800">
+        Método de pagamento "{activeProvider}" não suportado
+      </p>
+    </div>
+  )
+}

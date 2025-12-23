@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { OrderRepository } from '../../../infra/db/repositories/order-repository'
 import { PaymentMethodRepository } from '../../../infra/db/repositories/payment-method-repository'
-import { MercadoPagoGateway } from '../../../infra/gateways/mercado-pago-gateway'
+import { PaymentGatewayFactory } from '../../../infra/gateways/payment-gateway-factory'
 import type { PaymentGateway } from '../../../domain/payments/gateways'
 
 const generatePaymentLinkSchema = z.object({
@@ -55,10 +55,10 @@ export async function generatePaymentLinkUseCase(
     throw new Error('Order already paid')
   }
 
-  // Buscar método de pagamento
-  const paymentMethod = await paymentMethodRepository.findByProvider(storeId, 'mercadopago')
-  if (!paymentMethod || !paymentMethod.active) {
-    throw new Error('Mercado Pago payment method not configured or inactive')
+  // Buscar método de pagamento ativo
+  const paymentMethod = await paymentMethodRepository.findActive(storeId)
+  if (!paymentMethod) {
+    throw new Error('No active payment method configured for this store')
   }
 
   // Converter total para centavos

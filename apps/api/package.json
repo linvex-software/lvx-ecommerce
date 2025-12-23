@@ -25,6 +25,7 @@
     "drizzle-orm": "^0.32.0",
     "fastify": "^4.26.0",
     "mercadopago": "^2.11.0",
+    "payflux": "^0.0.4",
     "pino": "^9.0.0",
     "uuid": "^13.0.0",
     "zod": "^3.23.0"

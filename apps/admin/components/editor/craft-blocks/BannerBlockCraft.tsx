@@ -60,7 +60,7 @@ export const BannerBlockCraft = ({
               {cta_text && cta_link && (
                 <Button
                   size="lg"
-                  className="bg-white text-black hover:bg-gray-100"
+                  className="bg-background text-text-primary hover:bg-hover"
                   asChild
                 >
                   <a href={cta_link}>{cta_text}</a>

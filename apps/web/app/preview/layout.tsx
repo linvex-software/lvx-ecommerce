@@ -17,6 +17,7 @@ export default function PreviewLayout({ children }: { children: ReactNode }) {
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <meta httpEquiv="Permissions-Policy" content="unload=*, fullscreen=*, geolocation=*" />
       </head>
       <body suppressHydrationWarning>
         {children}
@@ -24,6 +25,12 @@ export default function PreviewLayout({ children }: { children: ReactNode }) {
     </html>
   )
 }
+
+
+
+
+
+
 
 
 

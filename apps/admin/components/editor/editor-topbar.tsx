@@ -5,26 +5,97 @@ import { useRouter, usePathname } from 'next/navigation'
 import { useAuthStore } from '@/store/auth-store'
 import { apiClient } from '@/lib/api-client'
 import { optimizeLayout, getOptimizationStats } from '@/lib/utils/layout-optimizer'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Menu, Undo2, Redo2, Eye, ChevronDown, Settings, ArrowLeft } from 'lucide-react'
+import { Menu, Undo2, Redo2, Eye, ChevronDown, Settings, ArrowLeft, Moon, Sun } from 'lucide-react'
 import { PreviewViewportControls } from './preview-viewport-controls'
+import { useTheme } from '@/components/providers/theme-provider'
 import Link from 'next/link'
 
 interface EditorTopbarProps {
   isPreview: boolean
+  useEditorContext?: boolean // Opcional: se false, não tenta usar o editor
+  customActionButton?: {
+    label: string
+    onClick: () => void
+    disabled?: boolean
+    isLoading?: boolean
+  } // Opcional: botão de ação customizado (ex: "Salvar Menu")
 }
 
-export function EditorTopbar({ isPreview }: EditorTopbarProps) {
+// Componente interno que usa o editor (só renderizado quando useEditorContext é true)
+function EditorTopbarWithEditor({ isPreview, customActionButton }: { isPreview: boolean; customActionButton?: EditorTopbarProps['customActionButton'] }) {
   const { query, enabled, actions } = useEditor((state) => ({
     enabled: state.options.enabled,
-    nodes: state.nodes, // Incluir nodes para garantir que temos acesso ao estado
+    nodes: state.nodes,
   }))
+  
+  return <EditorTopbarContent 
+    isPreview={isPreview} 
+    editorQuery={query} 
+    editorEnabled={enabled} 
+    editorActions={actions}
+    customActionButton={customActionButton}
+  />
+}
+
+// Componente interno sem editor (usado quando useEditorContext é false)
+function EditorTopbarWithoutEditor({ isPreview, customActionButton }: { isPreview: boolean; customActionButton?: EditorTopbarProps['customActionButton'] }) {
+  return <EditorTopbarContent 
+    isPreview={isPreview} 
+    editorQuery={null} 
+    editorEnabled={false} 
+    editorActions={null}
+    customActionButton={customActionButton}
+  />
+}
+
+// Componente principal que decide qual versão renderizar
+export function EditorTopbar({ isPreview, useEditorContext = true, customActionButton }: EditorTopbarProps) {
+  if (useEditorContext) {
+    return <EditorTopbarWithEditor isPreview={isPreview} customActionButton={customActionButton} />
+  }
+  return <EditorTopbarWithoutEditor isPreview={isPreview} customActionButton={customActionButton} />
+}
+
+// Componente de conteúdo compartilhado
+function EditorTopbarContent({ 
+  isPreview, 
+  editorQuery, 
+  editorEnabled, 
+  editorActions,
+  customActionButton
+}: { 
+  isPreview: boolean
+  editorQuery: any
+  editorEnabled: boolean
+  editorActions: any
+  customActionButton?: EditorTopbarProps['customActionButton']
+}) {
   const router = useRouter()
   const pathname = usePathname()
   const user = useAuthStore((state) => state.user)
   const [isSaving, setIsSaving] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const isMenuPage = pathname?.includes('/editor/menu') || false
+  const isPagesPage = pathname === '/editor/pages' // Exatamente /editor/pages (não inclui subpáginas)
+  
+  // Usar useTheme de forma segura (pode falhar durante SSR)
+  let theme: 'light' | 'dark' = 'light'
+  let toggleTheme: () => void = () => {}
+  
+  try {
+    const themeHook = useTheme()
+    theme = themeHook.theme
+    toggleTheme = themeHook.toggleTheme
+  } catch (error) {
+    // Se não estiver no contexto do ThemeProvider (durante SSR ou build), usar valores padrão
+    // O erro será ignorado e os valores padrão serão usados
+  }
+  
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   const handleSave = async () => {
     if (!user?.storeId) return
@@ -70,15 +141,19 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
       
       // Fallback: tentar serializar do editor local (pode estar vazio se o editor estiver no iframe)
       if (!layoutJson || Object.keys(layoutJson).length === 0) {
+        if (!editorQuery) {
+          throw new Error('Editor não disponível')
+        }
+        
         console.log('[EditorTopbar] Tentando serializar do editor local...')
         await new Promise(resolve => setTimeout(resolve, 300))
         
         try {
-          const serializedNodes = query.getSerializedNodes()
+          const serializedNodes = editorQuery.getSerializedNodes()
           layoutJson = serializedNodes as Record<string, unknown>
           console.log('[EditorTopbar] Usando getSerializedNodes(), nodeCount:', Object.keys(layoutJson).length)
         } catch (error) {
-          const serialized = query.serialize()
+          const serialized = editorQuery.serialize()
           layoutJson = JSON.parse(serialized)
         }
       }
@@ -194,56 +269,83 @@ export function EditorTopbar({ isPreview }: EditorTopbarProps) {
   }
 
   return (
-    <div className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4">
+    <div className="h-14 bg-background border-b border-border flex items-center justify-between px-4">
       {/* Left Section */}
       <div className="flex items-center gap-3">
         {/* Logo */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => router.push('/')}
-            className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+            className="p-1.5 hover:bg-hover rounded transition-colors"
             title="Voltar"
           >
-            <ArrowLeft className="w-5 h-5 text-gray-700" />
+            <ArrowLeft className="w-5 h-5 text-text-primary" />
           </button>
-          <div className="text-lg font-semibold text-gray-900">Editando: {user?.store?.name || 'Minha Loja'}</div>
+          <div className="text-lg font-semibold text-text-primary">Editando: {user?.store?.name || 'Minha Loja'}</div>
         </div>
         
         
       </div>
 
-      {/* Center Section - Preview Viewport Controls */}
-      <PreviewViewportControls />
+      {/* Center Section - Preview Viewport Controls - apenas quando editor está disponível */}
+      {editorQuery && <PreviewViewportControls />}
 
       {/* Right Section */}
       <div className="flex items-center gap-2">
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 text-text-secondary hover:bg-hover rounded transition-colors"
+          aria-label={theme === 'dark' ? 'Alternar para modo claro' : 'Alternar para modo escuro'}
+          title={theme === 'dark' ? 'Alternar para modo claro' : 'Alternar para modo escuro'}
+        >
+          {theme === 'dark' ? (
+            <Sun className="w-4 h-4" />
+          ) : (
+            <Moon className="w-4 h-4" />
+          )}
+        </button>
+        
         {/* Preferências */}
         <Link
           href="/editor/preferences"
-          className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+          className="p-2 text-text-secondary hover:bg-hover rounded transition-colors"
           title="Preferências"
         >
           <Settings className="w-4 h-4" />
         </Link>
         
         {/* Undo/Redo */}
-        <button className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors">
+        <button className="p-2 text-text-secondary hover:bg-hover rounded transition-colors">
           <Undo2 className="w-4 h-4" />
         </button>
-        <button className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors">
+        <button className="p-2 text-text-secondary hover:bg-hover rounded transition-colors">
           <Redo2 className="w-4 h-4" />
         </button>
         
         {/* Preview Eye */}
         <button
           onClick={handlePreview}
-          className="p-2 text-gray-600 hover:bg-gray-100 rounded transition-colors"
+          className="p-2 text-text-secondary hover:bg-hover rounded transition-colors"
         >
           <Eye className="w-4 h-4" />
         </button>
         
-        {/* Publish Button - apenas na homepage, não no menu */}
-        {!isPreview && !isMenuPage && (
+        {/* Custom Action Button (ex: Salvar Menu) */}
+        {!isPreview && customActionButton && (
+          <div className="relative">
+            <button
+              onClick={customActionButton.onClick}
+              disabled={customActionButton.disabled || customActionButton.isLoading}
+              className="px-4 py-2 text-sm bg-[#7c3aed] text-white rounded-md hover:bg-[#6d28d9] disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-1"
+            >
+              {customActionButton.isLoading ? 'Salvando...' : customActionButton.label}
+            </button>
+          </div>
+        )}
+
+        {/* Publish Button - apenas na homepage, não no menu ou pages */}
+        {!isPreview && !customActionButton && !isMenuPage && !isPagesPage && editorQuery && (
           <div className="relative">
             <button
               onClick={handleSave}

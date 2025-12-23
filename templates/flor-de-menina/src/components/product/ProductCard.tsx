@@ -106,7 +106,7 @@ export function ProductCard({ product, className }: ProductCardProps) {
         )}>
           <button
             onClick={handleQuickAdd}
-            className="w-full py-3 bg-background/95 backdrop-blur-sm text-foreground text-xs tracking-widest uppercase font-body hover:bg-primary hover:text-primary-foreground transition-colors flex items-center justify-center gap-2"
+            className="w-full py-3 bg-background/95 backdrop-blur-sm text-xs tracking-widest uppercase font-body hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-2"
           >
             <ShoppingBag size={14} />
             Adicionar Rápido

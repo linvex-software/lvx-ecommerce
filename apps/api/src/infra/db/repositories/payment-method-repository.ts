@@ -151,6 +151,37 @@ export class PaymentMethodRepository {
       created_at: paymentMethod.created_at
     }
   }
+
+  /**
+   * Busca o método de pagamento ativo para uma loja
+   * Retorna o primeiro método com active = true
+   */
+  async findActive(storeId: string): Promise<PaymentMethod | null> {
+    const [paymentMethod] = await db
+      .select()
+      .from(schema.paymentMethods)
+      .where(
+        and(
+          eq(schema.paymentMethods.store_id, storeId),
+          eq(schema.paymentMethods.active, true)
+        )
+      )
+      .limit(1)
+
+    if (!paymentMethod) {
+      return null
+    }
+
+    return {
+      id: paymentMethod.id,
+      store_id: paymentMethod.store_id,
+      name: paymentMethod.name,
+      provider: paymentMethod.provider,
+      config_json: paymentMethod.config_json as Record<string, unknown> | null,
+      active: paymentMethod.active,
+      created_at: paymentMethod.created_at
+    }
+  }
 }
 
 

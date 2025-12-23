@@ -65,7 +65,7 @@ export function CraftLayersPanel() {
     return (
       <div key={layer.id}>
         <div
-          className="flex items-center gap-1 px-2 py-1.5 hover:bg-gray-100 cursor-pointer group"
+          className="flex items-center gap-1 px-2 py-1.5 hover:bg-hover cursor-pointer group"
           style={{ paddingLeft: `${8 + depth * 16}px` }}
           onClick={() => {
             try {

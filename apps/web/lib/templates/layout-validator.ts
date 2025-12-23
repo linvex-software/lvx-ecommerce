@@ -219,6 +219,16 @@ export function validateAndCleanLayout(
 
   // Verificar se ROOT tem nós válidos
   const validRootNodes = cleanedLayout.ROOT.nodes?.filter(nodeId => cleanedLayout[nodeId]) || []
+  
+  // Se TODOS os nós do ROOT foram removidos, pode ser que o resolver não tenha os componentes
+  // Nesse caso, retornar o layout original em vez de um layout vazio
+  if (validRootNodes.length === 0 && cleanedLayout.ROOT.nodes && cleanedLayout.ROOT.nodes.length > 0) {
+    if (isDev) {
+      console.warn('[LayoutValidator] Todos os nós do ROOT foram removidos! Retornando layout original.')
+    }
+    return craftLayout
+  }
+  
   if (validRootNodes.length !== cleanedLayout.ROOT.nodes?.length) {
     // Silenciosamente ajustar os nós do ROOT sem log
     cleanedLayout.ROOT.nodes = validRootNodes

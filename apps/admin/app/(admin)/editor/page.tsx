@@ -1,5 +1,8 @@
 'use client'
 
+// Forçar renderização dinâmica para evitar pré-renderização estática
+export const dynamic = 'force-dynamic'
+
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Editor, useEditor } from '@craftjs/core'
@@ -10,11 +13,128 @@ import { EditorTopbar } from '@/components/editor/editor-topbar'
 import { TemplateSelector } from '@/components/editor/template-selector'
 import { IsolatedPreviewFrame } from '@/components/editor/isolated-preview-frame'
 import { PreviewProvider } from '@/components/editor/preview-context'
-import { ThemeProvider } from '@/components/theme/theme-provider'
 import { loadTemplateLayout, loadTemplateConfig, loadTemplateComponents } from '@/lib/templates/template-loader'
 import { validateAndCleanLayout, createSafeDefaultLayout } from '@/lib/templates/layout-validator'
 import { EditorCartProvider } from '@/components/editor/editor-cart-provider'
 import { Spinner } from '@/components/ui/ios-spinner'
+
+// Componente que escuta mensagens do iframe para selecionar nodes e fornecer token
+function NodeSelectorListener() {
+  const { actions, query } = useEditor((state) => ({
+    nodes: state.nodes
+  }))
+  const accessToken = useAuthStore((state) => state.accessToken)
+  
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verificar origem para segurança
+      const isLocalhost = event.origin.includes('localhost') || event.origin.includes('127.0.0.1')
+      const isWebOrigin = event.origin.includes('web') || isLocalhost
+      
+      if (!isWebOrigin) return
+      
+      // Responder a solicitações de token
+      if (event.data?.type === 'GET_AUTH_TOKEN') {
+        console.log('[NodeSelectorListener] Enviando token para iframe');
+        event.source?.postMessage({
+          type: 'GET_AUTH_TOKEN_RESPONSE',
+          token: accessToken
+        }, { targetOrigin: event.origin });
+        return;
+      }
+      
+      if (event.data.action === 'SELECT_NODE' && event.data.nodeId) {
+        const nodeId = event.data.nodeId
+        console.log('[NodeSelectorListener] Recebida mensagem para selecionar node:', nodeId)
+        
+        // Função para tentar selecionar o node com retry
+        const trySelectNode = (attempt = 0) => {
+          try {
+            // Usar query para acessar os nodes
+            if (!query || !actions) {
+              if (attempt < 5) {
+                setTimeout(() => trySelectNode(attempt + 1), 200)
+                return
+              }
+              console.warn('[NodeSelectorListener] Query ou actions não disponíveis')
+              return
+            }
+            
+            // Primeiro, tentar selecionar pelo nodeId recebido
+            try {
+              const node = query.node(nodeId).get()
+              if (node && actions.selectNode) {
+                console.log('[NodeSelectorListener] Node encontrado pelo ID, selecionando:', nodeId)
+                actions.selectNode(nodeId)
+                return true
+              }
+            } catch (e) {
+              // Node não encontrado pelo ID, continuar procurando
+            }
+            
+            // Se não encontrou pelo ID, tentar encontrar pelo tipo HeroBanner
+            // Buscar nos nodes do ROOT
+            try {
+              const rootNode = query.node('ROOT').get()
+              if (rootNode && rootNode.data && rootNode.data.nodes) {
+                for (const childId of rootNode.data.nodes) {
+                  try {
+                    const childNode = query.node(childId).get()
+                    if (childNode) {
+                      const typeName = typeof childNode.data?.type === 'object' && childNode.data?.type !== null && 'resolvedName' in childNode.data.type
+                        ? (childNode.data.type as { resolvedName?: string }).resolvedName
+                        : undefined
+                      const displayName = childNode.data?.displayName
+                      
+                      if (typeName === 'HeroBanner' || displayName === 'Hero Banner') {
+                        if (actions.selectNode) {
+                          console.log('[NodeSelectorListener] Node HeroBanner encontrado pelo tipo, selecionando:', childId)
+                          actions.selectNode(childId)
+                          return true
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    // Continuar procurando
+                  }
+                }
+              }
+            } catch (e) {
+              // Erro ao acessar ROOT
+            }
+            
+            // Se não encontrou e ainda há tentativas, tentar novamente
+            if (attempt < 5) {
+              console.log(`[NodeSelectorListener] Tentativa ${attempt + 1}: Node não encontrado, tentando novamente em 200ms...`)
+              setTimeout(() => trySelectNode(attempt + 1), 200)
+              return false
+            }
+            
+            console.warn('[NodeSelectorListener] Não foi possível encontrar o node HeroBanner após 5 tentativas')
+            return false
+          } catch (error) {
+            console.error('[NodeSelectorListener] Erro ao selecionar node:', error)
+            if (attempt < 5) {
+              setTimeout(() => trySelectNode(attempt + 1), 200)
+            }
+            return false
+          }
+        }
+        
+        // Iniciar tentativa após um pequeno delay
+        setTimeout(() => trySelectNode(), 300)
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    
+    return () => {
+      window.removeEventListener('message', handleMessage)
+    }
+  }, [actions, query, accessToken])
+  
+  return null
+}
 
 function EditorContent() {
   const searchParams = useSearchParams()
@@ -213,35 +333,28 @@ function EditorContent() {
     }
   }
 
-  // Mostrar spinner apenas durante carregamento inicial dos dados
-  // Não esperar pelo preview estar pronto para evitar loading infinito
-  if (isLoading || savedLayout === undefined || Object.keys(templateResolver).length === 0) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-        <Spinner size="lg" />
-      </div>
-    )
-  }
+  // Renderizar estrutura mesmo durante carregamento - o preview terá seu próprio loading
+  // Se não tiver dados ainda, usar valores padrão para evitar erro
+  const displayLayout = savedLayout || null
+  const displayResolver = Object.keys(templateResolver).length > 0 ? templateResolver : {}
 
   return (
-    <ThemeProvider>
-      <PreviewProvider>
-        <div className="h-full flex flex-col overflow-hidden">
-          <Editor
-            resolver={templateResolver}
-            enabled={!isPreview}
-          >
-            <EditorContentInner 
-              savedLayout={savedLayout} 
-              isPreview={isPreview}
-              onTemplateSelect={handleTemplateSelect}
-              selectedTemplate={selectedTemplate}
-              templateResolver={templateResolver}
-            />
-          </Editor>
-        </div>
-      </PreviewProvider>
-    </ThemeProvider>
+    <PreviewProvider>
+      <div className="h-full flex flex-col overflow-hidden">
+        <Editor
+          resolver={displayResolver}
+          enabled={!isPreview}
+        >
+          <EditorContentInner 
+            savedLayout={displayLayout} 
+            isPreview={isPreview}
+            onTemplateSelect={handleTemplateSelect}
+            selectedTemplate={selectedTemplate}
+            templateResolver={displayResolver}
+          />
+        </Editor>
+      </div>
+    </PreviewProvider>
   )
 }
 
@@ -258,12 +371,9 @@ function EditorContentInner({
   selectedTemplate: string
   templateResolver: Record<string, any>
 }) {
-  // Se não tiver layout ou resolver vazio, não renderizar nada
-  // O spinner já está sendo mostrado no nível superior
-  if (!savedLayoutProp || Object.keys(templateResolver).length === 0) {
-    return null
-  }
-  // Se o layout não tem ROOT válido, usar layout padrão seguro
+  // Sempre renderizar estrutura - o preview terá seu próprio loading
+  // Se não tiver layout ainda, o preview mostrará loading
+  // Se não tiver layout ainda, usar null - o preview mostrará loading
   let savedLayout = savedLayoutProp
   if (savedLayout && (!savedLayout.ROOT || typeof savedLayout.ROOT !== 'object')) {
     console.warn('[Editor] Layout carregado não tem ROOT válido, usando layout padrão seguro')
@@ -315,8 +425,8 @@ function EditorContentInner({
   })
   
   // Converter layout para JSON string para usar na prop data do Frame
-  // O Craft só deve receber data quando existir layout válido
-  const layoutJson = Object.keys(finalLayout).length > 0 
+  // Se não tiver layout ainda, passar null - o preview mostrará loading
+  const layoutJson = finalLayout && Object.keys(finalLayout).length > 0 
     ? JSON.stringify(finalLayout) 
     : null
   
@@ -328,19 +438,18 @@ function EditorContentInner({
   return (
     <>
       <EditorTopbar isPreview={isPreview} />
-      <div className="flex-1 flex overflow-hidden bg-white">
+      <NodeSelectorListener />
+      <div className="flex-1 flex overflow-hidden bg-background">
         {!isPreview && (
-          <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
+          <div className="w-64 bg-surface border-r border-border h-full flex flex-col">
             <TemplateSelector onTemplateSelect={onTemplateSelect} selectedTemplate={selectedTemplate} />
           </div>
         )}
-        <div className="flex-1 overflow-hidden bg-gray-50">
-          {layoutJson && (
-            <IsolatedPreviewFrame
-              templateId={selectedTemplate}
-              layoutJson={layoutJson}
-            />
-          )}
+        <div className="flex-1 overflow-hidden bg-surface-2">
+          <IsolatedPreviewFrame
+            templateId={selectedTemplate}
+            layoutJson={layoutJson}
+          />
         </div>
       </div>
     </>
@@ -349,13 +458,7 @@ function EditorContentInner({
 
 export default function EditorPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <Spinner size="lg" />
-        </div>
-      }
-    >
+    <Suspense fallback={null}>
       <EditorContent />
     </Suspense>
   )

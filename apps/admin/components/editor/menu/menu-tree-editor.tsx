@@ -16,21 +16,22 @@ interface MenuTreeEditorProps {
 }
 
 const getItemIcon = (type: NavbarItem['type']) => {
+  const iconClass = "h-4 w-4 text-text-secondary"
   switch (type) {
     case 'link':
     case 'internal':
     case 'external':
-      return <Link className="h-4 w-4" />
+      return <Link className={iconClass} />
     case 'category':
-      return <Folder className="h-4 w-4" />
+      return <Folder className={iconClass} />
     case 'page':
-      return <FileText className="h-4 w-4" />
+      return <FileText className={iconClass} />
     case 'custom-block':
-      return <Image className="h-4 w-4" />
+      return <Image className={iconClass} />
     case 'dynamic-list':
-      return <List className="h-4 w-4" />
+      return <List className={iconClass} />
     default:
-      return <Folder className="h-4 w-4" />
+      return <Folder className={iconClass} />
   }
 }
 
@@ -152,12 +153,12 @@ export function MenuTreeEditor({
           onClick={() => onSelectItem(item)}
           className={`
             group flex items-center gap-2 px-4 py-2 cursor-pointer transition-colors
-            ${isSelected ? 'bg-blue-50 border-l-2 border-l-blue-500' : 'hover:bg-gray-50'}
+            ${isSelected ? 'bg-primary/10 border-l-2 border-l-primary' : 'hover:bg-hover'}
             ${level > 0 ? 'ml-4' : ''}
           `}
           style={{ paddingLeft: `${level * 16 + 16}px` }}
         >
-          <GripVertical className="h-4 w-4 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <GripVertical className="h-4 w-4 text-text-tertiary opacity-0 group-hover:opacity-100 transition-opacity" />
           
           {hasChildren ? (
             <button
@@ -165,7 +166,7 @@ export function MenuTreeEditor({
                 e.stopPropagation()
                 toggleExpanded(item.id)
               }}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-text-tertiary hover:text-text-secondary"
             >
               {isExpanded ? (
                 <ChevronDown className="h-4 w-4" />
@@ -179,10 +180,10 @@ export function MenuTreeEditor({
 
           <div className="flex items-center gap-2 flex-1 min-w-0">
             {getItemIcon(item.type)}
-            <span className="text-sm font-medium text-gray-900 truncate">{item.label}</span>
-            <span className="text-xs text-gray-400">({getItemTypeLabel(item.type)})</span>
+            <span className="text-sm font-medium text-text-primary truncate">{item.label}</span>
+            <span className="text-xs text-text-tertiary">({getItemTypeLabel(item.type)})</span>
             {!item.visible && (
-              <span className="text-xs text-gray-400">(oculto)</span>
+              <span className="text-xs text-text-tertiary">(oculto)</span>
             )}
           </div>
 
@@ -192,7 +193,7 @@ export function MenuTreeEditor({
                 e.stopPropagation()
                 onAddItem(item.id)
               }}
-              className="p-1 text-gray-400 hover:text-blue-600"
+              className="p-1 text-text-tertiary hover:text-primary"
               title="Adicionar filho"
             >
               <Plus className="h-4 w-4" />
@@ -202,7 +203,7 @@ export function MenuTreeEditor({
                 e.stopPropagation()
                 onDeleteItem(item.id)
               }}
-              className="p-1 text-gray-400 hover:text-red-600"
+              className="p-1 text-text-tertiary hover:text-error"
               title="Remover"
             >
               <Trash2 className="h-4 w-4" />
@@ -221,9 +222,9 @@ export function MenuTreeEditor({
 
   return (
     <div className="h-full flex flex-col">
-      <div className="border-b border-gray-200 px-4 py-3">
+      <div className="border-b border-border px-4 py-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-gray-900">Itens do Menu</h2>
+          <h2 className="text-sm font-semibold text-text-primary">Itens do Menu</h2>
           <Button
             size="sm"
             variant="outline"
@@ -240,7 +241,7 @@ export function MenuTreeEditor({
         {items.length === 0 ? (
           <div className="flex h-full items-center justify-center">
             <div className="text-center">
-              <p className="text-sm text-gray-500">Nenhum item no menu</p>
+              <p className="text-sm text-text-secondary">Nenhum item no menu</p>
               <Button
                 size="sm"
                 variant="outline"

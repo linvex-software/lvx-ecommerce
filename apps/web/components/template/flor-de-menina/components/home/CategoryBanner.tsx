@@ -39,12 +39,16 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
   const [canScrollRight, setCanScrollRight] = useState(false);
   const [showButtons, setShowButtons] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showColorModal, setShowColorModal] = useState(false);
+  const [selectedCategoryForColor, setSelectedCategoryForColor] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [colorUpdateKey, setColorUpdateKey] = useState(0); // Para forçar re-render
   
   // Obter props do Craft.js PRIMEIRO
   let craftProps: { 
     categoryImages?: string[];
     selectedCategoryIds?: string[];
+    categoryTitleColors?: Record<string, string>; // { categoryId: color }
   } = {};
   let nodeActions: { setProp: (callback: (props: any) => void) => void } | null = null;
   let hasCraftContext = false;
@@ -53,24 +57,28 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
     const node = useNode((node) => ({
       categoryImages: node.data.props.categoryImages || [],
       selectedCategoryIds: node.data.props.selectedCategoryIds || [],
+      categoryTitleColors: node.data.props.categoryTitleColors || {},
     }));
     const fullNode = useNode();
     craftProps = { 
       categoryImages: node.categoryImages,
       selectedCategoryIds: node.selectedCategoryIds,
+      categoryTitleColors: node.categoryTitleColors,
     };
     nodeActions = fullNode.actions;
     hasCraftContext = true;
-    console.log('[CategoryBanner] Props do Craft.js obtidas:', {
-      selectedCategoryIds: craftProps.selectedCategoryIds,
-      categoryImagesCount: craftProps.categoryImages?.length || 0,
-      isInEditor
-    });
   } catch (e) {
     // Não está no contexto do editor - tentar obter props do layout salvo
     console.log('[CategoryBanner] Não está no contexto do Craft.js, tentando obter props do layout salvo');
     hasCraftContext = false;
   }
+  
+  // Debug: logar quando categoryTitleColors mudar
+  React.useEffect(() => {
+    if (hasCraftContext) {
+      console.log('[CategoryBanner] categoryTitleColors atualizado:', craftProps.categoryTitleColors);
+    }
+  }, [craftProps.categoryTitleColors, hasCraftContext]);
   
   // Verificar se está no editor - usar múltiplas verificações para garantir
   const [isInEditorMode, setIsInEditorMode] = React.useState(false);
@@ -119,6 +127,42 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
       props.selectedCategoryIds = ids;
     });
   };
+
+  const handleCategoryTitleColorChange = (categoryId: string, color: string) => {
+    console.log('[CategoryBanner] Alterando cor da categoria:', { categoryId, color });
+    setProp((props: any) => {
+      const currentColors = props.categoryTitleColors || {};
+      const newColors = {
+        ...currentColors,
+        [categoryId]: color
+      };
+      props.categoryTitleColors = newColors;
+      console.log('[CategoryBanner] Novas cores:', newColors);
+    });
+    // Forçar re-render para atualizar a cor em tempo real
+    setColorUpdateKey(prev => prev + 1);
+  };
+
+  const handleCategoryTitleDoubleClick = (categoryId: string, e: React.MouseEvent) => {
+    if (isInEditorMode) {
+      e.preventDefault();
+      e.stopPropagation();
+      setSelectedCategoryForColor(categoryId);
+      setShowColorModal(true);
+    }
+  };
+
+  // Obter cores atualizadas diretamente do useNode quando disponível
+  const currentTitleColors = React.useMemo(() => {
+    if (hasCraftContext) {
+      return craftProps.categoryTitleColors || {};
+    }
+    return {};
+  }, [hasCraftContext, craftProps.categoryTitleColors, colorUpdateKey]);
+
+  const getCategoryTitleColor = React.useCallback((categoryId: string): string => {
+    return currentTitleColors[categoryId] || '#FFFFFF';
+  }, [currentTitleColors]);
   
   // Debug: verificar se está no editor
   useEffect(() => {
@@ -539,9 +583,25 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
     />
   ) : null;
 
+  // Renderizar modal de cor do título apenas no editor
+  const colorModal = showColorModal && isInEditorMode && mounted && selectedCategoryForColor ? (
+    <CategoryTitleColorModal
+      categoryId={selectedCategoryForColor}
+      categoryName={categories.find(c => c.id === selectedCategoryForColor)?.name || 'Categoria'}
+      color={getCategoryTitleColor(selectedCategoryForColor)}
+      onColorChange={(color) => handleCategoryTitleColorChange(selectedCategoryForColor, color)}
+      onClose={() => {
+        setShowColorModal(false);
+        setSelectedCategoryForColor(null);
+      }}
+      isOpen={showColorModal}
+    />
+  ) : null;
+
   return (
     <>
       {settingsModal}
+      {colorModal}
     <section ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }} className="py-16 bg-cream relative">
       {/* Botão para abrir configurações - apenas no editor */}
       {isInEditorMode && mounted && (
@@ -663,14 +723,39 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
                   )}
                 </div>
                 <div className="absolute bottom-0 left-0 right-0 p-6 text-center z-10">
-                  <h3 className="font-display text-2xl text-white mb-2">
+                  <div 
+                    className="font-display text-2xl mb-2 "
+                    onDoubleClick={(e) => handleCategoryTitleDoubleClick(category.id, e)}
+                    title={isInEditorMode ? "Duplo clique para alterar a cor" : undefined}
+                    style={{
+                      color: getCategoryTitleColor(category.id),
+                      cursor: isInEditorMode ? 'pointer' : 'default',
+                      userSelect: 'none',
+                    }}
+                  >
                     {category.name}
-                  </h3>
-                  {renderEditableText(`${category.nodeId}_cta`, {
-                    tag: "span",
-                    className: "inline-block text-white/80 text-xs tracking-widest uppercase font-body border-b border-gold pb-1 group-hover:border-primary transition-colors",
-                    content: "Ver Coleção"
-                  })}
+                  </div>
+                  {isInEditorMode ? (
+                    // No editor, renderizar sem link para não bloquear edição
+                    renderEditableText(`${category.nodeId}_cta`, {
+                      tag: "span",
+                      className: "inline-block text-white/80 text-xs tracking-widest uppercase font-body border-b border-gold pb-1 group-hover:border-primary transition-colors",
+                      content: "Ver Coleção"
+                    })
+                  ) : (
+                    // Fora do editor, envolver em Link - remover borda do EditableText
+                    <Link
+                      href={category.href}
+                      className="category-cta-link inline-block text-white/80 text-xs tracking-widest uppercase font-body  border-none pb-1 group-hover:border-primary transition-colors no-underline hover:no-underline"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      {renderEditableText(`${category.nodeId}_cta`, {
+                        tag: "span",
+                        className: "category-cta-text",
+                        content: "Ver Coleção"
+                      })}
+                    </Link>
+                  )}
                 </div>
               </div>
             );
@@ -707,6 +792,13 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
         
         .animate-in {
           animation: slideInFromRight 0.3s ease-out;
+        }
+        
+        /* Remover borda do texto interno quando estiver dentro do Link */
+        .category-cta-link .category-cta-text,
+        .category-cta-link .category-cta-text * {
+          border-bottom: none !important;
+          border: none !important;
         }
       `}</style>
     </section>
@@ -989,11 +1081,218 @@ function CategoryBannerSettings({
     : null;
 }
 
+// Componente de Modal para configurar cor do título de uma categoria específica
+function CategoryTitleColorModal({
+  categoryId,
+  categoryName,
+  color,
+  onColorChange,
+  onClose,
+  isOpen,
+}: {
+  categoryId: string;
+  categoryName: string;
+  color: string;
+  onColorChange: (color: string) => void;
+  onClose: () => void;
+  isOpen: boolean;
+}) {
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [currentColor, setCurrentColor] = useState(color);
+
+  // Atualizar cor local quando a prop mudar
+  useEffect(() => {
+    setCurrentColor(color);
+  }, [color]);
+
+  // Fechar ao clicar fora do modal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (modalRef.current && !modalRef.current.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+
+    const timeout = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside);
+    }, 100);
+
+    return () => {
+      clearTimeout(timeout);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
+
+  // Fechar ao pressionar Escape
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isOpen, onClose]);
+
+  const handleColorChange = (newColor: string) => {
+    setCurrentColor(newColor);
+    onColorChange(newColor);
+  };
+
+  const modalContent = (
+    <>
+      {/* Overlay */}
+      <div 
+        className="fixed inset-0 z-[9998] bg-black/50"
+        onClick={onClose}
+      />
+      {/* Modal */}
+      <div
+        ref={modalRef}
+        data-modal="true"
+        className="fixed z-[9999] left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-md bg-white rounded-lg shadow-2xl border-2 border-blue-500 overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-6 border-b border-gray-200">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Cor do Título</h3>
+            <p className="text-sm text-gray-500 mt-1">
+              {categoryName}
+            </p>
+          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onClose();
+            }}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label="Fechar"
+            data-modal-button="true"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Color Picker */}
+        <div className="p-6">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Escolha a cor do título
+          </label>
+          <p className="text-xs text-gray-500 mb-4">
+            A cor será aplicada ao nome da categoria "{categoryName}"
+          </p>
+          
+          <div className="flex items-center gap-3">
+            {/* Preview da cor atual */}
+            <div className="relative">
+              <button
+                type="button"
+                data-modal-button="true"
+                className="h-16 w-16 rounded-xl border-2 border-gray-200 shadow-sm transition-all hover:scale-105 hover:shadow-md"
+                style={{ backgroundColor: currentColor }}
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                }}
+              >
+                {currentColor === '#FFFFFF' && (
+                  <div className="absolute inset-0 rounded-xl border border-gray-300" />
+                )}
+              </button>
+              
+              {/* Color picker nativo */}
+              <input
+                type="color"
+                value={currentColor}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  handleColorChange(e.target.value);
+                }}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                data-modal-button="true"
+              />
+            </div>
+
+            {/* Input de texto para código hex */}
+            <div className="flex-1">
+              <input
+                type="text"
+                value={currentColor}
+                onChange={(e) => {
+                  const newColor = e.target.value;
+                  if (/^#[0-9A-F]{6}$/i.test(newColor) || newColor === '') {
+                    handleColorChange(newColor || '#FFFFFF');
+                  }
+                }}
+                placeholder="#FFFFFF"
+                className="h-16 w-full rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-mono ring-offset-white placeholder:text-gray-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gray-950 focus-visible:ring-offset-2"
+                data-modal-button="true"
+              />
+            </div>
+          </div>
+
+          {/* Preview do título com a cor */}
+          <div className="mt-6 p-4 bg-gray-50 rounded-lg">
+            <p className="text-xs text-gray-500 mb-2">Preview:</p>
+            <h3 
+              className="font-display text-2xl"
+              style={{ color: currentColor }}
+            >
+              {categoryName}
+            </h3>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-gray-200 bg-gray-50 flex items-center justify-end gap-3">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onClose();
+            }}
+            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors font-medium"
+            data-modal-button="true"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              e.preventDefault();
+              onClose();
+            }}
+            className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 transition-colors font-medium"
+            data-modal-button="true"
+          >
+            Salvar
+          </button>
+        </div>
+      </div>
+    </>
+  );
+
+  return typeof document !== 'undefined' 
+    ? createPortal(modalContent, document.body)
+    : null;
+}
+
 CategoryBanner.craft = {
   displayName: 'Category Banner',
   props: {
     categoryImages: [], // Array de URLs das imagens das categorias
     selectedCategoryIds: [], // IDs das categorias selecionadas
+    categoryTitleColors: {}, // Objeto com cores por categoria: { [categoryId]: color }
   },
   isCanvas: true,
   rules: {

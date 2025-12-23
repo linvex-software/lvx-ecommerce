@@ -30,6 +30,7 @@ function EditablePreviewContent({
   const isUpdatingFromParent = useRef(false)
   const initialLayoutLoaded = useRef(false)
   const lastInitialLayoutJson = useRef<string | null>(null)
+  const fallbackTimeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   useEffect(() => {
     isMounted.current = true
@@ -69,7 +70,33 @@ function EditablePreviewContent({
       if (!layoutToUse) {
         console.log('[EditablePreview] Sem layout inicial, aguardando postMessage do parent')
         setIsLoading(true)
-        // Manter isLoading true até receber layout via postMessage
+        
+        // Timeout de segurança: se após 5 segundos não receber layout via postMessage,
+        // carregar layout padrão e enviar LAYOUT_APPLIED para evitar loading infinito
+        if (fallbackTimeoutRef.current) {
+          clearTimeout(fallbackTimeoutRef.current)
+        }
+        fallbackTimeoutRef.current = setTimeout(() => {
+          if (isMounted.current) {
+            console.warn('[EditablePreview] Timeout aguardando layout: usando layout padrão')
+            const defaultLayout = createSafeDefaultLayout()
+            actions.deserialize(JSON.stringify(defaultLayout))
+            lastSerialized.current = query.serialize()
+            setSafeData(JSON.stringify(defaultLayout))
+            setIsLoading(false)
+            initialLayoutLoaded.current = true
+            
+            // Notificar parent que o layout foi aplicado
+            setTimeout(() => {
+              if (window.parent) {
+                window.parent.postMessage({ action: 'LAYOUT_APPLIED' }, '*')
+              }
+            }, 100)
+          }
+          fallbackTimeoutRef.current = null
+        }, 5000)
+        
+        // Retornar sem fazer nada mais - aguardar postMessage ou timeout
         return
       }
 
@@ -158,6 +185,14 @@ function EditablePreviewContent({
     }
 
     loadLayout()
+    
+    // Cleanup: limpar timeout se componente desmontar
+    return () => {
+      if (fallbackTimeoutRef.current) {
+        clearTimeout(fallbackTimeoutRef.current)
+        fallbackTimeoutRef.current = null
+      }
+    }
   }, [templateId, resolver, actions, query, initialLayoutJson])
 
   // Escutar evento customizado para atualizações de layout do pai
@@ -170,23 +205,60 @@ function EditablePreviewContent({
         if (layout && Object.keys(layout).length > 0) {
           console.log('[EditablePreview] Recebendo atualização de layout do pai')
           isUpdatingFromParent.current = true
+          
+          // Validar e limpar layout
           const cleaned = validateAndCleanLayout(layout, resolver)
-          actions.deserialize(JSON.stringify(cleaned))
+          
+          // Verificar se o layout limpo tem conteúdo válido
+          const hasValidContent = cleaned && 
+            cleaned.ROOT && 
+            Object.keys(cleaned).length > 1 && 
+            (cleaned.ROOT as any)?.nodes?.length > 0
+          
+          if (!hasValidContent) {
+            console.warn('[EditablePreview] Layout limpo está vazio! Usando layout original.')
+            actions.deserialize(JSON.stringify(layout))
+            setSafeData(JSON.stringify(layout))
+          } else {
+            actions.deserialize(JSON.stringify(cleaned))
+            setSafeData(JSON.stringify(cleaned))
+          }
+          
           lastSerialized.current = query.serialize()
-          setSafeData(JSON.stringify(cleaned))
           
           // Se estava aguardando layout, marcar como carregado
           if (isLoading) {
             setIsLoading(false)
             initialLayoutLoaded.current = true
+            
+            // Limpar timeout de fallback já que recebemos o layout
+            if (fallbackTimeoutRef.current) {
+              clearTimeout(fallbackTimeoutRef.current)
+              fallbackTimeoutRef.current = null
+            }
           }
           
-          // Notificar parent que o layout foi aplicado
-          setTimeout(() => {
+          // Notificar parent que o layout foi aplicado (com múltiplas tentativas para garantir)
+          const notifyApplied = () => {
             if (window.parent) {
+              console.log('[EditablePreview] Enviando LAYOUT_APPLIED para parent')
               window.parent.postMessage({ action: 'LAYOUT_APPLIED' }, '*')
+              
+              // Enviar novamente após um delay para garantir que foi recebido
+              setTimeout(() => {
+                if (window.parent) {
+                  window.parent.postMessage({ action: 'LAYOUT_APPLIED' }, '*')
+                }
+              }, 500)
             }
-          }, 100)
+          }
+          
+          // Aguardar um pouco para garantir que o layout foi renderizado
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              notifyApplied()
+            })
+          })
           
           // Resetar flag após um delay
           setTimeout(() => {
@@ -195,6 +267,15 @@ function EditablePreviewContent({
         }
       } catch (error) {
         console.warn('[EditablePreview] Erro ao processar layout atualizado:', error)
+        // Mesmo em caso de erro, notificar parent para evitar loading infinito
+        if (window.parent && isLoading) {
+          setIsLoading(false)
+          setTimeout(() => {
+            if (window.parent) {
+              window.parent.postMessage({ action: 'LAYOUT_APPLIED' }, '*')
+            }
+          }, 100)
+        }
       }
     }
 

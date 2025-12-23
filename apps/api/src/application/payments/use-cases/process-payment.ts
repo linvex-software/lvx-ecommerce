@@ -72,13 +72,10 @@ export async function processPaymentUseCase(
     throw new Error('Order already paid')
   }
 
-  // 4. Buscar método de pagamento (já foi buscado no controller, mas validamos novamente aqui)
-  const paymentMethod = await paymentMethodRepository.findByProvider(
-    storeId,
-    'mercadopago'
-  )
-  if (!paymentMethod || !paymentMethod.active) {
-    throw new Error('Mercado Pago payment method not configured or inactive for this store')
+  // 4. Buscar método de pagamento ativo (já foi buscado no controller, mas validamos novamente aqui)
+  const paymentMethod = await paymentMethodRepository.findActive(storeId)
+  if (!paymentMethod) {
+    throw new Error('No active payment method configured for this store')
   }
 
   // 5. Criar pagamento no gateway

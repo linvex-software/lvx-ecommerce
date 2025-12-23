@@ -7,7 +7,7 @@ import { tenantMiddleware } from '../../../infra/http/middlewares/tenant'
 export async function registerPaymentRoutes(app: FastifyInstance): Promise<void> {
   const paymentController = new PaymentController()
 
-  // GET /payments/public-key - Busca chave pública do Mercado Pago (público, apenas tenantMiddleware)
+  // GET /payments/public-key - Busca chave pública do gateway ativo (público, apenas tenantMiddleware)
   app.get(
     '/payments/public-key',
     {
@@ -15,6 +15,17 @@ export async function registerPaymentRoutes(app: FastifyInstance): Promise<void>
     },
     async (request: FastifyRequest, reply: FastifyReply) => {
       await paymentController.getPublicKey(request, reply)
+    }
+  )
+
+  // GET /payments/active-gateway - Busca qual gateway está ativo (público, apenas tenantMiddleware)
+  app.get(
+    '/payments/active-gateway',
+    {
+      onRequest: [tenantMiddleware]
+    },
+    async (request: FastifyRequest, reply: FastifyReply) => {
+      await paymentController.getActiveGateway(request, reply)
     }
   )
 

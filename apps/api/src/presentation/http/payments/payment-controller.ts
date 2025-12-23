@@ -4,7 +4,7 @@ import {
   processPaymentUseCase,
   processPaymentSchema
 } from '../../../application/payments/use-cases/process-payment'
-import { MercadoPagoGateway } from '../../../infra/gateways/mercado-pago-gateway'
+import { PaymentGatewayFactory } from '../../../infra/gateways/payment-gateway-factory'
 import { TransactionRepository } from '../../../infra/db/repositories/transaction-repository'
 import { OrderRepository } from '../../../infra/db/repositories/order-repository'
 import { PaymentMethodRepository } from '../../../infra/db/repositories/payment-method-repository'
@@ -22,46 +22,81 @@ export class PaymentController {
       }
 
       const paymentMethodRepository = new PaymentMethodRepository()
-      const paymentMethod = await paymentMethodRepository.findByProvider(
-        storeId,
-        'mercadopago'
-      )
+      const paymentMethod = await paymentMethodRepository.findActive(storeId)
 
-      if (!paymentMethod || !paymentMethod.active) {
+      if (!paymentMethod) {
         await reply.code(404).send({ 
-          error: 'Mercado Pago payment method not configured or inactive',
-          publicKey: null
+          error: 'No active payment method configured',
+          publicKey: null,
+          provider: null
         })
         return
       }
 
       const config = paymentMethod.config_json as Record<string, unknown> | null
-      const publicKey = 
-        (config?.publicKey as string) ||
-        (config?.public_key as string) ||
-        (config?.publicKeyProd as string) ||
-        (config?.public_key_prod as string) ||
-        null
-
-      if (!publicKey) {
-        console.error('[PaymentController] Chave pública não encontrada no config_json')
-        console.error('[PaymentController] Config keys disponíveis:', config ? Object.keys(config) : 'config é null')
+      if (!config) {
         await reply.code(404).send({ 
-          error: 'Mercado Pago public key not configured',
-          message: 'A chave pública não foi encontrada na configuração. Configure no painel administrativo.',
-          publicKey: null
+          error: 'Payment method configuration not found',
+          publicKey: null,
+          provider: paymentMethod.provider
         })
         return
       }
 
-      // Validar formato básico da chave pública
-      if (!publicKey.startsWith('APP_USR-') && !publicKey.startsWith('TEST-')) {
-        console.warn('[PaymentController] Formato de chave pública pode estar incorreto:', publicKey.substring(0, 20) + '...')
-        // Não bloquear, apenas avisar - o Mercado Pago vai validar
+      // Buscar chave pública baseado no provider
+      let publicKey: string | null = null
+
+      if (paymentMethod.provider === 'mercadopago') {
+        publicKey = 
+          (config.publicKey as string) ||
+          (config.public_key as string) ||
+          (config.publicKeyProd as string) ||
+          (config.public_key_prod as string) ||
+          null
+
+        if (!publicKey) {
+          await reply.code(404).send({ 
+            error: 'Mercado Pago public key not configured',
+            message: 'A chave pública não foi encontrada na configuração. Configure no painel administrativo.',
+            publicKey: null,
+            provider: 'mercadopago'
+          })
+          return
+        }
+
+        // Validar formato básico da chave pública Mercado Pago
+        if (!publicKey.startsWith('APP_USR-') && !publicKey.startsWith('TEST-')) {
+          console.warn('[PaymentController] Formato de chave pública pode estar incorreto:', publicKey.substring(0, 20) + '...')
+        }
+      } else if (paymentMethod.provider === 'stripe') {
+        publicKey = 
+          (config.public_key as string) ||
+          (config.publicKey as string) ||
+          null
+
+        if (!publicKey) {
+          await reply.code(404).send({ 
+            error: 'Stripe public key not configured',
+            message: 'A chave pública não foi encontrada na configuração. Configure no painel administrativo.',
+            publicKey: null,
+            provider: 'stripe'
+          })
+          return
+        }
+      } else {
+        await reply.code(400).send({ 
+          error: `Public key endpoint not supported for provider: ${paymentMethod.provider}`,
+          publicKey: null,
+          provider: paymentMethod.provider
+        })
+        return
       }
 
-      console.log('[PaymentController] Chave pública encontrada:', publicKey.substring(0, 20) + '...')
-      await reply.status(200).send({ publicKey })
+      console.log(`[PaymentController] Chave pública encontrada (${paymentMethod.provider}):`, publicKey.substring(0, 20) + '...')
+      await reply.status(200).send({ 
+        publicKey,
+        provider: paymentMethod.provider
+      })
     } catch (error) {
       console.error('[PaymentController] Erro ao buscar chave pública:', error)
       await reply.status(500).send({ error: 'Internal server error' })
@@ -86,66 +121,21 @@ export class PaymentController {
       const orderRepository = new OrderRepository()
       const paymentMethodRepository = new PaymentMethodRepository()
 
-      // PRIORIDADE 1: Buscar credenciais do banco de dados (configuradas no painel admin /loja)
-      const paymentMethod = await paymentMethodRepository.findByProvider(
-        storeId,
-        'mercadopago'
-      )
+      // Buscar método de pagamento ativo
+      const paymentMethod = await paymentMethodRepository.findActive(storeId)
 
-      let accessToken: string | undefined
-      let accessTokenSource = ''
-
-      if (paymentMethod && paymentMethod.active) {
-        const config = paymentMethod.config_json as Record<string, unknown> | null
-        if (config) {
-          // Tentar diferentes nomes de campos no config_json
-          accessToken = 
-            (config.access_token as string) ||
-            (config.accessToken as string) ||
-            (config.accessTokenProd as string) ||
-            (config.access_token_prod as string)
-          
-          if (accessToken) {
-            accessTokenSource = 'banco de dados (painel admin)'
-            console.log(`[PaymentController] Access token encontrado no ${accessTokenSource}:`, accessToken.substring(0, 20) + '...')
-          }
-        }
-      }
-
-      // PRIORIDADE 2: Fallback para variáveis de ambiente (.env)
-      if (!accessToken) {
-        accessToken =
-          process.env.MP_ACCESS_TOKEN_PROD ||
-          process.env.MERCADO_PAGO_ACCESS_TOKEN_PROD ||
-          process.env.MERCADOPAGO_ACCESS_TOKEN_PROD ||
-          process.env.MP_ACCESS_TOKEN ||
-          process.env.MERCADO_PAGO_ACCESS_TOKEN ||
-          process.env.MERCADOPAGO_ACCESS_TOKEN ||
-          process.env.MP_ACCESS_TOKEN_TEST ||
-          process.env.MERCADO_PAGO_ACCESS_TOKEN_TEST
-        
-        if (accessToken) {
-          accessTokenSource = 'variáveis de ambiente (.env)'
-          console.log(`[PaymentController] Access token encontrado no ${accessTokenSource}:`, accessToken.substring(0, 20) + '...')
-        }
-      }
-
-      if (!accessToken) {
-        console.error('[PaymentController] Nenhum access token encontrado')
-        console.error('  Verificou banco de dados:', paymentMethod ? 'sim' : 'não')
-        console.error('  Payment method ativo:', paymentMethod?.active ? 'sim' : 'não')
-        console.error('  Variáveis de ambiente verificadas:')
-        console.error('    MP_ACCESS_TOKEN:', process.env.MP_ACCESS_TOKEN ? 'existe' : 'não existe')
-        console.error('    MERCADO_PAGO_ACCESS_TOKEN:', process.env.MERCADO_PAGO_ACCESS_TOKEN ? 'existe' : 'não existe')
-        
-        await reply.code(500).send({
-          error: 'Mercado Pago access token not configured',
-          message: 'Configure o Access Token no painel admin (/admin/store) ou nas variáveis de ambiente (.env)'
+      if (!paymentMethod) {
+        await reply.code(400).send({
+          error: 'No active payment method configured',
+          message: 'Configure um método de pagamento ativo no painel admin (/admin/store)'
         })
         return
       }
 
-      const paymentGateway = new MercadoPagoGateway(accessToken)
+      console.log(`[PaymentController] Usando gateway: ${paymentMethod.provider}`)
+
+      // Criar gateway usando factory
+      const paymentGateway = PaymentGatewayFactory.create(paymentMethod)
 
       const result = await processPaymentUseCase(
         validated,
@@ -187,6 +177,38 @@ export class PaymentController {
       // Garantir que sempre retorna uma resposta
       await reply.status(500).send({ error: 'Internal server error' })
       return
+    }
+  }
+
+  async getActiveGateway(
+    request: FastifyRequest,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const paymentMethodRepository = new PaymentMethodRepository()
+      const paymentMethod = await paymentMethodRepository.findActive(storeId)
+
+      if (!paymentMethod) {
+        await reply.code(404).send({ 
+          error: 'No active payment method configured',
+          provider: null
+        })
+        return
+      }
+
+      await reply.status(200).send({ 
+        provider: paymentMethod.provider,
+        name: paymentMethod.name
+      })
+    } catch (error) {
+      console.error('[PaymentController] Erro ao buscar gateway ativo:', error)
+      await reply.status(500).send({ error: 'Internal server error' })
     }
   }
 }

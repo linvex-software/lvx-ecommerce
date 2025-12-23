@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Search, ShoppingBag, User, Menu, X, Heart } from "lucide-react";
 import { Button } from "../ui/button";
 import { useCart } from "../contexts/CartContext";
@@ -13,6 +14,7 @@ import { useStoreTheme } from '@/lib/hooks/use-store-theme';
 import { useStoreSettings } from '@/lib/hooks/use-store-settings';
 import React from 'react';
 import { DynamicMenu } from '../../../../menu/dynamic-menu';
+import { useHeroBannerContext, getHeaderInHero } from '../home/HeroBanner';
 
 // Componente helper para renderizar texto editável ou texto simples
 function EditableTextOrPlain({
@@ -28,22 +30,23 @@ function EditableTextOrPlain({
   className?: string
   isInCraftContext?: boolean
 }) {
-  // Se estiver no contexto do Craft.js, usar Element diretamente
-  if (isInCraftContext) {
-    return (
-      <Element
-        id={id}
-        is={EditableText}
-        tag={tag}
-        className={className}
-        content={content}
-      />
-    );
+  // Fora do contexto do Craft.js - renderizar texto simples
+  if (!isInCraftContext) {
+    const Tag = tag as keyof JSX.IntrinsicElements;
+    return <Tag className={className}>{content}</Tag>;
   }
 
-  // Fora do contexto do Craft.js - renderizar texto simples
-  const Tag = tag as keyof JSX.IntrinsicElements;
-  return <Tag className={className}>{content}</Tag>;
+  // Se estiver no contexto do Craft.js, usar Element
+  // Usar useMemo para evitar re-renderizações desnecessárias
+  return React.useMemo(() => (
+    <Element
+      id={id}
+      is={EditableText}
+      tag={tag}
+      className={className}
+      content={content}
+    />
+  ), [id, tag, className, content, isInCraftContext]);
 }
 
 export function Header() {
@@ -55,6 +58,17 @@ export function Header() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasHydrated, setHasHydrated] = useState(true);
   const [favoritesCount, setFavoritesCount] = useState(0);
+  const [isScrolled, setIsScrolled] = useState(false);
+  const isInsideHero = useHeroBannerContext();
+  const pathname = usePathname();
+  // No editor, /preview é sempre a homepage
+  // Na loja, / é a homepage
+  const isHomePage = pathname === '/' || (isInEditor && pathname === '/preview');
+  
+  // Determinar se deve usar cores claras (branco) ou escuras
+  // Na página principal: branco quando não scrolled, foreground quando scrolled
+  // Nas outras páginas: sempre primary-foreground (cores claras sobre bg-primary)
+  const shouldUseLightColors = isHomePage ? !isScrolled : true;
 
   // Carregar hooks de autenticação apenas no contexto web (runtime)
   useEffect(() => {
@@ -147,63 +161,188 @@ export function Header() {
   // Usar isInEditor do useSafeNode para verificar se está no editor
   // isInEditor já está disponível do hook useSafeNode
 
+  // Detectar scroll para transição suave de opacidade/background
+  // Array de dependências vazio pois o scroll é sempre do mesmo window
+  // Usar uma constante para garantir que o array seja sempre o mesmo
+  const scrollEffectDeps: never[] = [];
+  
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    // No editor, também detectar scroll para aplicar o estilo correto
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      setIsScrolled(scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Verificar estado inicial
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, scrollEffectDeps);
+
   // Menu dinâmico será carregado pelo DynamicMenu
+
+  // Se o Header está sendo renderizado pelo layout.json (não dentro do HeroBanner)
+  // e já há um Header dentro de um HeroBanner, não renderizar (evita duplicação)
+  if (!isInsideHero && getHeaderInHero()) {
+    return null;
+  }
 
   return (
     <header
       ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }}
-      className={`${isInEditor ? '' : 'sticky top-0'} bg-background/95 backdrop-blur-md border-b border-border`}
+      className={cn(
+        isInEditor ? '' : 'sticky top-0 transition-all duration-300 w-full',
+        // Na página principal: sem background quando não scrolled, com background quando scrolled
+        // Nas outras páginas: sempre com bg-primary
+        isHomePage
+          ? (isScrolled 
+              ? 'bg-background/95 border-b border-border' 
+              : 'bg-transparent')
+          : 'bg-primary border-b border-primary/20'
+      )}
       style={{
         zIndex: isInEditor ? 1 : (isCartOpen ? 9998 : 9999),
         position: isInEditor ? 'relative' : 'sticky',
       }}
     >
-      {/* Top Bar */}
-      <div className="bg-primary text-primary-foreground text-center py-2 text-xs tracking-widest font-body">
-        <EditableTextOrPlain
-          id="node_header_topbar"
-          content="FRETE GRÁTIS PARA COMPRAS ACIMA DE R$ 299"
-          tag="span"
-          className=""
-          isInCraftContext={isInEditor}
-        />
-      </div>
-
       {/* Main Header */}
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 xl:h-20">
-          {/* Logo - à esquerda no mobile/tablet */}
-          <Link href="/" className="flex-shrink-0">
-            {theme?.logo_url ? (
-              <img
-                src={theme.logo_url}
-                alt="Logo"
-                className="h-8 xl:h-10 object-contain"
-              />
-            ) : (
-              <h1 className="font-display text-2xl xl:text-3xl font-semibold text-foreground tracking-wide">
-                {settings?.name || "Minha Loja"}
-              </h1>
+        {/* Mobile: flex com menu à esquerda, logo centralizado, ícones à direita */}
+        <div className="xl:hidden relative flex items-center justify-between h-16">
+          {/* Menu Button - à esquerda */}
+          <button
+            className={cn(
+              "p-2 -ml-2 transition-colors z-10 flex-shrink-0",
+              shouldUseLightColors ? "text-primary-foreground" : "text-foreground"
             )}
-          </Link>
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            aria-label="Menu"
+          >
+            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
 
-          {/* Desktop Navigation - Menu Dinâmico */}
-          <nav className="hidden xl:flex items-center gap-8">
-            <DynamicMenu className="flex items-center gap-8" isMobile={false} />
+          {/* Logo - centralizado absolutamente */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
+            <Link href="/" className="flex-shrink-0">
+              {theme?.logo_url ? (
+                <img
+                  src={theme.logo_url}
+                  alt="Logo"
+                  className={cn(
+                    "h-8 object-contain transition-all duration-300",
+                    !isScrolled && ""
+                  )}
+                  style={!isScrolled ? {   } : {}}
+                />
+              ) : (
+                <h1 className={cn(
+                  "font-display text-2xl font-semibold tracking-wide transition-colors duration-300",
+                  shouldUseLightColors ? "text-primary-foreground" : "text-foreground"
+                )}>
+                  {settings?.name || "Minha Loja"}
+                </h1>
+              )}
+            </Link>
+          </div>
+
+          {/* Actions Mobile - Pesquisar e Carrinho - à direita */}
+          <div className="flex items-center gap-2 z-10 flex-shrink-0">
+            <Link href="/busca" className={cn(
+              "p-2 transition-colors",
+              shouldUseLightColors 
+                ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                : "hover:text-primary text-foreground"
+            )}>
+              <Search size={20} />
+            </Link>
+            <button
+              onClick={() => setIsOpen(true)}
+              className={cn(
+                "p-2 transition-colors relative",
+                shouldUseLightColors 
+                  ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                  : "hover:text-primary text-foreground"
+              )}
+            >
+              <ShoppingBag size={20} />
+              {itemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-primary-foreground text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+                  {itemCount}
+                </span>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* Desktop: grid com 3 colunas (logo, menu, ícones) */}
+        <div className="hidden xl:grid grid-cols-3 items-center h-20">
+
+          {/* Desktop: Logo à esquerda */}
+          <div className="flex items-center">
+            <Link href="/" className="flex-shrink-0">
+              {theme?.logo_url ? (
+                <img
+                  src={theme.logo_url}
+                  alt="Logo"
+                  className={cn(
+                    "h-10 object-contain transition-all duration-300",
+                    !isScrolled && ""
+                  )}
+                  style={!isScrolled ? {   } : {}}
+                />
+              ) : (
+                <h1 className={cn(
+                  "font-display text-3xl font-semibold tracking-wide transition-colors duration-300",
+                  shouldUseLightColors ? "text-primary-foreground" : "text-foreground"
+                )}>
+                  {settings?.name || "Minha Loja"}
+                </h1>
+              )}
+            </Link>
+          </div>
+
+          {/* Desktop Navigation - Menu Dinâmico (centro) - Centralizado */}
+          <nav className="flex items-center justify-center flex-nowrap">
+            <DynamicMenu 
+              className="flex items-center gap-8 flex-nowrap" 
+              isMobile={false} 
+              variant={shouldUseLightColors ? 'light' : 'default'}
+            />
           </nav>
 
           {/* Actions - Desktop only */}
-          <div className="hidden xl:flex items-center gap-2 xl:gap-4">
-            <Link href="/busca" className="p-2 hover:text-primary transition-colors">
+          <div className="flex items-center justify-end gap-2 xl:gap-4">
+            <Link href="/busca" className={cn(
+              "p-2 transition-colors",
+              shouldUseLightColors 
+                ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                : "hover:text-primary text-foreground"
+            )}>
               <Search size={20} />
             </Link>
-            <Link href="/minha-conta" className="p-2 hover:text-primary transition-colors">
+            <Link href="/minha-conta" className={cn(
+              "p-2 transition-colors",
+              shouldUseLightColors 
+                ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                : "hover:text-primary text-foreground"
+            )}>
               <User size={20} />
             </Link>
             {/* Favoritos - Sempre visível */}
             <button 
               type="button"
-              className="p-2 hover:text-primary transition-colors relative z-50"
+              className={cn(
+                "p-2 transition-colors relative z-50",
+                shouldUseLightColors 
+                  ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                  : "hover:text-primary text-foreground"
+              )}
               onClick={async (e) => {
                 e.preventDefault()
                 e.stopPropagation()
@@ -253,7 +392,12 @@ export function Header() {
             </button>
             <button
               onClick={() => setIsOpen(true)}
-              className="p-2 hover:text-primary transition-colors relative"
+              className={cn(
+                "p-2 transition-colors relative",
+                shouldUseLightColors 
+                  ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                  : "hover:text-primary text-foreground"
+              )}
             >
               <ShoppingBag size={20} />
               {itemCount > 0 && (
@@ -263,65 +407,83 @@ export function Header() {
               )}
             </button>
           </div>
-
-          {/* Mobile/Tablet Menu Button - à direita no mobile/tablet */}
-          <button
-            className="xl:hidden p-2 -mr-2"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Menu"
-          >
-            {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
         </div>
       </div>
+
+      {/* Overlay escuro quando menu está aberto */}
+      {isMobileMenuOpen && (
+        <div
+          className="xl:hidden fixed inset-0 bg-black/50 z-30 transition-opacity duration-300"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
 
       {/* Mobile/Tablet Menu */}
       <div
         className={cn(
-          "xl:hidden fixed inset-0 top-[104px] bg-background z-40 transition-transform duration-300",
+          "xl:hidden fixed top-0 bottom-0 left-0 w-[280px] bg-[#F5F1EB] z-40 transition-transform duration-300 shadow-xl",
           isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
-        <nav className="flex flex-col p-6 gap-4 bg-white" style={{ transform: 'translateY(-10px)' }}>
-          {/* Menu Dinâmico Mobile */}
-          <DynamicMenu 
-            className="flex flex-col gap-0" 
-            isMobile={true}
-            onItemClick={() => setIsMobileMenuOpen(false)}
-          />
+        <nav className="flex flex-col h-full overflow-y-auto pt-16" style={{ overflowX: 'visible' }}>
+          {/* Seção de Login/Conta */}
+          {hasHydrated && (
+            <>
+              <div className="px-4 pb-4">
+                {!isAuthenticated ? (
+                  <>
+                    <h2 className="text-lg font-bold text-foreground mb-2">OLÁ!</h2>
+                    <p className="text-sm text-foreground/80 mb-4">
+                      ENTRE OU CADASTRE-SE NA SUA CONTA
+                    </p>
+                    <Link
+                      href="/login"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full"
+                    >
+                      <button
+                        className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors"
+                        data-modal-button="true"
+                      >
+                        ENTRAR
+                      </button>
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <h2 className="text-lg font-bold text-foreground mb-2">OLÁ!</h2>
+                    <p className="text-sm text-foreground/80 mb-4">
+                      ACESSE SUA CONTA
+                    </p>
+                    <Link
+                      href="/minha-conta"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                      className="block w-full"
+                    >
+                      <button
+                        className="w-full bg-primary text-primary-foreground py-3 px-4 rounded-lg font-medium text-sm hover:bg-primary/90 transition-colors"
+                        data-modal-button="true"
+                      >
+                        MINHA CONTA
+                      </button>
+                    </Link>
+                  </>
+                )}
+              </div>
 
-          {/* Mobile Actions - com separadores iguais aos outros itens */}
-          <button
-            onClick={() => {
-              setIsOpen(true)
-              setIsMobileMenuOpen(false)
-            }}
-            className="flex items-center gap-2 text-lg font-body py-3 border-b border-border text-foreground hover:text-primary transition-colors"
-          >
-            <ShoppingBag size={20} />
-            <span>Carrinho</span>
-            {itemCount > 0 && (
-              <span className="ml-auto bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full font-medium">
-                {itemCount}
-              </span>
-            )}
-          </button>
-          <Link
-            href="/busca"
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="flex items-center gap-2 text-lg font-body py-3 border-b border-border text-foreground hover:text-primary transition-colors"
-          >
-            <Search size={20} />
-            <span>Pesquisar</span>
-          </Link>
-          <Link
-            href={hasHydrated && isAuthenticated ? "/minha-conta" : "/login"}
-            onClick={() => setIsMobileMenuOpen(false)}
-            className="flex items-center gap-2 text-lg font-body py-3 border-b border-border text-foreground hover:text-primary transition-colors"
-          >
-            <User size={20} />
-            <span>{hasHydrated && isAuthenticated ? "Minha Conta" : "Fazer login"}</span>
-          </Link>
+              {/* Linha Separadora */}
+              <div className="border-t border-border/40 mx-4" />
+            </>
+          )}
+
+          {/* Menu Dinâmico Mobile */}
+          <div className="flex-1 py-4" style={{ overflowX: 'visible', position: 'relative', zIndex: 1 }}>
+            <DynamicMenu 
+              className="flex flex-col gap-0" 
+              isMobile={true}
+              onItemClick={() => setIsMobileMenuOpen(false)}
+            />
+          </div>
         </nav>
       </div>
     </header>
