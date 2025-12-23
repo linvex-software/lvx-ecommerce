@@ -9,6 +9,7 @@
 
 import { CartProvider } from './flor-de-menina/components/contexts/CartContext'
 import { MiniCart } from './flor-de-menina/components/cart/MiniCart'
+import { ScrollToTopButton } from './flor-de-menina/components/layout/ScrollToTopButton'
 import { TemplateLayoutRenderer } from '@/lib/templates/template-layout-renderer'
 import { ErrorBoundary } from '@/components/error-boundary'
 
@@ -19,6 +20,7 @@ export function FlorDeMeninaTemplate() {
         <div className="flex flex-col min-h-screen">
           <TemplateLayoutRenderer templateId="flor-de-menina" />
           <MiniCart />
+          <ScrollToTopButton />
         </div>
       </CartProvider>
     </ErrorBoundary>

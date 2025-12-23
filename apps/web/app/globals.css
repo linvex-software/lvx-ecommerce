@@ -81,6 +81,11 @@ All colors MUST be HSL.
 @layer base {
   /* NOTA: Estilos base (body, h1-h6, fontes, html) estão definidos em 
      templates/flor-de-menina/styles.css para garantir consistência total. */
+  
+  /* Scroll suave global */
+  html {
+    scroll-behavior: smooth!important;
+  }
 }
 
 @layer components {
