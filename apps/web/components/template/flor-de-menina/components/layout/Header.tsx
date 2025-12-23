@@ -308,9 +308,9 @@ export function Header() {
           </div>
 
           {/* Desktop Navigation - Menu Dinâmico (centro) - Centralizado */}
-          <nav className="flex items-center justify-center">
+          <nav className="flex items-center justify-center flex-nowrap overflow-x-auto">
             <DynamicMenu 
-              className="flex items-center gap-8" 
+              className="flex items-center gap-8 flex-nowrap" 
               isMobile={false} 
               variant={shouldUseLightColors ? 'light' : 'default'}
             />

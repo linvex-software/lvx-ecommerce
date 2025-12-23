@@ -101,13 +101,13 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
     if (displayType === 'mega-menu' && hasChildren) {
       return (
         <div key={item.id} className="relative group">
-          <button className={`text-sm font-body tracking-wide transition-colors duration-200 relative flex items-center gap-1 ${
+          <button className={`text-sm font-body tracking-wide transition-colors duration-200 relative flex items-center gap-1 whitespace-nowrap ${
             isLight 
               ? "text-white/80 hover:text-white" 
               : "text-foreground/80 hover:text-primary"
           }`}>
             <span>{item.label}</span>
-            <ChevronDown className="h-4 w-4" />
+            <ChevronDown className="h-4 w-4 flex-shrink-0" />
             <span className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
               isLight ? "bg-white" : "bg-primary"
             }`} />
@@ -159,8 +159,8 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
             className={isMobile 
               ? `text-sm font-body py-2.5 px-4 text-foreground hover:text-foreground/80 transition-colors ${level > 0 ? 'pl-6' : ''}`
               : isInDropdown
-                ? `menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground`
-                : `text-sm font-body tracking-wide transition-colors duration-200 relative group ${
+                ? `menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground whitespace-nowrap`
+                : `text-sm font-body tracking-wide transition-colors duration-200 relative group whitespace-nowrap ${
                     isLight 
                       ? "text-white/80 hover:text-white" 
                       : "text-foreground/80 hover:text-primary"
@@ -192,8 +192,8 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
             className={isMobile 
               ? `text-sm font-body py-2.5 px-4 text-foreground hover:text-foreground/80 transition-colors ${level > 0 ? 'pl-6' : ''}`
               : isPageInDropdown
-                ? `menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground`
-                : `text-sm font-body tracking-wide transition-colors duration-200 relative group ${
+                ? `menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground whitespace-nowrap`
+                : `text-sm font-body tracking-wide transition-colors duration-200 relative group whitespace-nowrap ${
                     isLight 
                       ? "text-white/80 hover:text-white" 
                       : "text-foreground/80 hover:text-primary"
@@ -220,8 +220,8 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
             className={isMobile 
               ? `text-sm font-body py-2.5 px-4 text-foreground hover:text-foreground/80 transition-colors ${level > 0 ? 'pl-6' : ''}`
               : isListInDropdown
-                ? `menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground`
-                : `text-sm font-body tracking-wide transition-colors duration-200 relative group ${
+                ? `menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground whitespace-nowrap`
+                : `text-sm font-body tracking-wide transition-colors duration-200 relative group whitespace-nowrap ${
                     isLight 
                       ? "text-white/80 hover:text-white" 
                       : "text-foreground/80 hover:text-primary"
@@ -306,13 +306,13 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
     // Desktop dropdown
     return (
       <div key={item.id} className="relative group">
-        <button className={`text-sm font-body tracking-wide transition-colors duration-200 relative flex items-center gap-1 ${
+        <button className={`text-sm font-body tracking-wide transition-colors duration-200 relative flex items-center gap-1 whitespace-nowrap ${
           isLight 
             ? "text-white/80 hover:text-white" 
             : "text-foreground/80 hover:text-primary"
         }`}>
           <span>{item.label}</span>
-          {hasChildren && <ChevronDown className="h-4 w-4" />}
+          {hasChildren && <ChevronDown className="h-4 w-4 flex-shrink-0" />}
           <span className={`absolute -bottom-1 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full ${
             isLight ? "bg-white" : "bg-primary"
           }`} />
@@ -407,7 +407,7 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
   }
 
   return (
-    <nav className={`flex items-center gap-1 ${className}`}>
+    <nav className={`flex items-center gap-1 flex-nowrap ${className}`}>
       {menuItems.map((item) => renderItem(item))}
     </nav>
   )
