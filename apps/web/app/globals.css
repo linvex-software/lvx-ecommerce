@@ -89,6 +89,14 @@ All colors MUST be HSL.
 }
 
 @layer components {
+  /* Hover para subitens do menu dropdown */
+  .menu-dropdown-item:hover {
+    background-color: hsl(var(--primary)) !important;
+    color: hsl(var(--primary-foreground)) !important;
+  }
+}
+
+@layer components {
   /* NOTA: Container, fontes, cores, gradientes, shadows e animações estão definidos em 
      templates/flor-de-menina/styles.css para garantir consistência entre editor e web. */
   

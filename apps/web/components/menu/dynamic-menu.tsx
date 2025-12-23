@@ -118,11 +118,7 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
                 <Link
                   href={child.url || '#'}
                   onClick={isMobile ? onItemClick : undefined}
-                  className={`block px-4 py-2.5 text-sm font-body transition-colors duration-150 ${
-                    isLight 
-                      ? "text-black hover:bg-white/10" 
-                      : "text-foreground hover:text-primary hover:bg-muted/60"
-                  }`}
+                  className="menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground"
                 >
                   {child.label}
                 </Link>
@@ -163,11 +159,7 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
             className={isMobile 
               ? `text-sm font-body py-2.5 px-4 text-foreground hover:text-foreground/80 transition-colors ${level > 0 ? 'pl-6' : ''}`
               : isInDropdown
-                ? `block px-4 py-2.5 text-sm font-body transition-colors duration-150 ${
-                    isLight 
-                      ? "text-white/90 hover:text-white hover:bg-white/10" 
-                      : "text-foreground hover:text-primary hover:bg-muted/60"
-                  }`
+                ? `menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground`
                 : `text-sm font-body tracking-wide transition-colors duration-200 relative group ${
                     isLight 
                       ? "text-white/80 hover:text-white" 
@@ -200,11 +192,7 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
             className={isMobile 
               ? `text-sm font-body py-2.5 px-4 text-foreground hover:text-foreground/80 transition-colors ${level > 0 ? 'pl-6' : ''}`
               : isPageInDropdown
-                ? `block px-4 py-2.5 text-sm font-body transition-colors duration-150 ${
-                    isLight 
-                      ? "text-black hover:text-white hover:bg-white/10" 
-                      : "text-foreground hover:text-primary hover:bg-muted/60"
-                  }`
+                ? `menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground`
                 : `text-sm font-body tracking-wide transition-colors duration-200 relative group ${
                     isLight 
                       ? "text-white/80 hover:text-white" 
@@ -232,11 +220,7 @@ export function DynamicMenu({ className = '', isMobile = false, onItemClick, var
             className={isMobile 
               ? `text-sm font-body py-2.5 px-4 text-foreground hover:text-foreground/80 transition-colors ${level > 0 ? 'pl-6' : ''}`
               : isListInDropdown
-                ? `block px-4 py-2.5 text-sm font-body transition-colors duration-150 ${
-                    isLight 
-                      ? "text-white/90 hover:text-white hover:bg-white/10" 
-                      : "text-foreground hover:text-primary hover:bg-muted/60"
-                  }`
+                ? `menu-dropdown-item block px-4 py-2.5 text-sm font-body transition-colors duration-150 text-foreground`
                 : `text-sm font-body tracking-wide transition-colors duration-200 relative group ${
                     isLight 
                       ? "text-white/80 hover:text-white" 

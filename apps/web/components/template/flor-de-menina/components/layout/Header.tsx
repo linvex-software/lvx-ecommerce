@@ -213,11 +213,12 @@ export function Header() {
     >
       {/* Main Header */}
       <div className="container mx-auto px-4">
-        <div className="relative flex items-center justify-between h-16 xl:h-20">
-          {/* Mobile/Tablet Menu Button - à esquerda no mobile/tablet */}
+        {/* Mobile: flex com menu à esquerda, logo centralizado, ícones à direita */}
+        <div className="xl:hidden relative flex items-center justify-between h-16">
+          {/* Menu Button - à esquerda */}
           <button
             className={cn(
-              "xl:hidden p-2 -ml-2 transition-colors z-10",
+              "p-2 -ml-2 transition-colors z-10 flex-shrink-0",
               shouldUseLightColors ? "text-primary-foreground" : "text-foreground"
             )}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -226,42 +227,32 @@ export function Header() {
             {isMobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
-          {/* Logo - centralizado absolutamente no mobile/tablet, à esquerda no desktop */}
-          <Link 
-            href="/" 
-            className="absolute left-1/2 transform -translate-x-1/2 xl:relative xl:left-0 xl:transform-none flex-shrink-0 z-10"
-          >
-            {theme?.logo_url ? (
-              <img
-                src={theme.logo_url}
-                alt="Logo"
-                className={cn(
-                  "h-8 xl:h-10 object-contain transition-all duration-300",
-                  !isScrolled && ""
-                )}
-                style={!isScrolled ? {   } : {}}
-              />
-            ) : (
-              <h1 className={cn(
-                "font-display text-2xl xl:text-3xl font-semibold tracking-wide transition-colors duration-300",
-                shouldUseLightColors ? "text-primary-foreground" : "text-foreground"
-              )}>
-                {settings?.name || "Minha Loja"}
-              </h1>
-            )}
-          </Link>
+          {/* Logo - centralizado absolutamente */}
+          <div className="absolute left-1/2 transform -translate-x-1/2 z-10">
+            <Link href="/" className="flex-shrink-0">
+              {theme?.logo_url ? (
+                <img
+                  src={theme.logo_url}
+                  alt="Logo"
+                  className={cn(
+                    "h-8 object-contain transition-all duration-300",
+                    !isScrolled && ""
+                  )}
+                  style={!isScrolled ? {   } : {}}
+                />
+              ) : (
+                <h1 className={cn(
+                  "font-display text-2xl font-semibold tracking-wide transition-colors duration-300",
+                  shouldUseLightColors ? "text-primary-foreground" : "text-foreground"
+                )}>
+                  {settings?.name || "Minha Loja"}
+                </h1>
+              )}
+            </Link>
+          </div>
 
-          {/* Desktop Navigation - Menu Dinâmico (centro) */}
-          <nav className="hidden xl:flex items-center gap-8 flex-1 justify-center">
-            <DynamicMenu 
-              className="flex items-center gap-8" 
-              isMobile={false} 
-              variant={shouldUseLightColors ? 'light' : 'default'}
-            />
-          </nav>
-
-          {/* Actions Mobile - Pesquisar e Carrinho */}
-          <div className="xl:hidden flex items-center gap-2 z-10">
+          {/* Actions Mobile - Pesquisar e Carrinho - à direita */}
+          <div className="flex items-center gap-2 z-10 flex-shrink-0">
             <Link href="/busca" className={cn(
               "p-2 transition-colors",
               shouldUseLightColors 
@@ -287,9 +278,46 @@ export function Header() {
               )}
             </button>
           </div>
+        </div>
+
+        {/* Desktop: grid com 3 colunas (logo, menu, ícones) */}
+        <div className="hidden xl:grid grid-cols-3 items-center h-20">
+
+          {/* Desktop: Logo à esquerda */}
+          <div className="flex items-center">
+            <Link href="/" className="flex-shrink-0">
+              {theme?.logo_url ? (
+                <img
+                  src={theme.logo_url}
+                  alt="Logo"
+                  className={cn(
+                    "h-10 object-contain transition-all duration-300",
+                    !isScrolled && ""
+                  )}
+                  style={!isScrolled ? {   } : {}}
+                />
+              ) : (
+                <h1 className={cn(
+                  "font-display text-3xl font-semibold tracking-wide transition-colors duration-300",
+                  shouldUseLightColors ? "text-primary-foreground" : "text-foreground"
+                )}>
+                  {settings?.name || "Minha Loja"}
+                </h1>
+              )}
+            </Link>
+          </div>
+
+          {/* Desktop Navigation - Menu Dinâmico (centro) - Centralizado */}
+          <nav className="flex items-center justify-center">
+            <DynamicMenu 
+              className="flex items-center gap-8" 
+              isMobile={false} 
+              variant={shouldUseLightColors ? 'light' : 'default'}
+            />
+          </nav>
 
           {/* Actions - Desktop only */}
-          <div className="hidden xl:flex items-center gap-2 xl:gap-4">
+          <div className="flex items-center justify-end gap-2 xl:gap-4">
             <Link href="/busca" className={cn(
               "p-2 transition-colors",
               shouldUseLightColors 
