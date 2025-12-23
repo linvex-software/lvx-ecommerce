@@ -52,19 +52,28 @@ function PreviewContent() {
   // Escutar mensagens do editor para atualizações em tempo real
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      // Verificar origem para segurança (aceitar do admin)
+      // Verificar origem para segurança (aceitar do admin, localhost e vercel.app)
       const origin = event.origin
       const isLocalhost = origin.includes('localhost') || origin.includes('127.0.0.1')
-      const isAdminOrigin = origin.includes('admin') || isLocalhost
+      const isAdminOrigin = origin.includes('admin') || origin.includes('vercel.app') || isLocalhost
 
-      if (!isAdminOrigin) return
+      if (!isAdminOrigin) {
+        console.log('[PreviewPage] Mensagem rejeitada de origem:', origin)
+        return
+      }
+
+      console.log('[PreviewPage] Mensagem recebida:', event.data.action, { origin })
 
       if (event.data.action === 'UPDATE_LAYOUT') {
         const layout = event.data.layout
         if (typeof layout === 'string') {
+          console.log('[PreviewPage] Recebendo UPDATE_LAYOUT, disparando layout-updated')
           setLayoutJson(layout)
           // Forçar re-render do TemplateLayoutRenderer ou EditablePreview
-          window.dispatchEvent(new CustomEvent('layout-updated', { detail: layout }))
+          // Usar requestAnimationFrame para garantir que o evento seja processado
+          requestAnimationFrame(() => {
+            window.dispatchEvent(new CustomEvent('layout-updated', { detail: layout }))
+          })
         }
       }
 
@@ -88,11 +97,19 @@ function PreviewContent() {
     // Notificar editor que preview está pronto
     const notifyReady = () => {
       if (window.parent) {
+        console.log('[PreviewPage] Enviando PREVIEW_READY para parent')
         window.parent.postMessage({ action: 'PREVIEW_READY' }, '*')
+        
+        // Enviar novamente após um delay para garantir que foi recebido
+        setTimeout(() => {
+          if (window.parent) {
+            window.parent.postMessage({ action: 'PREVIEW_READY' }, '*')
+          }
+        }, 1000)
       }
     }
 
-    // Aguardar um pouco antes de notificar
+    // Aguardar um pouco antes de notificar para garantir que tudo está carregado
     const timer = setTimeout(notifyReady, 500)
 
     return () => {
