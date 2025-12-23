@@ -28,6 +28,21 @@ export function TemplateLayoutRenderer({ templateId, initialLayoutJson }: Templa
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
+  // Preload de recursos críticos do template (CSS) - executa imediatamente
+  useEffect(() => {
+    if (typeof document === 'undefined') return
+
+    // Preload do CSS do template para melhorar FCP
+    const existingPreload = document.querySelector(`link[href="/templates/${templateId}/styles.css"][rel="preload"]`)
+    if (!existingPreload) {
+      const link = document.createElement('link')
+      link.rel = 'preload'
+      link.href = `/templates/${templateId}/styles.css`
+      link.as = 'style'
+      document.head.appendChild(link)
+    }
+  }, [templateId])
+
   useEffect(() => {
     const loadTemplate = async () => {
       try {
