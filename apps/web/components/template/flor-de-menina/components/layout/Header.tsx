@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Search, ShoppingBag, User, Menu, X, Heart } from "lucide-react";
 import { Button } from "../ui/button";
 import { useCart } from "../contexts/CartContext";
@@ -59,6 +60,15 @@ export function Header() {
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
   const isInsideHero = useHeroBannerContext();
+  const pathname = usePathname();
+  // No editor, /preview é sempre a homepage
+  // Na loja, / é a homepage
+  const isHomePage = pathname === '/' || (isInEditor && pathname === '/preview');
+  
+  // Determinar se deve usar cores claras (branco) ou escuras
+  // Na página principal: branco quando não scrolled, foreground quando scrolled
+  // Nas outras páginas: sempre primary-foreground (cores claras sobre bg-primary)
+  const shouldUseLightColors = isHomePage ? !isScrolled : true;
 
   // Carregar hooks de autenticação apenas no contexto web (runtime)
   useEffect(() => {
@@ -152,11 +162,16 @@ export function Header() {
   // isInEditor já está disponível do hook useSafeNode
 
   // Detectar scroll para transição suave de opacidade/background
+  // Array de dependências vazio pois o scroll é sempre do mesmo window
+  // Usar uma constante para garantir que o array seja sempre o mesmo
+  const scrollEffectDeps: never[] = [];
+  
   useEffect(() => {
-    if (isInEditor || typeof window === 'undefined') {
+    if (typeof window === 'undefined') {
       return;
     }
 
+    // No editor, também detectar scroll para aplicar o estilo correto
     const handleScroll = () => {
       const scrollY = window.scrollY;
       setIsScrolled(scrollY > 50);
@@ -168,7 +183,7 @@ export function Header() {
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, [isInEditor]);
+  }, scrollEffectDeps);
 
   // Menu dinâmico será carregado pelo DynamicMenu
 
@@ -183,9 +198,13 @@ export function Header() {
       ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }}
       className={cn(
         isInEditor ? '' : 'sticky top-0 transition-all duration-300 w-full',
-        isScrolled 
-          ? 'bg-background/95 border-b border-border' 
-          : 'bg-transparent'
+        // Na página principal: sem background quando não scrolled, com background quando scrolled
+        // Nas outras páginas: sempre com bg-primary
+        isHomePage
+          ? (isScrolled 
+              ? 'bg-background/95 border-b border-border' 
+              : 'bg-transparent')
+          : 'bg-primary border-b border-primary/20'
       )}
       style={{
         zIndex: isInEditor ? 1 : (isCartOpen ? 9998 : 9999),
@@ -199,7 +218,7 @@ export function Header() {
           <button
             className={cn(
               "xl:hidden p-2 -ml-2 transition-colors z-10",
-              isScrolled ? "text-foreground" : "text-white"
+              shouldUseLightColors ? "text-primary-foreground" : "text-foreground"
             )}
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Menu"
@@ -225,7 +244,7 @@ export function Header() {
             ) : (
               <h1 className={cn(
                 "font-display text-2xl xl:text-3xl font-semibold tracking-wide transition-colors duration-300",
-                isScrolled ? "text-foreground" : "text-white"
+                shouldUseLightColors ? "text-primary-foreground" : "text-foreground"
               )}>
                 {settings?.name || "Minha Loja"}
               </h1>
@@ -237,7 +256,7 @@ export function Header() {
             <DynamicMenu 
               className="flex items-center gap-8" 
               isMobile={false} 
-              variant={isScrolled ? 'default' : 'light'}
+              variant={shouldUseLightColors ? 'light' : 'default'}
             />
           </nav>
 
@@ -245,7 +264,9 @@ export function Header() {
           <div className="xl:hidden flex items-center gap-2 z-10">
             <Link href="/busca" className={cn(
               "p-2 transition-colors",
-              isScrolled ? "hover:text-primary text-foreground" : "hover:text-white/80 text-white"
+              shouldUseLightColors 
+                ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                : "hover:text-primary text-foreground"
             )}>
               <Search size={20} />
             </Link>
@@ -253,7 +274,9 @@ export function Header() {
               onClick={() => setIsOpen(true)}
               className={cn(
                 "p-2 transition-colors relative",
-                isScrolled ? "hover:text-primary text-foreground" : "hover:text-white/80 text-white"
+                shouldUseLightColors 
+                  ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                  : "hover:text-primary text-foreground"
               )}
             >
               <ShoppingBag size={20} />
@@ -269,13 +292,17 @@ export function Header() {
           <div className="hidden xl:flex items-center gap-2 xl:gap-4">
             <Link href="/busca" className={cn(
               "p-2 transition-colors",
-              isScrolled ? "hover:text-primary text-foreground" : "hover:text-white/80 text-white"
+              shouldUseLightColors 
+                ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                : "hover:text-primary text-foreground"
             )}>
               <Search size={20} />
             </Link>
             <Link href="/minha-conta" className={cn(
               "p-2 transition-colors",
-              isScrolled ? "hover:text-primary text-foreground" : "hover:text-white/80 text-white"
+              shouldUseLightColors 
+                ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                : "hover:text-primary text-foreground"
             )}>
               <User size={20} />
             </Link>
@@ -284,7 +311,9 @@ export function Header() {
               type="button"
               className={cn(
                 "p-2 transition-colors relative z-50",
-                isScrolled ? "hover:text-primary text-foreground" : "hover:text-white/80 text-white"
+                shouldUseLightColors 
+                  ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                  : "hover:text-primary text-foreground"
               )}
               onClick={async (e) => {
                 e.preventDefault()
@@ -337,7 +366,9 @@ export function Header() {
               onClick={() => setIsOpen(true)}
               className={cn(
                 "p-2 transition-colors relative",
-                isScrolled ? "hover:text-primary text-foreground" : "hover:text-white/80 text-white"
+                shouldUseLightColors 
+                  ? "hover:text-primary-foreground/80 text-primary-foreground" 
+                  : "hover:text-primary text-foreground"
               )}
             >
               <ShoppingBag size={20} />
