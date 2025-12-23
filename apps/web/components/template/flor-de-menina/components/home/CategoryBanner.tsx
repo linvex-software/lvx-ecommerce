@@ -735,11 +735,26 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
                   >
                     {category.name}
                   </div>
-                  {renderEditableText(`${category.nodeId}_cta`, {
-                    tag: "span",
-                    className: "inline-block text-white/80 text-xs tracking-widest uppercase font-body border-b border-gold pb-1 group-hover:border-primary transition-colors",
-                    content: "Ver Coleção"
-                  })}
+                  {isInEditorMode ? (
+                    // No editor, renderizar sem link para não bloquear edição
+                    renderEditableText(`${category.nodeId}_cta`, {
+                      tag: "span",
+                      className: "inline-block text-white/80 text-xs tracking-widest uppercase font-body border-b border-gold pb-1 group-hover:border-primary transition-colors",
+                      content: "Ver Coleção"
+                    })
+                  ) : (
+                    // Fora do editor, envolver em Link
+                    <Link
+                      href={category.href}
+                      className="inline-block text-white/80 text-xs tracking-widest uppercase font-body border-b border-gold pb-1 group-hover:border-primary transition-colors"
+                    >
+                      {renderEditableText(`${category.nodeId}_cta`, {
+                        tag: "span",
+                        className: "",
+                        content: "Ver Coleção"
+                      })}
+                    </Link>
+                  )}
                 </div>
               </div>
             );
