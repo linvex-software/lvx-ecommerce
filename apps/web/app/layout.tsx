@@ -7,6 +7,7 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { TemplateProvider } from '@/components/template-provider-wrapper'
 import { Toaster } from 'react-hot-toast'
 import { GlobalErrorHandler } from '@/components/global-error-handler'
+import { SpeedInsights } from '@vercel/speed-insights/next'
 
 // Por enquanto, usar template padrão
 // Em produção, isso virá do banco de dados baseado na loja
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <CartSyncProvider>
                 {children}
                 <Toaster position="top-center" reverseOrder={false} />
+                <SpeedInsights />
               </CartSyncProvider>
             </ThemeProvider>
           </TemplateProvider>
