@@ -743,14 +743,15 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
                       content: "Ver Coleção"
                     })
                   ) : (
-                    // Fora do editor, envolver em Link
+                    // Fora do editor, envolver em Link - remover borda do EditableText
                     <Link
                       href={category.href}
-                      className="inline-block text-white/80 text-xs tracking-widest uppercase font-body border-b border-gold pb-1 group-hover:border-primary transition-colors"
+                      className="category-cta-link inline-block text-white/80 text-xs tracking-widest uppercase font-body  border-none pb-1 group-hover:border-primary transition-colors no-underline hover:no-underline"
+                      style={{ textDecoration: 'none' }}
                     >
                       {renderEditableText(`${category.nodeId}_cta`, {
                         tag: "span",
-                        className: "",
+                        className: "category-cta-text",
                         content: "Ver Coleção"
                       })}
                     </Link>
@@ -793,7 +794,12 @@ export function CategoryBanner({ children: craftChildren }: { children?: React.R
           animation: slideInFromRight 0.3s ease-out;
         }
         
- 
+        /* Remover borda do texto interno quando estiver dentro do Link */
+        .category-cta-link .category-cta-text,
+        .category-cta-link .category-cta-text * {
+          border-bottom: none !important;
+          border: none !important;
+        }
       `}</style>
     </section>
     </>
