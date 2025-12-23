@@ -6,10 +6,12 @@ import { useSafeNode } from "../../lib/hooks/use-safe-node";
 import { EditableText } from "../common/editable-text";
 import { Element, useNode } from '@craftjs/core';
 import { useStoreSettings } from "@/lib/hooks/use-store-settings";
+import { useStoreTheme } from '@/lib/hooks/use-store-theme';
 
 export function Footer() {
   const { connectors: { connect } } = useSafeNode();
   const { data: settings } = useStoreSettings();
+  const { data: theme } = useStoreTheme();
 
   // Obter nodeId do Footer para gerar IDs únicos
   let nodeId = 'node_footer';
@@ -22,55 +24,22 @@ export function Footer() {
 
   return (
     <footer ref={(ref: HTMLElement | null) => { if (ref) connect(ref) }} className="bg-charcoal text-secondary mt-20">
-      {/* Newsletter */}
-      <div className="bg-primary py-12">
-        <div className="container mx-auto px-4 text-center">
-          <h3 className="font-display text-2xl lg:text-3xl text-primary-foreground mb-2">
-            <Element
-              id={`${nodeId}_newsletter_title`}
-              is={EditableText}
-              tag="span"
-              className=""
-              content="Receba Novidades em Primeira Mão"
-            />
-          </h3>
-          <Element
-            id={`${nodeId}_newsletter_description`}
-            is={EditableText}
-            tag="p"
-            className="text-primary-foreground/80 mb-6 font-body text-sm"
-            content="Cadastre-se e ganhe 10% OFF na primeira compra"
-          />
-          <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-            <input
-              type="email"
-              placeholder="Seu melhor e-mail"
-              className="flex-1 px-4 py-3 bg-primary-foreground text-foreground placeholder:text-muted-foreground font-body text-sm focus:outline-none focus:ring-2 focus:ring-gold"
-            />
-            <button
-              type="submit"
-              className="px-8 py-3 bg-gold text-accent-foreground font-body text-sm tracking-wider uppercase hover:bg-gold-light transition-colors"
-            >
-              <Element
-                id={`${nodeId}_newsletter_button`}
-                is={EditableText}
-                tag="span"
-                className=""
-                content="Inscrever"
-              />
-            </button>
-          </form>
-        </div>
-      </div>
-
       {/* Main Footer */}
       <div className="container mx-auto px-4 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12">
           {/* Brand */}
           <div>
-            <h4 className="font-display text-2xl text-secondary mb-4">
-              {settings?.name || "Minha Loja"}
-            </h4>
+            {theme?.logo_url ? (
+              <img
+                src={theme.logo_url}
+                alt={settings?.name || "Logo"}
+                className="h-10 mb-4 object-contain"
+              />
+            ) : (
+              <h4 className="font-display text-2xl text-secondary mb-4">
+                {settings?.name || "Minha Loja"}
+              </h4>
+            )}
             <Element
               id={`${nodeId}_brand_description`}
               is={EditableText}

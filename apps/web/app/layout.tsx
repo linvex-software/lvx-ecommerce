@@ -6,6 +6,7 @@ import { CartSyncProvider } from '@/components/CartSyncProvider'
 import { ThemeProvider } from '@/components/theme-provider'
 import { TemplateProvider } from '@/components/template-provider-wrapper'
 import { Toaster } from 'react-hot-toast'
+import { GlobalErrorHandler } from '@/components/global-error-handler'
 
 // Por enquanto, usar template padrão
 // Em produção, isso virá do banco de dados baseado na loja
@@ -15,6 +16,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR" suppressHydrationWarning>
       <body suppressHydrationWarning>
+        <GlobalErrorHandler />
         <Providers>
           {/* TemplateProvider primeiro para aplicar estilos do template antes de outros providers */}
           <TemplateProvider templateId={DEFAULT_TEMPLATE_ID}>

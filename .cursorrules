@@ -1,0 +1,240 @@
+# Regras do Cursor para White Label Ecommerce
+
+## 🚨 Regras Críticas para Modais e Botões
+
+### 1. Botões dentro de Modais DEVEM ter `data-modal-button="true"`
+
+**Problema:** O CSS global em `editable-preview.tsx` desabilita `pointer-events` em todos os botões que não têm `data-modal-button="true"`. Isso impede que botões dentro de modais sejam clicáveis.
+
+**Solução:** SEMPRE adicione `data-modal-button="true"` em botões que estão dentro de modais renderizados via `createPortal` ou dentro de elementos com `data-modal="true"`.
+
+**Exemplo:**
+```tsx
+// ✅ CORRETO
+<button
+  type="button"
+  data-modal-button="true"
+  onClick={handleClick}
+  className="..."
+>
+  Clique aqui
+</button>
+
+// ❌ ERRADO - botão não será clicável
+<button
+  type="button"
+  onClick={handleClick}
+  className="..."
+>
+  Clique aqui
+</button>
+```
+
+**Quando aplicar:**
+- Botões dentro de modais de configuração (HeroBannerSettings, ProductShowcase, etc.)
+- Botões dentro de elementos com `data-modal="true"`
+- Qualquer botão renderizado via `createPortal` que precisa ser clicável
+
+### 2. NUNCA use `confirm()`, `alert()` ou `prompt()` em iframes com sandbox
+
+**Problema:** O iframe do preview está com sandbox que bloqueia modais nativos do navegador. Chamadas a `confirm()`, `alert()` ou `prompt()` serão ignoradas silenciosamente.
+
+**Solução:** Use modais customizados ou componentes de diálogo para confirmações e mensagens.
+
+**Exemplo:**
+```tsx
+// ❌ ERRADO - não funciona em iframe sandboxed
+const confirmed = confirm('Tem certeza?');
+if (confirmed) {
+  handleAction();
+}
+
+// ✅ CORRETO - usar modal customizado ou remover confirmação
+const handleClick = () => {
+  // Remover diretamente ou usar modal customizado
+  handleAction();
+};
+```
+
+**Alternativas:**
+- Remover confirmação se a ação for reversível
+- Criar modal de confirmação customizado usando React
+- Usar biblioteca de diálogos (ex: Radix UI Dialog)
+
+### 3. Arrays em Craft.js Props DEVEM ser Imutáveis
+
+**Problema:** Craft.js não detecta mudanças quando arrays são mutados diretamente. Isso impede re-renders e atualizações visuais.
+
+**Solução:** SEMPRE crie novos arrays ao atualizar props do Craft.js. Use métodos imutáveis como `filter()`, `map()`, spread operator, etc.
+
+**Exemplo:**
+```tsx
+// ✅ CORRETO - criar novo array
+setProp((props: any) => {
+  const currentImages = props.backgroundImages || [];
+  const newImages = currentImages.filter((_: string, i: number) => i !== index);
+  props.backgroundImages = newImages; // Novo array, Craft.js detecta mudança
+});
+
+// ❌ ERRADO - mutação direta, Craft.js não detecta
+setProp((props: any) => {
+  props.backgroundImages.splice(index, 1); // Mutação direta!
+});
+```
+
+**Padrão recomendado:**
+```tsx
+// Para remover item
+const newArray = oldArray.filter((_, i) => i !== index);
+
+// Para adicionar item
+const newArray = [...oldArray, newItem];
+
+// Para atualizar item
+const newArray = [...oldArray];
+newArray[index] = newValue;
+
+// Para reordenar
+const newArray = [...oldArray];
+[newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+```
+
+### 4. Obter Props Atuais DENTRO do Callback do setProp
+
+**Problema:** Ao obter props antes de chamar `setProp`, você pode estar usando valores desatualizados devido a closures ou timing.
+
+**Solução:** Sempre obtenha o valor atual das props DENTRO do callback do `setProp`.
+
+**Exemplo:**
+```tsx
+// ✅ CORRETO - obter valor atual dentro do callback
+setProp((props: any) => {
+  const currentImages = props.backgroundImages || []; // Valor atualizado
+  const newImages = currentImages.filter((_, i) => i !== index);
+  props.backgroundImages = newImages;
+});
+
+// ❌ ERRADO - pode usar valor desatualizado
+const currentImages = props.backgroundImages || []; // Pode estar desatualizado
+setProp((props: any) => {
+  const newImages = currentImages.filter((_, i) => i !== index);
+  props.backgroundImages = newImages;
+});
+```
+
+## 📋 Checklist ao Criar/Modificar Modais
+
+- [ ] Todos os botões dentro do modal têm `data-modal-button="true"`?
+- [ ] Não há uso de `confirm()`, `alert()` ou `prompt()`?
+- [ ] Arrays são atualizados de forma imutável?
+- [ ] Props são obtidas dentro do callback do `setProp`?
+- [ ] Eventos de botões têm `e.preventDefault()` e `e.stopPropagation()` quando necessário?
+- [ ] O modal tem `data-modal="true"` no elemento raiz?
+- [ ] O overlay tem `onClick` para fechar o modal?
+
+## 🎯 Padrões de Código
+
+### Modal com Botões Clicáveis
+```tsx
+function MyModal({ onClose, isOpen }: { onClose: () => void; isOpen: boolean }) {
+  const modalRef = React.useRef<HTMLDivElement>(null);
+  
+  const modalContent = (
+    <>
+      <div 
+        className="fixed inset-0 z-[9998] bg-black/50"
+        onClick={onClose}
+      />
+      <div
+        ref={modalRef}
+        data-modal="true"
+        className="fixed z-[9999] ..."
+        onClick={(e) => e.stopPropagation()}
+        onMouseDown={(e) => {
+          const target = e.target as HTMLElement;
+          if (target.closest('button')) {
+            return; // Permitir eventos de botões
+          }
+          e.stopPropagation();
+        }}
+      >
+        {/* Conteúdo do modal */}
+        <button
+          type="button"
+          data-modal-button="true" // ✅ OBRIGATÓRIO
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleAction();
+          }}
+          className="..."
+        >
+          Ação
+        </button>
+      </div>
+    </>
+  );
+
+  return typeof document !== 'undefined' 
+    ? createPortal(modalContent, document.body)
+    : null;
+}
+```
+
+### Atualizar Array no Craft.js
+```tsx
+// Remover item
+const handleRemove = React.useCallback((index: number) => {
+  setProp((props: any) => {
+    const current = props.items || [];
+    props.items = current.filter((_: any, i: number) => i !== index);
+  });
+}, [setProp]);
+
+// Adicionar item
+const handleAdd = React.useCallback((newItem: any) => {
+  setProp((props: any) => {
+    const current = props.items || [];
+    props.items = [...current, newItem];
+  });
+}, [setProp]);
+
+// Reordenar
+const handleMove = React.useCallback((index: number, direction: 'up' | 'down') => {
+  setProp((props: any) => {
+    const current = props.items || [];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    if (newIndex < 0 || newIndex >= current.length) return;
+    
+    const newItems = [...current];
+    [newItems[index], newItems[newIndex]] = [newItems[newIndex], newItems[index]];
+    props.items = newItems;
+  });
+}, [setProp]);
+```
+
+## 🔍 Debugging
+
+Se botões dentro de modais não estão funcionando:
+
+1. Verifique se têm `data-modal-button="true"`
+2. Verifique se o CSS global não está bloqueando (inspecione `pointer-events` no DevTools)
+3. Verifique se eventos não estão sendo bloqueados por `stopPropagation()` no elemento pai
+4. Verifique se o modal tem `data-modal="true"` no elemento raiz
+
+Se arrays não atualizam no Craft.js:
+
+1. Verifique se está criando um novo array (não mutando o existente)
+2. Verifique se está obtendo o valor atual dentro do callback do `setProp`
+3. Verifique se o `setProp` está disponível e é uma função
+4. Adicione logs para verificar se `setProp` está sendo chamado
+
+## 📝 Notas Adicionais
+
+- Sempre use `React.useCallback` para handlers que são passados como props ou usados em dependências
+- Use `useRef` para elementos DOM que precisam ser acessados diretamente
+- Use `createPortal` para renderizar modais fora da hierarquia do Craft.js
+- Teste sempre no contexto do editor (iframe) e na loja (renderização direta)
+
+
+

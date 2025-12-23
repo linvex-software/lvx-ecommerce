@@ -163,17 +163,48 @@ export function MercadoPagoPayment({
 
     const fetchIdentificationTypes = async (): Promise<void> => {
       try {
+        // Verificar se mp existe e se tem o método getIdentificationTypes
+        if (!mp) {
+          console.warn('[MercadoPagoPayment] MercadoPago não está disponível ainda')
+          return
+        }
+
+        if (typeof mp.getIdentificationTypes !== 'function') {
+          console.warn('[MercadoPagoPayment] getIdentificationTypes não está disponível no SDK do Mercado Pago')
+          // Usar tipos padrão do Brasil
+          setIdentificationTypes([
+            { id: 'CPF', name: 'CPF' },
+            { id: 'CNPJ', name: 'CNPJ' }
+          ])
+          return
+        }
+
         console.log('[MercadoPagoPayment] Buscando tipos de identificação... (tentativa', retryCount + 1, ')')
         const types = await mp.getIdentificationTypes()
+        
+        if (!types || !Array.isArray(types)) {
+          console.warn('[MercadoPagoPayment] Tipos de identificação não retornados ou formato inválido. Usando tipos padrão.')
+          setIdentificationTypes([
+            { id: 'CPF', name: 'CPF' },
+            { id: 'CNPJ', name: 'CNPJ' }
+          ])
+          return
+        }
+
         console.log('[MercadoPagoPayment] Tipos de identificação obtidos:', types.length, 'tipos')
         setIdentificationTypes(types)
       } catch (error: any) {
-        console.error('[MercadoPagoPayment] Erro ao obter tipos de identificação:', error)
+        console.error('[MercadoPagoPayment] Erro ao obter tipos de identificação:', error?.message || error || 'Erro desconhecido')
         
         // Se for erro relacionado à chave pública, não tentar novamente
         if (error?.message?.includes('public key') || error?.status === 500) {
           console.error('[MercadoPagoPayment] Erro relacionado à chave pública. Verifique se a chave está correta.')
-          onPaymentError('Erro na configuração da chave pública do Mercado Pago. Verifique as configurações no painel administrativo.')
+          // Não chamar onPaymentError aqui para não bloquear o fluxo - apenas logar
+          // Usar tipos padrão
+          setIdentificationTypes([
+            { id: 'CPF', name: 'CPF' },
+            { id: 'CNPJ', name: 'CNPJ' }
+          ])
           return
         }
 
@@ -183,8 +214,12 @@ export function MercadoPagoPayment({
           console.log(`[MercadoPagoPayment] Tentando novamente em ${retryDelay}ms...`)
           setTimeout(() => fetchIdentificationTypes(), retryDelay)
         } else {
-          console.warn('[MercadoPagoPayment] Não foi possível obter tipos de identificação após', maxRetries, 'tentativas. Continuando sem eles.')
-          // Não bloquear o fluxo se não conseguir obter os tipos
+          console.warn('[MercadoPagoPayment] Não foi possível obter tipos de identificação após', maxRetries, 'tentativas. Usando tipos padrão.')
+          // Usar tipos padrão do Brasil como fallback
+          setIdentificationTypes([
+            { id: 'CPF', name: 'CPF' },
+            { id: 'CNPJ', name: 'CNPJ' }
+          ])
         }
       }
     }

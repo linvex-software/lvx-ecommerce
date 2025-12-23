@@ -16,6 +16,124 @@ import { validateAndCleanLayout, createSafeDefaultLayout } from '@/lib/templates
 import { EditorCartProvider } from '@/components/editor/editor-cart-provider'
 import { Spinner } from '@/components/ui/ios-spinner'
 
+// Componente que escuta mensagens do iframe para selecionar nodes e fornecer token
+function NodeSelectorListener() {
+  const { actions, query } = useEditor((state) => ({
+    nodes: state.nodes
+  }))
+  const accessToken = useAuthStore((state) => state.accessToken)
+  
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Verificar origem para segurança
+      const isLocalhost = event.origin.includes('localhost') || event.origin.includes('127.0.0.1')
+      const isWebOrigin = event.origin.includes('web') || isLocalhost
+      
+      if (!isWebOrigin) return
+      
+      // Responder a solicitações de token
+      if (event.data?.type === 'GET_AUTH_TOKEN') {
+        console.log('[NodeSelectorListener] Enviando token para iframe');
+        event.source?.postMessage({
+          type: 'GET_AUTH_TOKEN_RESPONSE',
+          token: accessToken
+        }, { targetOrigin: event.origin });
+        return;
+      }
+      
+      if (event.data.action === 'SELECT_NODE' && event.data.nodeId) {
+        const nodeId = event.data.nodeId
+        console.log('[NodeSelectorListener] Recebida mensagem para selecionar node:', nodeId)
+        
+        // Função para tentar selecionar o node com retry
+        const trySelectNode = (attempt = 0) => {
+          try {
+            // Usar query para acessar os nodes
+            if (!query || !actions) {
+              if (attempt < 5) {
+                setTimeout(() => trySelectNode(attempt + 1), 200)
+                return
+              }
+              console.warn('[NodeSelectorListener] Query ou actions não disponíveis')
+              return
+            }
+            
+            // Primeiro, tentar selecionar pelo nodeId recebido
+            try {
+              const node = query.node(nodeId).get()
+              if (node && actions.selectNode) {
+                console.log('[NodeSelectorListener] Node encontrado pelo ID, selecionando:', nodeId)
+                actions.selectNode(nodeId)
+                return true
+              }
+            } catch (e) {
+              // Node não encontrado pelo ID, continuar procurando
+            }
+            
+            // Se não encontrou pelo ID, tentar encontrar pelo tipo HeroBanner
+            // Buscar nos nodes do ROOT
+            try {
+              const rootNode = query.node('ROOT').get()
+              if (rootNode && rootNode.data && rootNode.data.nodes) {
+                for (const childId of rootNode.data.nodes) {
+                  try {
+                    const childNode = query.node(childId).get()
+                    if (childNode) {
+                      const typeName = typeof childNode.data?.type === 'object' && childNode.data?.type !== null && 'resolvedName' in childNode.data.type
+                        ? (childNode.data.type as { resolvedName?: string }).resolvedName
+                        : undefined
+                      const displayName = childNode.data?.displayName
+                      
+                      if (typeName === 'HeroBanner' || displayName === 'Hero Banner') {
+                        if (actions.selectNode) {
+                          console.log('[NodeSelectorListener] Node HeroBanner encontrado pelo tipo, selecionando:', childId)
+                          actions.selectNode(childId)
+                          return true
+                        }
+                      }
+                    }
+                  } catch (e) {
+                    // Continuar procurando
+                  }
+                }
+              }
+            } catch (e) {
+              // Erro ao acessar ROOT
+            }
+            
+            // Se não encontrou e ainda há tentativas, tentar novamente
+            if (attempt < 5) {
+              console.log(`[NodeSelectorListener] Tentativa ${attempt + 1}: Node não encontrado, tentando novamente em 200ms...`)
+              setTimeout(() => trySelectNode(attempt + 1), 200)
+              return false
+            }
+            
+            console.warn('[NodeSelectorListener] Não foi possível encontrar o node HeroBanner após 5 tentativas')
+            return false
+          } catch (error) {
+            console.error('[NodeSelectorListener] Erro ao selecionar node:', error)
+            if (attempt < 5) {
+              setTimeout(() => trySelectNode(attempt + 1), 200)
+            }
+            return false
+          }
+        }
+        
+        // Iniciar tentativa após um pequeno delay
+        setTimeout(() => trySelectNode(), 300)
+      }
+    }
+    
+    window.addEventListener('message', handleMessage)
+    
+    return () => {
+      window.removeEventListener('message', handleMessage)
+    }
+  }, [actions, query, accessToken])
+  
+  return null
+}
+
 function EditorContent() {
   const searchParams = useSearchParams()
   const isPreview = searchParams.get('preview') === 'true'
@@ -328,6 +446,7 @@ function EditorContentInner({
   return (
     <>
       <EditorTopbar isPreview={isPreview} />
+      <NodeSelectorListener />
       <div className="flex-1 flex overflow-hidden bg-white">
         {!isPreview && (
           <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">

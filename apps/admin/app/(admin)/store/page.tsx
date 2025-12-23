@@ -10,7 +10,7 @@ import { Copy, Check } from 'lucide-react'
 import { toast } from 'sonner'
 import { ImageUpload } from '@/components/products/image-upload'
 import { useStoreTheme, useUpdateStoreLogo, useUpdateStoreBanner } from '@/lib/hooks/use-store-theme'
-import { MercadoPagoConfig } from '@/components/payment-methods/mercado-pago-config'
+import { PaymentMethodsConfig } from '@/components/payment-methods/payment-methods-config'
 
 export default function StorePage() {
   const user = useAuthStore((state) => state.user)
@@ -175,7 +175,7 @@ export default function StorePage() {
       {/* Payment Methods Configuration */}
       <div>
         <h2 className="text-2xl font-semibold tracking-tight text-text-primary mb-6">Métodos de Pagamento</h2>
-        <MercadoPagoConfig />
+        <PaymentMethodsConfig />
       </div>
 
     </div>

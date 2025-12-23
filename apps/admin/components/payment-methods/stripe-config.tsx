@@ -9,42 +9,42 @@ import { Switch } from '@/components/ui/switch'
 import { Loader2, Save } from 'lucide-react'
 import { usePaymentMethods, useCreatePaymentMethod, useUpdatePaymentMethod } from '@/lib/hooks/use-payment-methods'
 
-interface MercadoPagoConfigProps {
+interface StripeConfigProps {
   onActiveChange?: (active: boolean) => void
 }
 
-export function MercadoPagoConfig({ onActiveChange }: MercadoPagoConfigProps) {
+export function StripeConfig({ onActiveChange }: StripeConfigProps) {
   const { data: paymentMethods, isLoading } = usePaymentMethods()
   const createPaymentMethod = useCreatePaymentMethod()
   const updatePaymentMethod = useUpdatePaymentMethod()
 
-  const [accessToken, setAccessToken] = useState('')
   const [publicKey, setPublicKey] = useState('')
+  const [secretKey, setSecretKey] = useState('')
   const [active, setActive] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
 
-  const mercadoPagoMethod = paymentMethods?.find((pm) => pm.provider === 'mercadopago')
+  const stripeMethod = paymentMethods?.find((pm) => pm.provider === 'stripe')
 
   useEffect(() => {
-    if (mercadoPagoMethod) {
-      const config = mercadoPagoMethod.config_json as Record<string, unknown> | null
-      setAccessToken((config?.access_token as string) || '')
+    if (stripeMethod) {
+      const config = stripeMethod.config_json as Record<string, unknown> | null
       setPublicKey((config?.public_key as string) || '')
-      setActive(mercadoPagoMethod.active)
+      setSecretKey((config?.secret_key as string) || '')
+      setActive(stripeMethod.active)
     }
-  }, [mercadoPagoMethod])
+  }, [stripeMethod])
 
   const handleSave = async () => {
     setIsSaving(true)
     try {
-      if (mercadoPagoMethod) {
+      if (stripeMethod) {
         // Atualizar existente
         await updatePaymentMethod.mutateAsync({
-          id: mercadoPagoMethod.id,
+          id: stripeMethod.id,
           data: {
             config_json: {
-              access_token: accessToken,
-              public_key: publicKey
+              public_key: publicKey,
+              secret_key: secretKey
             },
             active
           }
@@ -52,11 +52,11 @@ export function MercadoPagoConfig({ onActiveChange }: MercadoPagoConfigProps) {
       } else {
         // Criar novo
         await createPaymentMethod.mutateAsync({
-          name: 'Mercado Pago',
-          provider: 'mercadopago',
+          name: 'Stripe',
+          provider: 'stripe',
           config_json: {
-            access_token: accessToken,
-            public_key: publicKey
+            public_key: publicKey,
+            secret_key: secretKey
           },
           active
         })
@@ -71,10 +71,10 @@ export function MercadoPagoConfig({ onActiveChange }: MercadoPagoConfigProps) {
   const handleActiveChange = async (checked: boolean) => {
     setActive(checked)
     // Se já existe método, atualizar imediatamente
-    if (mercadoPagoMethod) {
+    if (stripeMethod) {
       try {
         await updatePaymentMethod.mutateAsync({
-          id: mercadoPagoMethod.id,
+          id: stripeMethod.id,
           data: { active: checked }
         })
         onActiveChange?.(checked)
@@ -104,37 +104,12 @@ export function MercadoPagoConfig({ onActiveChange }: MercadoPagoConfigProps) {
   return (
     <Card className="border-0 shadow-[0_8px_30px_rgb(0,0,0,0.06)] bg-white/80 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-xl font-light">Mercado Pago</CardTitle>
+        <CardTitle className="text-xl font-light">Stripe</CardTitle>
         <CardDescription>
-          Configure suas chaves de API do Mercado Pago para processar pagamentos
+          Configure suas chaves de API do Stripe para processar pagamentos
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-6">
-        <div className="space-y-2">
-          <Label htmlFor="accessToken" className="text-sm font-light text-gray-700">
-            Access Token
-          </Label>
-          <Input
-            id="accessToken"
-            type="password"
-            value={accessToken}
-            onChange={(e) => setAccessToken(e.target.value)}
-            placeholder="APP_USR-..."
-            className="font-mono text-sm"
-          />
-          <p className="text-xs text-gray-500">
-            Token de acesso do Mercado Pago. Encontre em{' '}
-            <a
-              href="https://www.mercadopago.com.br/developers/panel/credentials"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-blue-600 hover:underline"
-            >
-              Credenciais do desenvolvedor
-            </a>
-          </p>
-        </div>
-
         <div className="space-y-2">
           <Label htmlFor="publicKey" className="text-sm font-light text-gray-700">
             Public Key
@@ -144,11 +119,36 @@ export function MercadoPagoConfig({ onActiveChange }: MercadoPagoConfigProps) {
             type="text"
             value={publicKey}
             onChange={(e) => setPublicKey(e.target.value)}
-            placeholder="APP_USR-..."
+            placeholder="pk_test_..."
             className="font-mono text-sm"
           />
           <p className="text-xs text-gray-500">
-            Chave pública do Mercado Pago. Use a mesma chave pública nas configurações da aplicação web.
+            Chave pública (publishable key) do Stripe. Encontre em{' '}
+            <a
+              href="https://dashboard.stripe.com/apikeys"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 hover:underline"
+            >
+              API Keys
+            </a>
+          </p>
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="secretKey" className="text-sm font-light text-gray-700">
+            Secret Key
+          </Label>
+          <Input
+            id="secretKey"
+            type="password"
+            value={secretKey}
+            onChange={(e) => setSecretKey(e.target.value)}
+            placeholder="sk_test_..."
+            className="font-mono text-sm"
+          />
+          <p className="text-xs text-gray-500">
+            Chave secreta (secret key) do Stripe. Mantenha esta chave em segredo.
           </p>
         </div>
 
@@ -158,7 +158,7 @@ export function MercadoPagoConfig({ onActiveChange }: MercadoPagoConfigProps) {
               Ativo
             </Label>
             <p className="text-xs text-gray-500">
-              Ative ou desative o método de pagamento Mercado Pago
+              Ative ou desative o método de pagamento Stripe
             </p>
           </div>
           <Switch
@@ -173,7 +173,7 @@ export function MercadoPagoConfig({ onActiveChange }: MercadoPagoConfigProps) {
           <Button
             type="button"
             onClick={handleSave}
-            disabled={isSaving || !accessToken || !publicKey}
+            disabled={isSaving || !publicKey || !secretKey}
             className="min-w-[120px]"
           >
             {isSaving ? (
@@ -190,13 +190,13 @@ export function MercadoPagoConfig({ onActiveChange }: MercadoPagoConfigProps) {
           </Button>
         </div>
 
-        {mercadoPagoMethod && (
+        {stripeMethod && (
           <div className="rounded-lg border border-green-200 bg-green-50 p-4">
             <p className="text-sm font-medium text-green-900 mb-1">
               ✅ Método de pagamento configurado
             </p>
             <p className="text-xs text-green-800">
-              O Mercado Pago está {active ? 'ativo' : 'inativo'} e pronto para processar pagamentos.
+              O Stripe está {active ? 'ativo' : 'inativo'} e pronto para processar pagamentos.
             </p>
           </div>
         )}
@@ -206,10 +206,10 @@ export function MercadoPagoConfig({ onActiveChange }: MercadoPagoConfigProps) {
             💡 Como configurar
           </p>
           <ul className="text-xs text-blue-800 space-y-1 list-disc list-inside">
-            <li>Acesse o painel do Mercado Pago e crie suas credenciais de teste ou produção</li>
-            <li>Copie o Access Token e a Public Key</li>
+            <li>Acesse o painel do Stripe e crie suas credenciais de teste ou produção</li>
+            <li>Copie a Public Key (publishable key) e a Secret Key</li>
             <li>Cole as chaves nos campos acima e salve</li>
-            <li>Configure a mesma Public Key no arquivo .env da aplicação web como <code className="bg-blue-100 px-1 rounded">NEXT_PUBLIC_MP_PUBLIC_KEY</code></li>
+            <li>Configure a mesma Public Key no arquivo .env da aplicação web como <code className="bg-blue-100 px-1 rounded">NEXT_PUBLIC_STRIPE_PUBLIC_KEY</code></li>
           </ul>
         </div>
       </CardContent>

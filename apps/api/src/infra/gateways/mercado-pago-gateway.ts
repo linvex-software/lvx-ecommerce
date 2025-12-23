@@ -60,17 +60,46 @@ export class MercadoPagoGateway implements PaymentGateway {
           throw new Error('Card token is required for card payments')
         }
 
-        paymentData.token = input.cardToken
+        // Validar formato básico do token (deve começar com algo válido)
+        const tokenStr = String(input.cardToken).trim()
+        if (!tokenStr || tokenStr.length < 10) {
+          throw new Error('Card token appears to be invalid. Please try again with a fresh token.')
+        }
+
+        paymentData.token = tokenStr
         paymentData.installments = input.installments || 1
+        
+        // payment_method_id é obrigatório para pagamentos com cartão
+        if (!input.paymentMethodId) {
+          throw new Error('payment_method_id is required for card payments')
+        }
         paymentData.payment_method_id = input.paymentMethodId
 
         if (input.issuerId) {
           paymentData.issuer_id = input.issuerId
         }
+
+        // Log para debug (não logar o token completo por segurança)
+        console.log('[MercadoPagoGateway] Criando pagamento com cartão:', {
+          payment_method_id: input.paymentMethodId,
+          installments: paymentData.installments,
+          issuer_id: input.issuerId,
+          token_length: tokenStr.length,
+          token_prefix: tokenStr.substring(0, 5) + '...'
+        })
       } else if (input.paymentMethod === 'pix') {
         paymentData.payment_method_id = 'pix'
         // PIX não precisa de token
       }
+
+      // Log do payload antes de enviar (sem dados sensíveis)
+      console.log('[MercadoPagoGateway] Payload do pagamento:', {
+        transaction_amount: paymentData.transaction_amount,
+        payment_method_id: paymentData.payment_method_id,
+        installments: paymentData.installments,
+        has_token: !!paymentData.token,
+        payer_email: paymentData.payer.email
+      })
 
       // Criar pagamento com idempotency key
       const payment = await this.client.create({
@@ -112,7 +141,27 @@ export class MercadoPagoGateway implements PaymentGateway {
 
       // Verificar se é erro do Mercado Pago com estrutura específica
       if (error?.cause?.[0]?.description) {
-        throw new Error(`Erro do Mercado Pago: ${error.cause[0].description}`)
+        const mpError = error.cause[0].description
+        
+        // Tratar erro específico de token inválido
+        if (mpError.includes('Invalid card_token_id') || mpError.includes('invalid card_token')) {
+          throw new Error(
+            'Token do cartão inválido ou expirado. ' +
+            'Por favor, tente novamente - o token pode ter expirado ou foi gerado incorretamente. ' +
+            'Certifique-se de que está usando credenciais do mesmo ambiente (teste ou produção).'
+          )
+        }
+        
+        throw new Error(`Erro do Mercado Pago: ${mpError}`)
+      }
+
+      // Verificar se a mensagem de erro contém informações sobre token inválido
+      const errorMessage = error?.message || ''
+      if (errorMessage.includes('Invalid card_token_id') || errorMessage.includes('invalid card_token')) {
+        throw new Error(
+          'Token do cartão inválido ou expirado. ' +
+          'Por favor, tente novamente - o token pode ter expirado ou foi gerado incorretamente.'
+        )
       }
 
       throw new Error('Erro desconhecido ao criar pagamento no Mercado Pago')

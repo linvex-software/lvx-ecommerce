@@ -9,18 +9,19 @@
 
 import { CartProvider } from './flor-de-menina/components/contexts/CartContext'
 import { MiniCart } from './flor-de-menina/components/cart/MiniCart'
-import { WhatsAppButton } from './flor-de-menina/components/layout/WhatsAppButton'
 import { TemplateLayoutRenderer } from '@/lib/templates/template-layout-renderer'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export function FlorDeMeninaTemplate() {
   return (
-    <CartProvider>
-      <div className="flex flex-col min-h-screen">
-        <TemplateLayoutRenderer templateId="flor-de-menina" />
-        <MiniCart />
-        <WhatsAppButton />
-      </div>
-    </CartProvider>
+    <ErrorBoundary>
+      <CartProvider>
+        <div className="flex flex-col min-h-screen">
+          <TemplateLayoutRenderer templateId="flor-de-menina" />
+          <MiniCart />
+        </div>
+      </CartProvider>
+    </ErrorBoundary>
   )
 }
 

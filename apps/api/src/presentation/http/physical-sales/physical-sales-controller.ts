@@ -37,7 +37,7 @@ import { OrderRepository } from '../../../infra/db/repositories/order-repository
 import { PaymentMethodRepository } from '../../../infra/db/repositories/payment-method-repository'
 import { CustomerRepository } from '../../../infra/db/repositories/customer-repository'
 import { UserRepository } from '../../../infra/db/repositories/user-repository'
-import { MercadoPagoGateway } from '../../../infra/gateways/mercado-pago-gateway'
+import { PaymentGatewayFactory } from '../../../infra/gateways/payment-gateway-factory'
 
 export class PhysicalSalesController {
   constructor(
@@ -718,29 +718,17 @@ export class PhysicalSalesController {
       const orderRepository = new OrderRepository()
       const paymentMethodRepository = new PaymentMethodRepository()
 
-      // Buscar credenciais do Mercado Pago
-      const paymentMethod = await paymentMethodRepository.findByProvider(storeId, 'mercadopago')
-      if (!paymentMethod || !paymentMethod.active) {
+      // Buscar método de pagamento ativo
+      const paymentMethod = await paymentMethodRepository.findActive(storeId)
+      if (!paymentMethod) {
         await reply.code(400).send({
-          error: 'Mercado Pago payment method not configured or inactive'
+          error: 'No active payment method configured'
         })
         return
       }
 
-      const config = paymentMethod.config_json as Record<string, unknown> | null
-      const accessToken =
-        (config?.access_token as string) ||
-        (config?.accessToken as string) ||
-        (config?.accessTokenProd as string) ||
-        (config?.access_token_prod as string) ||
-        process.env.MERCADOPAGO_ACCESS_TOKEN
-
-      if (!accessToken) {
-        await reply.code(500).send({ error: 'Mercado Pago access token not found' })
-        return
-      }
-
-      const paymentGateway = new MercadoPagoGateway(accessToken)
+      // Criar gateway usando factory
+      const paymentGateway = PaymentGatewayFactory.create(paymentMethod)
 
       const result = await generatePaymentLinkUseCase(validated, storeId, {
         orderRepository,

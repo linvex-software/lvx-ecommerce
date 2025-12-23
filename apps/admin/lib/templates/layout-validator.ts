@@ -113,6 +113,52 @@ export function validateAndCleanLayout(
     return createSafeDefaultLayout()
   }
 
+  // Se o resolver estiver vazio, retornar o layout original sem validação
+  // Isso evita remover todos os nós quando o resolver ainda não foi carregado
+  const resolverKeys = Object.keys(resolver)
+  if (resolverKeys.length === 0) {
+    console.warn('[LayoutValidator] Resolver vazio - retornando layout original sem validação')
+    return craftLayout
+  }
+
+  // Coletar todos os tipos únicos de componentes no layout
+  const componentTypes = new Set<string>()
+  const collectTypes = (nodeId: string, node: CraftNode | undefined, visited: Set<string> = new Set()) => {
+    if (!node || visited.has(nodeId)) return
+    visited.add(nodeId)
+    
+    if (node.type?.resolvedName) {
+      componentTypes.add(node.type.resolvedName)
+    }
+    
+    if (node.nodes) {
+      for (const childId of node.nodes) {
+        collectTypes(childId, craftLayout[childId], visited)
+      }
+    }
+  }
+  
+  collectTypes('ROOT', craftLayout.ROOT)
+  
+  // Verificar quais componentes do layout estão no resolver
+  const missingComponents = Array.from(componentTypes).filter(type => !(type in resolver))
+  
+  // Se muitos componentes estão faltando, pode ser que o resolver não foi carregado corretamente
+  // Se TODOS os componentes do layout estão faltando, retornar o layout original
+  if (missingComponents.length > 0 && missingComponents.length === componentTypes.size) {
+    console.warn('[LayoutValidator] NENHUM componente do layout está no resolver! Retornando layout original.')
+    return craftLayout
+  }
+  
+  // Se a maioria dos componentes está faltando (>80%), também retornar o layout original
+  const missingPercentage = componentTypes.size > 0 
+    ? (missingComponents.length / componentTypes.size) * 100 
+    : 0
+  if (missingPercentage > 80) {
+    console.warn(`[LayoutValidator] ${missingPercentage.toFixed(0)}% dos componentes estão faltando no resolver! Retornando layout original.`)
+    return craftLayout
+  }
+
   // Limpar o layout recursivamente
   const cleanedLayout: CraftLayout = {}
   const visited = new Set<string>()
@@ -149,6 +195,14 @@ export function validateAndCleanLayout(
 
   // Verificar se ROOT tem nós válidos
   const validRootNodes = cleanedLayout.ROOT.nodes?.filter(nodeId => cleanedLayout[nodeId]) || []
+  
+  // Se TODOS os nós do ROOT foram removidos, pode ser que o resolver não tenha os componentes
+  // Nesse caso, retornar o layout original em vez de um layout vazio
+  if (validRootNodes.length === 0 && cleanedLayout.ROOT.nodes && cleanedLayout.ROOT.nodes.length > 0) {
+    console.warn('[LayoutValidator] Todos os nós do ROOT foram removidos! Retornando layout original.')
+    return craftLayout
+  }
+  
   if (validRootNodes.length !== cleanedLayout.ROOT.nodes?.length) {
     console.warn(`[LayoutValidator] Alguns nós do ROOT foram removidos: ${cleanedLayout.ROOT.nodes?.length || 0} -> ${validRootNodes.length}`)
     cleanedLayout.ROOT.nodes = validRootNodes

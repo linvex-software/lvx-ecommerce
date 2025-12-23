@@ -11,7 +11,7 @@ import { useCartStore } from '@/lib/store/useCartStore'
 import { useCreateOrder } from '@/lib/hooks/use-create-order'
 import { cn } from '@/lib/utils'
 import { DeliveryOptionsWithCep } from '@/components/checkout/DeliveryOptionsWithCep'
-import { MercadoPagoPayment } from '@/components/checkout/MercadoPagoPayment'
+import { PaymentMethod } from '@/components/checkout/PaymentMethod'
 import { PixQrCode } from '@/components/checkout/PixQrCode'
 import { CouponInput } from '@/components/checkout/CouponInput'
 import { useIsAuthenticated, useHasHydrated, useAuthStore } from '@/lib/store/useAuthStore'
@@ -725,7 +725,7 @@ export default function CheckoutPage() {
                       </Button>
                     </div>
                   ) : (
-                    <MercadoPagoPayment
+                    <PaymentMethod
                       orderId={createdOrder?.id || ''}
                       amount={Math.round(total * 100)} // converter para centavos
                       payer={{
