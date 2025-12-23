@@ -1,5 +1,8 @@
 'use client'
 
+// Forçar renderização dinâmica para evitar pré-renderização estática
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect } from 'react'
 import { Editor } from '@craftjs/core'
 import { useAuthStore } from '@/store/auth-store'
@@ -9,8 +12,7 @@ import { MenuSettingsPanel } from '@/components/editor/menu/menu-settings-panel'
 import { TemplateSelector } from '@/components/editor/template-selector'
 import { EditorTopbar } from '@/components/editor/editor-topbar'
 import { PreviewProvider } from '@/components/editor/preview-context'
-import { Button } from '@white-label/ui'
-import { Save, Loader2 } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import type { NavbarItem } from '@/lib/types/navbar'
 
@@ -213,8 +215,8 @@ export default function MenuEditorPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+      <div className="flex h-screen items-center justify-center bg-background">
+        <Loader2 className="h-6 w-6 animate-spin text-text-tertiary" />
       </div>
     )
   }
@@ -225,47 +227,28 @@ export default function MenuEditorPage() {
         resolver={{}}
         enabled={true}
       >
-        <div className="flex h-screen flex-col bg-gray-50">
-          <EditorTopbar isPreview={false} />
-        
-        {/* Menu Header com botão de salvar */}
-        <div className="border-b border-gray-200 bg-white px-6 py-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-gray-900">Menu / Navbar</h2>
-              <p className="text-sm text-gray-500">Configure os itens de navegação da sua loja</p>
-            </div>
-            <Button
-              onClick={handleSave}
-              disabled={isSaving}
-              className="flex items-center gap-2"
-            >
-              {isSaving ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Save className="h-4 w-4" />
-                  Salvar Menu
-                </>
-              )}
-            </Button>
-          </div>
-        </div>
+        <div className="flex h-screen flex-col bg-surface-2">
+          <EditorTopbar 
+            isPreview={false} 
+            customActionButton={{
+              label: 'Salvar Menu',
+              onClick: handleSave,
+              disabled: isSaving,
+              isLoading: isSaving
+            }}
+          />
         
         {/* Main Content */}
         <div className="flex flex-1 overflow-hidden">
           {/* Left Panel - Navigation + Tree Editor */}
-          <div className="w-80 border-r border-gray-200 bg-white flex flex-col">
+          <div className="w-80 border-r border-border bg-surface flex flex-col">
             {/* Navigation */}
             <div className="flex-shrink-0">
               <TemplateSelector />
             </div>
             
             {/* Tree Editor */}
-            <div className="flex-1 overflow-y-auto border-t border-gray-200">
+            <div className="flex-1 overflow-y-auto border-t border-border">
               <MenuTreeEditor
                 items={menuItems}
                 selectedItem={selectedItem}
@@ -279,7 +262,7 @@ export default function MenuEditorPage() {
           </div>
 
           {/* Right Panel - Settings */}
-          <div className="flex-1 bg-gray-50 overflow-y-auto">
+          <div className="flex-1 bg-surface-2 overflow-y-auto">
             {selectedItem ? (
               <MenuSettingsPanel
                 item={selectedItem}
@@ -288,8 +271,8 @@ export default function MenuEditorPage() {
             ) : (
               <div className="flex h-full items-center justify-center">
                 <div className="text-center">
-                  <p className="text-sm text-gray-500">Selecione um item para editar</p>
-                  <p className="text-xs text-gray-400 mt-1">Clique em um item do menu à esquerda ou adicione um novo</p>
+                  <p className="text-sm text-text-secondary">Selecione um item para editar</p>
+                  <p className="text-xs text-text-tertiary mt-1">Clique em um item do menu à esquerda ou adicione um novo</p>
                 </div>
               </div>
             )}

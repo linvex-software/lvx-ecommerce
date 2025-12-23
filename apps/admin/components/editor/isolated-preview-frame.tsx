@@ -187,18 +187,24 @@ export function IsolatedPreviewFrame({
 
   const previewUrl = getPreviewUrl()
 
-  // Não renderizar iframe até ter layoutJson válido
-  if (!layoutJson) {
-    return null
-  }
-
   // Não mostrar o iframe até que o layout tenha sido aplicado
   // Isso evita o flash do template padrão
   // MAS sempre renderizar o iframe (mesmo invisível) para receber mensagens
-  const shouldShowIframe = isReady && layoutApplied
+  // Se não tiver layoutJson, sempre mostrar loading
+  const shouldShowIframe = layoutJson && isReady && layoutApplied
 
   return (
-    <div className="w-full h-full flex items-center justify-center bg-gray-100 overflow-auto">
+    <div className="w-full h-full flex items-center justify-center bg-surface-2 overflow-auto relative">
+      {/* Loading enquanto preview não está pronto */}
+      {!shouldShowIframe && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            <p className="text-sm text-text-secondary">Carregando preview...</p>
+          </div>
+        </div>
+      )}
+      
       <div 
         className="flex-shrink-0 transition-all duration-300"
         style={{
@@ -213,7 +219,7 @@ export function IsolatedPreviewFrame({
         <iframe
           ref={iframeRef}
           src={previewUrl}
-          className="w-full h-full border-0 rounded-lg shadow-lg"
+          className="w-full h-full border-0 shadow-lg"
           title="Preview"
           sandbox="allow-same-origin allow-scripts allow-forms allow-popups"
           style={{

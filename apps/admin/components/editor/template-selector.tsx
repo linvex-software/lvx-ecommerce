@@ -67,16 +67,16 @@ export function TemplateSelector({ onTemplateSelect, selectedTemplate: externalS
   return (
     <div className="h-full flex flex-col">
       {/* Seletor de Seções */}
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="font-semibold text-sm text-gray-900 mb-3">Editor</h3>
+      <div className="p-4 border-b border-border">
+        <h3 className="font-semibold text-sm text-text-primary mb-3">Editor</h3>
         <div className="space-y-1">
           <Link
             href="/editor"
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
               isHomepage
-                ? "bg-blue-50 text-blue-700 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-text-secondary hover:bg-hover"
             )}
           >
             <Home className="w-4 h-4" />
@@ -87,8 +87,8 @@ export function TemplateSelector({ onTemplateSelect, selectedTemplate: externalS
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
               isMenu
-                ? "bg-blue-50 text-blue-700 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-text-secondary hover:bg-hover"
             )}
           >
             <Menu className="w-4 h-4" />
@@ -99,8 +99,8 @@ export function TemplateSelector({ onTemplateSelect, selectedTemplate: externalS
             className={cn(
               "flex items-center gap-2 px-3 py-2 rounded-md text-sm transition-colors",
               isPages
-                ? "bg-blue-50 text-blue-700 font-medium"
-                : "text-gray-700 hover:bg-gray-100"
+                ? "bg-primary/10 text-primary font-medium"
+                : "text-text-secondary hover:bg-hover"
             )}
           >
             <FileText className="w-4 h-4" />
@@ -111,10 +111,10 @@ export function TemplateSelector({ onTemplateSelect, selectedTemplate: externalS
 
       {/* Seletor de Templates (apenas na homepage) */}
       {isHomepage && (
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-border">
           <div className="flex items-center gap-2 mb-4">
-            <Layout className="w-5 h-5 text-gray-600" />
-            <h3 className="font-semibold text-sm text-gray-900">Template</h3>
+            <Layout className="w-5 h-5 text-text-secondary" />
+            <h3 className="font-semibold text-sm text-text-primary">Template</h3>
           </div>
 
           <div className="space-y-2">
@@ -147,7 +147,7 @@ export function TemplateSelector({ onTemplateSelect, selectedTemplate: externalS
           </div>
 
           {isLoading && (
-            <div className="mt-4 text-center text-sm text-gray-500">
+            <div className="mt-4 text-center text-sm text-text-secondary">
               Carregando template...
             </div>
           )}

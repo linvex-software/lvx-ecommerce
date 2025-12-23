@@ -77,17 +77,41 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
   }, [isMounted, isChecking, isAuthenticated, user, needsOnboarding, router])
 
-  // Mostrar loading enquanto verifica autenticação ou não está montado
-  if (!isMounted || isChecking || !isAuthenticated || !user) {
+  // Para rotas do editor, passar direto - o editor tem seu próprio loading
+  // Para outras rotas, mostrar loading apenas se realmente não estiver autenticado
+  if (!isEditorRoute && (!isMounted || isChecking || !isAuthenticated || !user)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50/50">
         <div className="text-sm font-light text-gray-500 tracking-wide">Carregando...</div>
       </div>
     )
   }
+  
+  // Para editor, passar direto - não mostrar loading aqui
+  // O editor tem seu próprio controle de autenticação
+  if (isEditorRoute) {
+    if (!isMounted || isChecking) {
+      return <>{children}</>
+    }
+    // Verificar autenticação e role para editor em background, mas não bloquear renderização
+    // O editor/layout.tsx fará essa verificação
+    if (user && user.role && !ALLOWED_ROLES.includes(user.role)) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-gray-50/50">
+          <div className="text-center">
+            <p className="text-sm font-medium text-gray-900">Acesso negado</p>
+            <p className="mt-1 text-xs text-gray-500">
+              Você não tem permissão para acessar esta área
+            </p>
+          </div>
+        </div>
+      )
+    }
+    return <>{children}</>
+  }
 
-  // Verificar role antes de renderizar
-  if (!user.role || !(ALLOWED_ROLES as readonly string[]).includes(user.role)) {
+  // Verificar role antes de renderizar (apenas para rotas não-editor)
+  if (!user || !user.role || !(ALLOWED_ROLES as readonly string[]).includes(user.role)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50/50">
         <div className="text-center">

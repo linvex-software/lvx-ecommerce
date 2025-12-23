@@ -30,13 +30,13 @@ export const MenuItemPageCraft = ({
       }}
       className={`
         inline-flex items-center gap-2 px-3 py-2 rounded-md transition-colors
-        ${isSelected ? 'bg-blue-100 ring-2 ring-blue-500' : 'hover:bg-gray-100'}
+        ${isSelected ? 'bg-primary/10 ring-2 ring-primary' : 'hover:bg-hover'}
       `}
     >
-      <Link href={href} className="text-sm font-medium text-gray-900">
+      <Link href={href} className="text-sm font-medium text-text-primary">
         {label}
       </Link>
-      <span className="text-xs text-gray-400">(Página)</span>
+      <span className="text-xs text-text-tertiary">(Página)</span>
     </div>
   )
 }
@@ -47,6 +47,7 @@ MenuItemPageCraft.craft = {
     label: 'Página',
   },
 }
+
 
 
 

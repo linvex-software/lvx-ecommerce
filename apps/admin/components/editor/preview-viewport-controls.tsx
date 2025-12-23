@@ -17,7 +17,7 @@ export function PreviewViewportControls() {
   ]
 
   return (
-    <div className="flex items-center gap-1 bg-gray-100 rounded-lg p-1">
+    <div className="flex items-center gap-1 bg-surface-2 rounded-lg p-1">
       {modes.map(({ mode, icon: Icon, label }) => (
         <button
           key={mode}
@@ -25,7 +25,7 @@ export function PreviewViewportControls() {
           className={`p-2 rounded transition-colors ${
             previewMode === mode
               ? 'bg-[#7c3aed] text-white'
-              : 'text-gray-600 hover:bg-gray-200'
+              : 'text-text-secondary hover:bg-hover'
           }`}
           title={label}
           aria-label={`Visualizar em ${label}`}
@@ -36,6 +36,7 @@ export function PreviewViewportControls() {
     </div>
   )
 }
+
 
 
 

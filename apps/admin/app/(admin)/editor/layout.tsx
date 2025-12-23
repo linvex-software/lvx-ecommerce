@@ -60,17 +60,20 @@ export default function EditorLayout({ children }: { children: React.ReactNode }
     }
   }, [isMounted, isChecking, isAuthenticated, user, router])
 
-  // Mostrar loading enquanto verifica autenticação
-  if (!isMounted || isChecking || !isAuthenticated || !user) {
+  // Não mostrar loading - deixar o conteúdo renderizar imediatamente
+  // Isso evita o flash de "Carregando..." rápido
+  // O loading do preview será mostrado na área correta
+  // As verificações de autenticação acontecem em background via useEffect
+  if (!isMounted || isChecking) {
     return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-        <Spinner size="lg" />
+      <div className={`h-screen w-full ${isPreferencesPage ? 'overflow-y-auto' : 'overflow-hidden'}`}>
+        {children}
       </div>
     )
   }
 
   // Verificar role antes de renderizar
-  if (!user.role || !(ALLOWED_ROLES as readonly string[]).includes(user.role)) {
+  if (!user || !user.role || !(ALLOWED_ROLES as readonly string[]).includes(user.role)) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50/50">
         <div className="text-center">

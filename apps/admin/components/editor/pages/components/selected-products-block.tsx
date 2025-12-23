@@ -70,7 +70,7 @@ export function SelectedProductsBlock({ pageId, pageSlug }: SelectedProductsBloc
       >
         <div className="text-center">
           <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-sm text-gray-500">Carregando produtos...</p>
+          <p className="text-sm text-text-secondary">Carregando produtos...</p>
         </div>
       </div>
     )
@@ -86,10 +86,10 @@ export function SelectedProductsBlock({ pageId, pageSlug }: SelectedProductsBloc
         }}
         className="p-8 text-center"
       >
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-text-secondary">
           Nenhum produto selecionado nesta página
         </p>
-        <p className="text-xs text-gray-400 mt-1">
+        <p className="text-xs text-text-tertiary mt-1">
           Selecione produtos nas configurações da página
         </p>
       </div>

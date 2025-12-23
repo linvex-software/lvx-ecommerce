@@ -158,14 +158,14 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="border-b border-gray-200 px-4 py-3">
-        <h3 className="text-sm font-semibold text-gray-900">Configurações da Página</h3>
+      <div className="border-b border-border px-4 py-3">
+        <h3 className="text-sm font-semibold text-text-primary">Configurações da Página</h3>
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-6">
         {/* Básico */}
         <div className="space-y-4">
-          <h4 className="text-xs font-semibold text-gray-500 uppercase">Básico</h4>
+          <h4 className="text-xs font-semibold text-text-secondary uppercase">Básico</h4>
           
           <div>
             <Label>Título</Label>
@@ -179,7 +179,7 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
           <div>
             <Label>Slug (URL)</Label>
             <div className="flex items-center gap-2">
-              <span className="text-sm text-gray-500">/</span>
+              <span className="text-sm text-text-secondary">/</span>
               <Input
                 value={slug}
                 onChange={(e) => handleSlugChange(e.target.value)}
@@ -187,7 +187,7 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
                 className="flex-1"
               />
             </div>
-            <p className="text-xs text-gray-400 mt-1">
+            <p className="text-xs text-text-tertiary mt-1">
               Apenas letras minúsculas, números e hífens
             </p>
           </div>
@@ -201,7 +201,7 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
                 setPublished(e.target.checked)
                 onUpdate({ published: e.target.checked })
               }}
-              className="rounded border-gray-300"
+              className="rounded border-border"
             />
             <Label htmlFor="published" className="cursor-pointer">
               Publicada
@@ -212,7 +212,7 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
         {/* Produtos */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase">Produtos</h4>
+            <h4 className="text-xs font-semibold text-text-secondary uppercase">Produtos</h4>
             <Button
               size="sm"
               variant="outline"
@@ -229,17 +229,17 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
                 product && (
                   <div
                     key={product.id}
-                    className="flex items-center justify-between p-2 bg-gray-50 rounded border border-gray-200"
+                    className="flex items-center justify-between p-2 bg-surface-2 rounded border border-border"
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
+                      <p className="text-sm font-medium text-text-primary truncate">
                         {product.name}
                       </p>
-                      <p className="text-xs text-gray-500">SKU: {product.sku}</p>
+                      <p className="text-xs text-text-secondary">SKU: {product.sku}</p>
                     </div>
                     <button
                       onClick={() => handleRemoveProduct(product.id)}
-                      className="ml-2 text-gray-400 hover:text-red-600"
+                      className="ml-2 text-text-tertiary hover:text-error"
                     >
                       <X className="h-4 w-4" />
                     </button>
@@ -251,9 +251,9 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
 
           {/* Seletor de produtos */}
           {showProductSelector && (
-            <div className="border border-gray-200 rounded-lg p-4 space-y-3">
+            <div className="border border-border rounded-lg p-4 space-y-3">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-text-tertiary" />
                 <Input
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -269,7 +269,7 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
               ) : (
                 <div className="max-h-64 overflow-y-auto space-y-2">
                   {availableProducts.length === 0 ? (
-                    <p className="text-sm text-gray-500 text-center py-4">
+                    <p className="text-sm text-text-secondary text-center py-4">
                       Nenhum produto encontrado
                     </p>
                   ) : (
@@ -281,21 +281,21 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
                           onClick={() => handleToggleProduct(product.id)}
                           className={`w-full text-left p-2 rounded border transition-colors ${
                             isSelected
-                              ? 'border-blue-500 bg-blue-50'
-                              : 'border-gray-200 hover:border-gray-300'
+                              ? 'border-primary bg-primary/10'
+                              : 'border-border hover:border-border-hover'
                           }`}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium text-gray-900 truncate">
+                              <p className="text-sm font-medium text-text-primary truncate">
                                 {product.name}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-text-secondary">
                                 R$ {product.base_price ? parseFloat(product.base_price).toFixed(2) : '0.00'}
                               </p>
                             </div>
                             {isSelected && (
-                              <Check className="h-4 w-4 text-blue-600 flex-shrink-0 ml-2" />
+                              <Check className="h-4 w-4 text-primary flex-shrink-0 ml-2" />
                             )}
                           </div>
                         </button>
@@ -308,7 +308,7 @@ export function PageSettingsPanel({ page, onUpdate }: PageSettingsPanelProps) {
           )}
 
           {selectedProducts.length === 0 && !showProductSelector && (
-            <p className="text-sm text-gray-500 text-center py-4">
+            <p className="text-sm text-text-secondary text-center py-4">
               Nenhum produto selecionado
             </p>
           )}

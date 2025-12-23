@@ -67,8 +67,8 @@ export function CraftPreviewFrame({ blocks, blockId }: CraftPreviewFrameProps) {
       style={{ minHeight: '400px' }}
     >
       {!isReady && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
-          <div className="text-sm text-gray-500">Carregando preview...</div>
+        <div className="absolute inset-0 flex items-center justify-center bg-surface-2">
+          <div className="text-sm text-text-secondary">Carregando preview...</div>
         </div>
       )}
       <iframe

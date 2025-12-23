@@ -357,7 +357,7 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-text-secondary mt-1">
                 Você pode escolher entre rotas pré-definidas, categorias ou páginas institucionais
               </p>
             </div>
@@ -366,10 +366,10 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
               <Input
                 value={formData.url || ''}
                 readOnly
-                className="bg-gray-50 font-mono text-sm"
+                className="bg-surface-2 font-mono text-sm"
                 placeholder="Selecione uma página acima"
               />
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-text-secondary mt-1">
                 Esta é a URL que será usada quando o usuário clicar no item do menu.
                 {!formData.url && ' Selecione uma página acima para preencher automaticamente.'}
               </p>
@@ -433,14 +433,14 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="border-b border-gray-200 px-6 py-4">
-        <h2 className="text-lg font-semibold text-gray-900">Configurações do Item</h2>
+      <div className="border-b border-border px-6 py-4">
+        <h2 className="text-lg font-semibold text-text-primary">Configurações do Item</h2>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
         {/* Configurações básicas */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-gray-700">Básico</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Básico</h3>
           
           <div>
             <Label>Texto do item</Label>
@@ -494,14 +494,14 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
         {/* Configurações específicas do tipo */}
         {formData.type && formData.type !== 'submenu' && (
           <div className="space-y-4">
-            <h3 className="text-sm font-semibold text-gray-700">Configurações do Tipo</h3>
+            <h3 className="text-sm font-semibold text-text-primary">Configurações do Tipo</h3>
             {renderSettingsByType()}
           </div>
         )}
 
         {/* Visibilidade por breakpoint */}
         <div className="space-y-4">
-          <h3 className="text-sm font-semibold text-gray-700">Visibilidade</h3>
+          <h3 className="text-sm font-semibold text-text-primary">Visibilidade</h3>
           
           <div>
             <Label>
@@ -539,7 +539,7 @@ export function MenuSettingsPanel({ item, onUpdate }: MenuSettingsPanelProps) {
         </div>
       </div>
 
-      <div className="border-t border-gray-200 px-6 py-4">
+      <div className="border-t border-border px-6 py-4">
         <Button onClick={handleUpdate} className="w-full">
           Salvar Alterações
         </Button>

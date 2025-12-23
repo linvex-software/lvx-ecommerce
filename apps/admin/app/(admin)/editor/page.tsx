@@ -1,5 +1,8 @@
 'use client'
 
+// Forçar renderização dinâmica para evitar pré-renderização estática
+export const dynamic = 'force-dynamic'
+
 import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { Editor, useEditor } from '@craftjs/core'
@@ -10,7 +13,6 @@ import { EditorTopbar } from '@/components/editor/editor-topbar'
 import { TemplateSelector } from '@/components/editor/template-selector'
 import { IsolatedPreviewFrame } from '@/components/editor/isolated-preview-frame'
 import { PreviewProvider } from '@/components/editor/preview-context'
-import { ThemeProvider } from '@/components/theme/theme-provider'
 import { loadTemplateLayout, loadTemplateConfig, loadTemplateComponents } from '@/lib/templates/template-loader'
 import { validateAndCleanLayout, createSafeDefaultLayout } from '@/lib/templates/layout-validator'
 import { EditorCartProvider } from '@/components/editor/editor-cart-provider'
@@ -331,35 +333,28 @@ function EditorContent() {
     }
   }
 
-  // Mostrar spinner apenas durante carregamento inicial dos dados
-  // Não esperar pelo preview estar pronto para evitar loading infinito
-  if (isLoading || savedLayout === undefined || Object.keys(templateResolver).length === 0) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-        <Spinner size="lg" />
-      </div>
-    )
-  }
+  // Renderizar estrutura mesmo durante carregamento - o preview terá seu próprio loading
+  // Se não tiver dados ainda, usar valores padrão para evitar erro
+  const displayLayout = savedLayout || null
+  const displayResolver = Object.keys(templateResolver).length > 0 ? templateResolver : {}
 
   return (
-    <ThemeProvider>
-      <PreviewProvider>
-        <div className="h-full flex flex-col overflow-hidden">
-          <Editor
-            resolver={templateResolver}
-            enabled={!isPreview}
-          >
-            <EditorContentInner 
-              savedLayout={savedLayout} 
-              isPreview={isPreview}
-              onTemplateSelect={handleTemplateSelect}
-              selectedTemplate={selectedTemplate}
-              templateResolver={templateResolver}
-            />
-          </Editor>
-        </div>
-      </PreviewProvider>
-    </ThemeProvider>
+    <PreviewProvider>
+      <div className="h-full flex flex-col overflow-hidden">
+        <Editor
+          resolver={displayResolver}
+          enabled={!isPreview}
+        >
+          <EditorContentInner 
+            savedLayout={displayLayout} 
+            isPreview={isPreview}
+            onTemplateSelect={handleTemplateSelect}
+            selectedTemplate={selectedTemplate}
+            templateResolver={displayResolver}
+          />
+        </Editor>
+      </div>
+    </PreviewProvider>
   )
 }
 
@@ -376,12 +371,9 @@ function EditorContentInner({
   selectedTemplate: string
   templateResolver: Record<string, any>
 }) {
-  // Se não tiver layout ou resolver vazio, não renderizar nada
-  // O spinner já está sendo mostrado no nível superior
-  if (!savedLayoutProp || Object.keys(templateResolver).length === 0) {
-    return null
-  }
-  // Se o layout não tem ROOT válido, usar layout padrão seguro
+  // Sempre renderizar estrutura - o preview terá seu próprio loading
+  // Se não tiver layout ainda, o preview mostrará loading
+  // Se não tiver layout ainda, usar null - o preview mostrará loading
   let savedLayout = savedLayoutProp
   if (savedLayout && (!savedLayout.ROOT || typeof savedLayout.ROOT !== 'object')) {
     console.warn('[Editor] Layout carregado não tem ROOT válido, usando layout padrão seguro')
@@ -433,8 +425,8 @@ function EditorContentInner({
   })
   
   // Converter layout para JSON string para usar na prop data do Frame
-  // O Craft só deve receber data quando existir layout válido
-  const layoutJson = Object.keys(finalLayout).length > 0 
+  // Se não tiver layout ainda, passar null - o preview mostrará loading
+  const layoutJson = finalLayout && Object.keys(finalLayout).length > 0 
     ? JSON.stringify(finalLayout) 
     : null
   
@@ -447,19 +439,17 @@ function EditorContentInner({
     <>
       <EditorTopbar isPreview={isPreview} />
       <NodeSelectorListener />
-      <div className="flex-1 flex overflow-hidden bg-white">
+      <div className="flex-1 flex overflow-hidden bg-background">
         {!isPreview && (
-          <div className="w-64 bg-white border-r border-gray-200 h-full flex flex-col">
+          <div className="w-64 bg-surface border-r border-border h-full flex flex-col">
             <TemplateSelector onTemplateSelect={onTemplateSelect} selectedTemplate={selectedTemplate} />
           </div>
         )}
-        <div className="flex-1 overflow-hidden bg-gray-50">
-          {layoutJson && (
-            <IsolatedPreviewFrame
-              templateId={selectedTemplate}
-              layoutJson={layoutJson}
-            />
-          )}
+        <div className="flex-1 overflow-hidden bg-surface-2">
+          <IsolatedPreviewFrame
+            templateId={selectedTemplate}
+            layoutJson={layoutJson}
+          />
         </div>
       </div>
     </>
@@ -468,13 +458,7 @@ function EditorContentInner({
 
 export default function EditorPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm">
-          <Spinner size="lg" />
-        </div>
-      }
-    >
+    <Suspense fallback={null}>
       <EditorContent />
     </Suspense>
   )

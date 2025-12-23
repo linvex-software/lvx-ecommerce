@@ -1,5 +1,8 @@
 'use client'
 
+// Forçar renderização dinâmica para evitar pré-renderização estática
+export const dynamic = 'force-dynamic'
+
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import { Editor, useEditor, Frame } from '@craftjs/core'
@@ -8,8 +11,8 @@ import { apiClient } from '@/lib/api-client'
 import { EditorTopbar } from '@/components/editor/editor-topbar'
 import { PreviewProvider } from '@/components/editor/preview-context'
 import { PageSettingsPanel } from '@/components/editor/pages/page-settings-panel'
-import { Button } from '@white-label/ui'
-import { Save, Loader2 } from 'lucide-react'
+import { TemplateSelector } from '@/components/editor/template-selector'
+import { Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { loadTemplateLayout, loadTemplateConfig, loadTemplateComponents } from '@/lib/templates/template-loader'
 import { RestrictedFrame } from '@/components/editor/restricted-frame'
@@ -278,85 +281,70 @@ function PageEditorContent() {
     }
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex h-screen items-center justify-center">
-        <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-      </div>
-    )
-  }
-
-  if (!page) {
-    return null
-  }
-
   return (
     <PreviewProvider>
       <Editor
         resolver={templateResolver}
         enabled={true}
       >
-        <div className="flex h-screen flex-col bg-gray-50">
-          <EditorTopbar isPreview={false} />
-        
-          {/* Page Header */}
-          <div className="border-b border-gray-200 bg-white px-6 py-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {isNew ? 'Nova Página' : page.title}
-                </h2>
-                <p className="text-sm text-gray-500">
-                  {isNew ? 'Crie uma nova página dinâmica' : `Editando: /${page.slug}`}
-                </p>
-              </div>
-              <Button
-                onClick={handleSave}
-                disabled={isSaving || !page.title?.trim() || !page.slug?.trim()}
-                className="flex items-center gap-2"
-              >
-                {isSaving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Salvar Página
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+        <div className="flex h-screen flex-col bg-surface-2">
+          <EditorTopbar 
+            isPreview={false}
+            customActionButton={page ? {
+              label: 'Salvar Página',
+              onClick: handleSave,
+              disabled: isSaving || !page.title?.trim() || !page.slug?.trim(),
+              isLoading: isSaving
+            } : undefined}
+          />
         
           {/* Main Content */}
           <div className="flex flex-1 overflow-hidden">
-            {/* Right Panel - Settings */}
-            <div className="w-80 border-r border-gray-200 bg-white overflow-y-auto">
-              <PageSettingsPanel
-                page={page}
-                onUpdate={handleUpdatePage}
-              />
+            {/* Left Panel - Navigation + Settings */}
+            <div className="w-80 border-r border-border bg-surface flex flex-col">
+              {/* Navigation */}
+              <div className="flex-shrink-0">
+                <TemplateSelector />
+              </div>
+              
+              {/* Settings Panel */}
+              <div className="flex-1 overflow-y-auto border-t border-border">
+                {isLoading || !page ? (
+                  <div className="flex h-full items-center justify-center">
+                    <Loader2 className="h-6 w-6 animate-spin text-text-tertiary" />
+                  </div>
+                ) : (
+                  <PageSettingsPanel
+                    page={page}
+                    onUpdate={handleUpdatePage}
+                  />
+                )}
+              </div>
             </div>
 
             {/* Editor Area */}
-            <div className="flex-1 bg-gray-50 overflow-y-auto">
-              <ThemeProvider>
-                <EditorCartProvider>
-                  <div className="min-h-full bg-white">
-                    {/* Renderizar conteúdo Craft.js se existir */}
-                    {page.contentJson && Object.keys(page.contentJson).length > 0 ? (
-                      <RestrictedFrame
-                        data={JSON.stringify(page.contentJson)}
-                      />
-                    ) : (
-                      /* Preview padrão: mostrar produtos selecionados - mesmo layout da loja */
-                      <DynamicPagePreview page={page} />
-                    )}
-                  </div>
-                </EditorCartProvider>
-              </ThemeProvider>
+            <div className="flex-1 bg-surface-2 overflow-y-auto">
+              {isLoading || !page ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-6 w-6 animate-spin text-text-tertiary" />
+                </div>
+              ) : (
+                <ThemeProvider>
+                  <EditorCartProvider>
+                    <div className="min-h-full bg-background">
+                      {/* Renderizar conteúdo Craft.js se existir */}
+                      {page.contentJson && Object.keys(page.contentJson).length > 0 ? (
+                        <RestrictedFrame
+                          data={JSON.stringify(page.contentJson)}
+                        />
+                      ) : (
+                        /* Preview padrão: mostrar produtos selecionados - mesmo layout da loja */
+                        <DynamicPagePreview page={page} />
+                      )}
+                    </div>
+                  </EditorCartProvider>
+                </ThemeProvider>
+              )}
             </div>
           </div>
         </div>
