@@ -61,7 +61,6 @@ export function MercadoPagoPayment({
   const cardFormRef = useRef<any>(null) // Ref para manter referência estável do CardForm
   const [identificationTypes, setIdentificationTypes] = useState<Array<{ id: string; name: string }>>([])
   const [installments, setInstallments] = useState<Array<{ installments: number; recommended_message: string }>>([])
-  const [issuers, setIssuers] = useState<Array<{ id: string; name: string }>>([])
   const formRef = useRef<HTMLFormElement>(null)
 
   // Buscar chave pública do banco de dados
@@ -228,6 +227,30 @@ export function MercadoPagoPayment({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mp]) // onPaymentError não precisa estar nas dependências para evitar re-renders desnecessários
 
+  // Interceptar chamadas da API do Mercado Pago para capturar respostas de installments
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const originalFetch = window.fetch
+    window.fetch = async (...args) => {
+      const url = args[0]?.toString() || ''
+      
+      // Interceptar chamadas para API de installments do Mercado Pago (apenas para logging se necessário)
+      if (url.includes('mercadopago.com') && url.includes('installments')) {
+        const response = await originalFetch(...args)
+        return response
+      }
+      
+      return originalFetch(...args)
+    }
+
+    return () => {
+      window.fetch = originalFetch
+    }
+  }, [])
+
+  // Campo issuer removido - Mercado Pago detecta automaticamente pelo BIN do cartão
+
   // Inicializar CardForm quando mp estiver disponível e método for cartão
   useEffect(() => {
     console.log('[MercadoPagoPayment] useEffect CardForm - Verificando condições:', {
@@ -275,7 +298,7 @@ export function MercadoPagoPayment({
         'form-checkout__expirationDate',
         'form-checkout__securityCode',
         'form-checkout__cardholderName',
-        'form-checkout__issuer',
+        'form-checkout__issuer', // Obrigatório na config do CardForm, mas oculto no DOM
         'form-checkout__installments',
         'form-checkout__identificationType',
         'form-checkout__identificationNumber',
@@ -303,6 +326,11 @@ export function MercadoPagoPayment({
             element.innerHTML = '' // Limpar o elemento
           }
           return true // Elemento existe e está pronto para receber iframe
+        }
+        
+        // Para o campo issuer, apenas verificar se existe (pode estar oculto)
+        if (id === 'form-checkout__issuer') {
+          return true // Elemento existe, não precisa estar visível
         }
         
         // Para outros elementos, verificar se estão visíveis
@@ -427,6 +455,8 @@ export function MercadoPagoPayment({
               id: 'form-checkout__cardholderName',
               placeholder: 'Titular do cartão'
             },
+            // issuer é obrigatório na configuração do CardForm, mas será preenchido automaticamente pelo BIN
+            // Não renderizamos no DOM - o CardForm gerencia internamente
             issuer: {
               id: 'form-checkout__issuer',
               placeholder: 'Banco emissor'
@@ -783,25 +813,34 @@ export function MercadoPagoPayment({
         throw new Error('Pedido não foi criado. Tente novamente.')
       }
 
+      // Preparar payload do pagamento
+      // NOTA: issuerId é opcional - Mercado Pago detecta automaticamente pelo BIN do cartão
+      // Só enviamos issuerId se o CardForm forneceu (caso o usuário tenha selecionado manualmente no CardForm)
+      const paymentPayload: any = {
+        orderId: finalOrderId,
+        paymentMethod: 'credit_card',
+        payer: {
+          email: payer.email,
+          firstName: payer.firstName,
+          lastName: payer.lastName,
+          identification: payer.identification || {
+            type: cardFormData.identificationType,
+            number: cardFormData.identificationNumber
+          }
+        },
+        cardToken: cardFormData.token,
+        installments: Number(cardFormData.installments),
+        paymentMethodId: cardFormData.paymentMethodId
+      }
+
+      // Adicionar issuerId apenas se fornecido pelo CardForm (opcional)
+      if (cardFormData.issuerId) {
+        paymentPayload.issuerId = cardFormData.issuerId
+      }
+
       const result: PaymentResult = await fetchAPI('/payments/process', {
         method: 'POST',
-        body: JSON.stringify({
-          orderId: finalOrderId,
-          paymentMethod: 'credit_card',
-          payer: {
-            email: payer.email,
-            firstName: payer.firstName,
-            lastName: payer.lastName,
-            identification: payer.identification || {
-              type: cardFormData.identificationType,
-              number: cardFormData.identificationNumber
-            }
-          },
-          cardToken: cardFormData.token,
-          installments: Number(cardFormData.installments),
-          issuerId: cardFormData.issuerId,
-          paymentMethodId: cardFormData.paymentMethodId
-        })
+        body: JSON.stringify(paymentPayload)
       })
 
       // Verificar se o pagamento foi rejeitado
@@ -935,10 +974,10 @@ export function MercadoPagoPayment({
             />
           </div>
 
-          <div className="space-y-2">
-            <label htmlFor="form-checkout__issuer" className="text-sm font-medium">Banco Emissor</label>
-            <select id="form-checkout__issuer" className="h-10 w-full border rounded-md px-3 py-2 bg-background" />
-          </div>
+          {/* Banco Emissor: Oculto - Mercado Pago detecta automaticamente pelo BIN do cartão */}
+          {/* O campo issuer é obrigatório na config do CardForm, mas não é exibido ao usuário */}
+          {/* Mercado Pago requer um <select>, não uma <div> */}
+          <select id="form-checkout__issuer" className="hidden" />
 
           <div className="space-y-2">
             <label htmlFor="form-checkout__installments" className="text-sm font-medium">Parcelas</label>

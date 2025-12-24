@@ -349,11 +349,21 @@ export default function CheckoutPage() {
     // Se for PIX, mostrar QR Code
     if (result.paymentResult.qrCode) {
       // Já está no estado paymentResult, será exibido abaixo
-    } else if (result.status === 'approved') {
-      // Pagamento aprovado, redirecionar
+    } else if (result.status === 'approved' || result.paymentResult?.status === 'approved') {
+      // Pagamento aprovado, redirecionar imediatamente
       clearCart()
       if (createdOrder?.id) {
         router.push(`/minha-conta/pedidos/${createdOrder.id}`)
+      } else {
+        // Se não tiver orderId, tentar extrair do resultado
+        const orderIdFromResult = result.transactionId || result.paymentResult?.id
+        if (orderIdFromResult) {
+          // Buscar orderId do pedido relacionado à transação
+          // Por enquanto, redireciona para lista de pedidos
+          router.push('/minha-conta/pedidos')
+        } else {
+          router.push('/minha-conta/pedidos')
+        }
       }
     }
   }
