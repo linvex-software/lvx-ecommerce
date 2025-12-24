@@ -350,21 +350,18 @@ export default function CheckoutPage() {
     if (result.paymentResult.qrCode) {
       // Já está no estado paymentResult, será exibido abaixo
     } else if (result.status === 'approved' || result.paymentResult?.status === 'approved') {
-      // Pagamento aprovado, redirecionar imediatamente
+      // Pagamento aprovado - limpar carrinho e aguardar para mostrar mensagem de sucesso
       clearCart()
-      if (createdOrder?.id) {
-        router.push(`/minha-conta/pedidos/${createdOrder.id}`)
-      } else {
-        // Se não tiver orderId, tentar extrair do resultado
-        const orderIdFromResult = result.transactionId || result.paymentResult?.id
-        if (orderIdFromResult) {
-          // Buscar orderId do pedido relacionado à transação
-          // Por enquanto, redireciona para lista de pedidos
-          router.push('/minha-conta/pedidos')
+      
+      // Redirecionar após 2 segundos para dar tempo de ver a mensagem de sucesso
+      setTimeout(() => {
+        if (createdOrder?.id) {
+          router.push(`/minha-conta/pedidos/${createdOrder.id}`)
         } else {
+          // Se não tiver orderId, redirecionar para lista de pedidos
           router.push('/minha-conta/pedidos')
         }
-      }
+      }, 2000)
     }
   }
 
@@ -719,20 +716,34 @@ export default function CheckoutPage() {
                         </p>
                       </div>
                     </div>
-                  ) : paymentResult?.status === 'approved' ? (
+                  ) : paymentResult?.status === 'approved' || paymentResult?.paymentResult?.status === 'approved' ? (
                     <div className="p-6 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg text-center">
-                      <h3 className="font-display text-xl mb-2 text-green-800 dark:text-green-200">
-                        Pagamento Aprovado!
-                      </h3>
-                      <p className="text-sm text-green-700 dark:text-green-300 mb-4">
-                        Seu pagamento foi processado com sucesso.
-                      </p>
-                      <Button onClick={() => {
-                        clearCart()
-                        router.push(`/minha-conta/pedidos/${createdOrder?.id}`)
-                      }}>
-                        Ver Pedido
-                      </Button>
+                      <div className="mb-4">
+                        <div className="mx-auto w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mb-4">
+                          <Check className="w-8 h-8 text-white" />
+                        </div>
+                        <h3 className="font-display text-xl mb-2 text-green-800 dark:text-green-200">
+                          Pagamento Aprovado!
+                        </h3>
+                        <p className="text-sm text-green-700 dark:text-green-300 mb-2">
+                          Seu pagamento foi processado com sucesso.
+                        </p>
+                        {createdOrder?.id && (
+                          <p className="text-xs text-green-600 dark:text-green-400 mb-4">
+                            Redirecionando para seu pedido...
+                          </p>
+                        )}
+                      </div>
+                      {createdOrder?.id && (
+                        <Button 
+                          onClick={() => {
+                            router.push(`/minha-conta/pedidos/${createdOrder.id}`)
+                          }}
+                          className="bg-green-600 hover:bg-green-700"
+                        >
+                          Ver Pedido Agora
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <PaymentMethod
