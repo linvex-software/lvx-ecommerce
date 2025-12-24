@@ -60,6 +60,7 @@ import { registerAdminNavbarRoutes } from './presentation/http/admin/navbar-rout
 import { registerStoreNavbarRoutes } from './presentation/http/store/navbar-routes'
 import { registerAdminLandingRoutes } from './presentation/http/admin/landing-routes'
 import { registerStoreLandingRoutes } from './presentation/http/store/landing-routes'
+import { registerMelhorEnvioRoutes } from './presentation/http/melhor-envio/melhor-envio-routes'
 
 async function buildServer() {
   const app = Fastify({
@@ -272,6 +273,7 @@ async function buildServer() {
   await registerStoreNavbarRoutes(app)
   await registerAdminLandingRoutes(app)
   await registerStoreLandingRoutes(app)
+  await registerMelhorEnvioRoutes(app)
 
   return app
 }
