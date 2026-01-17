@@ -105,7 +105,11 @@ export class PhysicalSaleRepository {
 
     return {
       ...sale,
-      total: total.toString(), // Substituir o total em reais por centavos
+      // IMPORTANTE: Substituir todos os valores monetários para CENTAVOS
+      // O frontend espera valores em centavos e divide por 100 no formatCurrency
+      subtotal: subtotal.toString(), // Substituir subtotal em reais por centavos
+      discount_amount: discount.toString(), // Substituir discount_amount em reais por centavos
+      total: total.toString(), // Substituir total em reais por centavos
       product: {
         id: row.product.id,
         name: row.product.name,
@@ -120,6 +124,7 @@ export class PhysicalSaleRepository {
             email: row.seller.email
           }
         : null,
+      // Manter campos calculados para compatibilidade (já estão em centavos)
       subtotal_calculated: subtotal,
       discount,
       shipping_cost_amount: Math.round(parseFloat(sale.shipping_cost) * 100),
@@ -181,13 +186,18 @@ export class PhysicalSaleRepository {
       .map((row) => {
         const sale = this.mapRowToPhysicalSale(row.sale)
         // Converter valores de REAIS para CENTAVOS 
+        // O banco armazena em REAIS (ex: "7.07"), precisamos converter para CENTAVOS (707)
         const subtotal = Math.round(parseFloat(sale.subtotal) * 100)
         const discount = Math.round(parseFloat(sale.discount_amount) * 100)
         const total = Math.round(parseFloat(sale.total) * 100)
         
         return {
           ...sale,
-          total: total.toString(), // Substituir o total em reais por centavos
+          // IMPORTANTE: Substituir todos os valores monetários para CENTAVOS
+          // O frontend espera valores em centavos e divide por 100 no formatCurrency
+          subtotal: subtotal.toString(), // Substituir subtotal em reais por centavos
+          discount_amount: discount.toString(), // Substituir discount_amount em reais por centavos
+          total: total.toString(), // Substituir total em reais por centavos
           product: {
             id: row.product!.id,
             name: row.product!.name,
@@ -202,6 +212,7 @@ export class PhysicalSaleRepository {
                 email: row.seller.email
               }
             : null,
+          // Manter campos calculados para compatibilidade (já estão em centavos)
           subtotal_calculated: subtotal,
           discount
         }

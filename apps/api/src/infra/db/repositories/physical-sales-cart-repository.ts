@@ -19,24 +19,33 @@ export class PhysicalSalesCartRepository {
       return sum + itemTotal - itemDiscount
     }, 0)
 
-    const result = await db
-      .insert(schema.physicalSalesCarts)
-      .values({
-        store_id: storeId,
-        seller_user_id: sellerUserId,
-        customer_id: data.customer_id ?? null,
-        items_json: data.items,
-        total: subtotal.toString(),
-        discount_amount: '0',
-        coupon_code: data.coupon_code ?? null,
-        shipping_address: data.shipping_address ?? null,
-        origin: data.origin ?? null,
-        commission_rate: data.commission_rate ? data.commission_rate.toString() : null,
-        status: 'active'
-      })
-      .returning()
+    const itemsJsonString = JSON.stringify(data.items)
 
-    return this.mapRowToCart(result[0])
+    const insertValues = {
+      store_id: storeId,
+      seller_user_id: sellerUserId,
+      customer_id: data.customer_id ?? null,
+      items_json: itemsJsonString as any,
+      total: subtotal.toString(),
+      discount_amount: '0',
+      coupon_code: data.coupon_code ?? null,
+      shipping_address: data.shipping_address ?? null,
+      origin: data.origin ?? null,
+      commission_rate: data.commission_rate ? data.commission_rate.toString() : null,
+      status: 'active' as const
+    }
+
+    try {
+      const result = await db
+        .insert(schema.physicalSalesCarts)
+        .values(insertValues)
+        .returning()
+
+      return this.mapRowToCart(result[0])
+    } catch (error: any) {
+      // Re-throw para que o controller possa tratar
+      throw error
+    }
   }
 
   async findById(id: string, storeId: string): Promise<PhysicalSalesCart | null> {
@@ -104,7 +113,7 @@ export class PhysicalSalesCartRepository {
     }
 
     if (data.items !== undefined) {
-      updateData.items_json = data.items
+      updateData.items_json = JSON.stringify(data.items) as any
       const subtotal = data.items.reduce((sum, item) => {
         const itemTotal = item.price * item.quantity
         const itemDiscount = item.discount ?? 0
@@ -201,13 +210,55 @@ export class PhysicalSalesCartRepository {
   }
 
   private mapRowToCart(row: typeof schema.physicalSalesCarts.$inferSelect): PhysicalSalesCart {
+    // Parse items_json com tratamento de erro
+    let items: Array<{
+      product_id: string
+      variant_id?: string | null
+      quantity: number
+      price: number
+      discount?: number
+    }> = []
+
+    const itemsJson = row.items_json as string | Array<{
+      product_id: string
+      variant_id?: string | null
+      quantity: number
+      price: number
+      discount?: number
+    }> | null | undefined
+
+    if (itemsJson) {
+      if (typeof itemsJson === 'string') {
+        // Se for string vazia ou inválida, usar array vazio
+        const trimmed = itemsJson.trim()
+        if (trimmed === '' || trimmed === 'null') {
+          items = []
+        } else {
+          try {
+            const parsed = JSON.parse(itemsJson)
+            // Garantir que é um array
+            if (Array.isArray(parsed)) {
+              items = parsed
+            } else {
+              items = []
+            }
+          } catch (parseError) {
+            items = []
+          }
+        }
+      } else if (Array.isArray(itemsJson)) {
+        // Se já for array, usar diretamente
+        items = itemsJson
+      }
+    }
+
     return {
       id: row.id,
       store_id: row.store_id,
       seller_user_id: row.seller_user_id,
       customer_id: row.customer_id ?? null,
       status: row.status as PhysicalSalesCartStatus,
-      items: typeof row.items_json === 'string' ? JSON.parse(row.items_json) : row.items_json,
+      items,
       total: row.total,
       discount_amount: row.discount_amount ?? '0',
       coupon_code: row.coupon_code,

@@ -196,19 +196,27 @@ export class PhysicalSalesController {
 
   async createCart(request: FastifyRequest, reply: FastifyReply): Promise<void> {
     try {
+      console.log('[PhysicalSalesController] 🛒 POST /physical-sales/cart - Iniciando...')
+      console.log('[PhysicalSalesController] 📥 Request body:', request.body)
+      
       const storeId = request.storeId
       if (!storeId) {
+        console.error('[PhysicalSalesController] ❌ Store ID não encontrado')
         await reply.code(400).send({ error: 'Store ID is required' })
         return
       }
 
       const userId = (request.user as { id?: string } | undefined)?.id
       if (!userId) {
+        console.error('[PhysicalSalesController] ❌ User ID não encontrado')
         await reply.code(401).send({ error: 'User ID is required' })
         return
       }
 
+      console.log('[PhysicalSalesController] ✅ Validações básicas OK:', { storeId, userId })
+
       const validated = createPhysicalSalesCartSchema.parse(request.body)
+      console.log('[PhysicalSalesController] ✅ Schema validado:', validated)
 
       const cart = await createPhysicalSalesCartUseCase(
         validated,
@@ -221,9 +229,15 @@ export class PhysicalSalesController {
         }
       )
 
+      console.log('[PhysicalSalesController] ✅ Carrinho criado com sucesso:', cart.id)
       await reply.code(201).send({ cart })
     } catch (error) {
+      console.error('[PhysicalSalesController] ❌ ERRO ao criar carrinho:')
+      console.error('[PhysicalSalesController] Tipo do erro:', error?.constructor?.name)
+      console.error('[PhysicalSalesController] Erro completo:', error)
+      
       if (error instanceof ZodError) {
+        console.error('[PhysicalSalesController] Erro de validação Zod:', error.errors)
         await reply.code(400).send({
           error: 'Validation error',
           details: error.errors
@@ -231,6 +245,26 @@ export class PhysicalSalesController {
         return
       }
       if (error instanceof Error) {
+        console.error('[PhysicalSalesController] Mensagem do erro:', error.message)
+        console.error('[PhysicalSalesController] Stack do erro:', error.stack)
+        
+        // Logar propriedades adicionais se existirem (erros do PostgreSQL)
+        if ((error as any).code) {
+          console.error('[PhysicalSalesController] PostgreSQL error code:', (error as any).code)
+        }
+        if ((error as any).detail) {
+          console.error('[PhysicalSalesController] PostgreSQL error detail:', (error as any).detail)
+        }
+        if ((error as any).hint) {
+          console.error('[PhysicalSalesController] PostgreSQL error hint:', (error as any).hint)
+        }
+        if ((error as any).constraint) {
+          console.error('[PhysicalSalesController] PostgreSQL constraint:', (error as any).constraint)
+        }
+        if ((error as any).column) {
+          console.error('[PhysicalSalesController] PostgreSQL column:', (error as any).column)
+        }
+        
         const statusCode =
           error.message.includes('not found') || error.message.includes('Cart must')
             ? 400
@@ -238,6 +272,7 @@ export class PhysicalSalesController {
         await reply.code(statusCode).send({ error: error.message })
         return
       }
+      console.error('[PhysicalSalesController] ❌ Erro desconhecido (não é Error nem ZodError)')
       await reply.code(500).send({ error: 'Internal server error' })
     }
   }

@@ -679,6 +679,7 @@ export class OrderRepository {
     startDate: Date,
     endDate: Date
   ): Promise<SalesByDay[]> {
+
     // Agrupar vendas por dia
     // total está em reais (numeric 12,2), retornar em reais como string
     const salesData = await db
@@ -699,11 +700,13 @@ export class OrderRepository {
       .groupBy(sql`DATE(${schema.orders.created_at})`)
       .orderBy(sql`DATE(${schema.orders.created_at})`)
 
-    return salesData.map((item) => ({
+    const result = salesData.map((item) => ({
       date: item.date,
       ordersCount: typeof item.ordersCount === 'number' ? item.ordersCount : Number(item.ordersCount) || 0,
       revenue: typeof item.revenue === 'string' ? item.revenue : String(item.revenue || '0')
     }))
+
+    return result
   }
 
   async getRevenueMetrics(
