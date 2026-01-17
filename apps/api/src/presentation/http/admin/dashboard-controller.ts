@@ -60,17 +60,46 @@ export class DashboardController {
       const startDateStr = request.query.start_date
       const endDateStr = request.query.end_date
 
-      const endDate = endDateStr ? new Date(endDateStr) : new Date()
-      const startDate = startDateStr ? new Date(startDateStr) : new Date()
-      // Se não fornecido, padrão de 30 dias
-      if (!startDateStr) {
+      // Parsear datas corretamente: YYYY-MM-DD deve ser tratado como início/fim do dia no timezone local
+      let endDate: Date
+      let startDate: Date
+
+      // Função helper para parsear YYYY-MM-DD no timezone local
+      const parseLocalDate = (dateStr: string, isEndOfDay: boolean = false): Date => {
+        const [year, month, day] = dateStr.split('-').map(Number)
+        // new Date(year, month, day) cria no timezone local (month é 0-indexed)
+        const date = new Date(year, month - 1, day)
+        if (isEndOfDay) {
+          date.setHours(23, 59, 59, 999)
+        } else {
+          date.setHours(0, 0, 0, 0)
+        }
+        return date
+      }
+
+      if (endDateStr) {
+        // Se fornecido, usar fim do dia (23:59:59.999) no timezone local
+        endDate = parseLocalDate(endDateStr, true)
+      } else {
+        endDate = new Date()
+        endDate.setHours(23, 59, 59, 999)
+      }
+
+      if (startDateStr) {
+        // Se fornecido, usar início do dia (00:00:00) no timezone local
+        startDate = parseLocalDate(startDateStr, false)
+      } else {
+        // Se não fornecido, padrão de 30 dias atrás
+        startDate = new Date()
         startDate.setDate(startDate.getDate() - 30)
+        startDate.setHours(0, 0, 0, 0)
       }
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         await reply.code(400).send({ error: 'Invalid date format. Use YYYY-MM-DD' })
         return
       }
+
 
       const sales = await getSalesByPeriodUseCase(
         storeId,
@@ -115,17 +144,46 @@ export class DashboardController {
       const startDateStr = request.query.start_date
       const endDateStr = request.query.end_date
 
-      const endDate = endDateStr ? new Date(endDateStr) : new Date()
-      const startDate = startDateStr ? new Date(startDateStr) : new Date()
-      // Se não fornecido, padrão de 30 dias
-      if (!startDateStr) {
+      // Parsear datas corretamente: YYYY-MM-DD deve ser tratado como início/fim do dia no timezone local
+      let endDate: Date
+      let startDate: Date
+
+      // Função helper para parsear YYYY-MM-DD no timezone local
+      const parseLocalDate = (dateStr: string, isEndOfDay: boolean = false): Date => {
+        const [year, month, day] = dateStr.split('-').map(Number)
+        // new Date(year, month, day) cria no timezone local (month é 0-indexed)
+        const date = new Date(year, month - 1, day)
+        if (isEndOfDay) {
+          date.setHours(23, 59, 59, 999)
+        } else {
+          date.setHours(0, 0, 0, 0)
+        }
+        return date
+      }
+
+      if (endDateStr) {
+        // Se fornecido, usar fim do dia (23:59:59.999) no timezone local
+        endDate = parseLocalDate(endDateStr, true)
+      } else {
+        endDate = new Date()
+        endDate.setHours(23, 59, 59, 999)
+      }
+
+      if (startDateStr) {
+        // Se fornecido, usar início do dia (00:00:00) no timezone local
+        startDate = parseLocalDate(startDateStr, false)
+      } else {
+        // Se não fornecido, padrão de 30 dias atrás
+        startDate = new Date()
         startDate.setDate(startDate.getDate() - 30)
+        startDate.setHours(0, 0, 0, 0)
       }
 
       if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
         await reply.code(400).send({ error: 'Invalid date format. Use YYYY-MM-DD' })
         return
       }
+
 
       const metrics = await getRevenueMetricsUseCase(
         storeId,
