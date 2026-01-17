@@ -1,4 +1,5 @@
 # 🛍️ White Label Ecommerce
+LvxEcommerce
 
 Monorepo de e-commerce white label construído com Clean Architecture, TypeScript e tecnologias modernas.
 
@@ -365,4 +366,5 @@ FRETE_API_KEY=
 
 # Licença
 STORE_LICENSE_KEY=
+
 ```
