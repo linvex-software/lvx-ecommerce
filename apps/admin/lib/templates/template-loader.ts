@@ -120,6 +120,8 @@ export async function loadTemplateComponents(templateId: string) {
         ...resolver,
         ...templateModule.componentResolver
       }
+      console.log('[template-loader] Resolver criado a partir de componentResolver do template')
+      console.log('[template-loader] Componentes no resolver:', Object.keys(templateModule.componentResolver))
     } else {
       // Caso contrário, construir o resolver a partir das exportações
       if (templateModule.Header) resolver.Header = templateModule.Header
@@ -131,7 +133,34 @@ export async function loadTemplateComponents(templateId: string) {
       if (templateModule.InstagramFeed) resolver.InstagramFeed = templateModule.InstagramFeed
       if (templateModule.EditableText) resolver.EditableText = templateModule.EditableText
       if (templateModule.EditableButton) resolver.EditableButton = templateModule.EditableButton
+      // Componentes para páginas dinâmicas (se exportados individualmente)
+      if (templateModule.FAQ) resolver.FAQ = templateModule.FAQ
+      if (templateModule.TextBlockCraft) resolver.TextBlock = templateModule.TextBlockCraft
       finalResolver = resolver
+      console.log('[template-loader] Resolver criado a partir de exportações individuais')
+    }
+    
+    // Verificar se FAQ e TextBlock estão no resolver
+    if (!finalResolver.FAQ) {
+      console.warn('[template-loader] FAQ não encontrado no resolver, tentando import dinâmico...')
+      try {
+        const { FAQ } = await import('@/components/store/faq')
+        finalResolver.FAQ = FAQ
+        console.log('[template-loader] FAQ adicionado via import dinâmico')
+      } catch (error) {
+        console.error('[template-loader] Erro ao importar FAQ:', error)
+      }
+    }
+    
+    if (!finalResolver.TextBlock) {
+      console.warn('[template-loader] TextBlock não encontrado no resolver, tentando import dinâmico...')
+      try {
+        const { TextBlockCraft } = await import('@/components/editor/craft-blocks/TextBlockCraft')
+        finalResolver.TextBlock = TextBlockCraft
+        console.log('[template-loader] TextBlock adicionado via import dinâmico')
+      } catch (error) {
+        console.error('[template-loader] Erro ao importar TextBlock:', error)
+      }
     }
     
     // Armazenar no cache

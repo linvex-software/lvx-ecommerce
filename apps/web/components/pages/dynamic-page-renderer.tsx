@@ -105,14 +105,18 @@ export function DynamicPageRenderer({ page }: DynamicPageRendererProps) {
     )
   }
 
+  // Determinar se é uma página institucional (tem conteúdo Craft.js mas não tem produtos)
+  const hasContent = page.contentJson && Object.keys(page.contentJson).length > 0
+  const isInstitutionalPage = hasContent && products.length === 0
+
   return (
     <CartProvider>
       <div className="min-h-screen bg-background">
         <Header />
         <MiniCart />
 
-        {/* Renderizar conteúdo Craft.js se existir (antes do header de produtos) */}
-        {page.contentJson && Object.keys(page.contentJson).length > 0 && (
+        {/* Para páginas institucionais (com conteúdo Craft.js e sem produtos) */}
+        {isInstitutionalPage && (
           <div className="w-full">
             <Editor
               resolver={resolver}
@@ -127,42 +131,57 @@ export function DynamicPageRenderer({ page }: DynamicPageRendererProps) {
           </div>
         )}
 
-        {/* Header - mesmo estilo da página /produtos */}
-        <div className="bg-cream py-12">
-          <div className="container mx-auto px-4">
-            <h1 className="font-display text-4xl lg:text-5xl text-foreground mt-4">
-              {page.title}
-            </h1>
-            {totalResults > 0 && (
-              <p className="text-muted-foreground font-body mt-2">
-                {totalResults} produto{totalResults !== 1 ? 's' : ''}
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Products Grid - mesmo estilo da página /produtos */}
-        <div className="container mx-auto px-4 py-8">
-          {products.length === 0 ? (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground font-body mb-4">
-                Nenhum produto encontrado nesta página.
-              </p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-8">
-              {products.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="animate-fade-up"
-                  style={{ animationDelay: `${index * 50}ms` }}
+        {/* Para páginas com produtos ou páginas mistas */}
+        {!isInstitutionalPage && (
+          <>
+            {/* Renderizar conteúdo Craft.js se existir (antes do header de produtos) */}
+            {hasContent && (
+              <div className="w-full">
+                <Editor
+                  resolver={resolver}
+                  enabled={false}
                 >
-                  <ProductCard product={product} />
-                </div>
-              ))}
+                  <Frame data={typeof page.contentJson === 'string' ? page.contentJson : JSON.stringify(page.contentJson)}>
+                    <div className="craft-render">
+                      {/* O conteúdo será renderizado pelo Craft.js */}
+                    </div>
+                  </Frame>
+                </Editor>
+              </div>
+            )}
+
+            {/* Header - mesmo estilo da página /produtos */}
+            <div className="bg-cream py-12">
+              <div className="container mx-auto px-4">
+                <h1 className="font-display text-4xl lg:text-5xl text-foreground mt-4">
+                  {page.title}
+                </h1>
+                {totalResults > 0 && (
+                  <p className="text-muted-foreground font-body mt-2">
+                    {totalResults} produto{totalResults !== 1 ? 's' : ''}
+                  </p>
+                )}
+              </div>
             </div>
-          )}
-        </div>
+
+            {/* Products Grid - mesmo estilo da página /produtos */}
+            {products.length > 0 && (
+              <div className="container mx-auto px-4 py-8">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-8">
+                  {products.map((product, index) => (
+                    <div
+                      key={product.id}
+                      className="animate-fade-up"
+                      style={{ animationDelay: `${index * 50}ms` }}
+                    >
+                      <ProductCard product={product} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
     </CartProvider>
   )

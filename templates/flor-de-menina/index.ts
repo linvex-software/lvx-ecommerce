@@ -18,6 +18,10 @@ import { InstagramFeed } from '../../apps/web/components/template/flor-de-menina
 import { EditableText } from '../../apps/web/components/template/flor-de-menina/components/common/editable-text'
 import { EditableButton } from '../../apps/web/components/template/flor-de-menina/components/common/editable-button'
 
+// Componentes do admin/store para páginas dinâmicas
+import { FAQ } from '../../apps/admin/components/store/faq'
+import { TextBlockCraft } from '../../apps/admin/components/editor/craft-blocks/TextBlockCraft'
+
 export const templateId = 'flor-de-menina'
 export const templateName = 'Flor de Menina'
 export const templateDescription = 'Template elegante para lojas de moda feminina'
@@ -35,11 +39,14 @@ export const componentResolver = {
   PromoBanner,
   InstagramFeed,
   EditableText,
-  EditableButton
+  EditableButton,
+  // Componentes para páginas dinâmicas
+  FAQ,
+  TextBlock: TextBlockCraft,
 }
 
 // Exportar componentes individualmente também
-export { Header, Footer, HeroBanner, ProductShowcase, CategoryBanner, PromoBanner, InstagramFeed, EditableText, EditableButton }
+export { Header, Footer, HeroBanner, ProductShowcase, CategoryBanner, PromoBanner, InstagramFeed, EditableText, EditableButton, FAQ, TextBlockCraft }
 
 /**
  * Carrega o layout fixo do template

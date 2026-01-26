@@ -10,8 +10,8 @@
  * Aplica os mesmos estilos globais da web para garantir consistência visual
  */
 
-import { Frame } from '@craftjs/core'
-import { useEffect, useRef } from 'react'
+import { Frame, useEditor } from '@craftjs/core'
+import { useEffect, useRef, useMemo } from 'react'
 import { TemplateStyles } from './template-styles'
 import { usePreviewMode } from './preview-context'
 
@@ -23,17 +23,92 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
   const frameRef = useRef<HTMLDivElement>(null)
   const { previewMode } = usePreviewMode()
   
-  // Verificar se data é válido antes de passar para o Frame
-  // O Craft só deve receber data quando existir layout válido
-  let safeData: string | undefined
+  // Acessar o resolver do Editor para validar componentes
+  // Usar try-catch porque useEditor pode falhar se não estiver dentro de um Editor
+  let resolver: Record<string, any> | undefined = undefined
   try {
-    if (data && data.trim().length > 0) {
-      const parsed = JSON.parse(data)
-      safeData = parsed && Object.keys(parsed).length > 0 ? data : undefined
+    const editorResult = useEditor((state) => ({ nodes: state.nodes }))
+    if (editorResult && editorResult.query) {
+      const options = editorResult.query.getOptions()
+      if (options && options.resolver) {
+        resolver = options.resolver as Record<string, any>
+      }
     }
-  } catch {
-    safeData = undefined
+  } catch (error) {
+    // Se não estiver dentro de um Editor, resolver será undefined
+    // Isso é esperado durante o carregamento inicial
+    resolver = undefined
   }
+  
+  // Validar e limpar o JSON antes de passar para o Frame
+  const safeData = useMemo(() => {
+    if (!data || !data.trim()) return undefined
+    
+    try {
+      const parsed = JSON.parse(data)
+      
+      // Validar estrutura básica
+      if (!parsed || typeof parsed !== 'object' || !parsed.ROOT) {
+        return undefined
+      }
+      
+      if (!parsed.ROOT.type || !parsed.ROOT.type.resolvedName) {
+        console.warn('[RestrictedFrame] JSON inválido: ROOT.type.resolvedName não encontrado')
+        return undefined
+      }
+      
+      // Se não temos resolver ainda, não validar componentes (pode estar carregando)
+      if (!resolver || Object.keys(resolver).length === 0) {
+        console.warn('[RestrictedFrame] Resolver não disponível ainda, aguardando...')
+        return undefined
+      }
+      
+      // Validar que todos os componentes referenciados existem no resolver
+      const htmlElements = ['div', 'span', 'p', 'a', 'img', 'button', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'section', 'article', 'header', 'footer', 'nav', 'main', 'aside', 'ul', 'ol', 'li', 'form', 'label', 'input', 'textarea', 'select', 'option']
+      
+      const validateNode = (nodeId: string, node: any): boolean => {
+        if (!node || !node.type || !node.type.resolvedName) {
+          return false
+        }
+        
+        const resolvedName = node.type.resolvedName
+        
+        // Elementos HTML nativos são sempre válidos
+        if (htmlElements.includes(resolvedName)) {
+          return true
+        }
+        
+        // Verificar se o componente existe no resolver
+        if (!resolver[resolvedName]) {
+          console.warn(`[RestrictedFrame] Componente ${resolvedName} não encontrado no resolver`)
+          return false
+        }
+        
+        // Validar nós filhos recursivamente
+        if (node.nodes && Array.isArray(node.nodes)) {
+          for (const childId of node.nodes) {
+            const childNode = parsed[childId]
+            if (!validateNode(childId, childNode)) {
+              return false
+            }
+          }
+        }
+        
+        return true
+      }
+      
+      // Validar ROOT
+      if (!validateNode('ROOT', parsed.ROOT)) {
+        console.warn('[RestrictedFrame] Validação falhou: componentes inválidos encontrados')
+        return undefined
+      }
+      
+      return data
+    } catch (error) {
+      console.error('[RestrictedFrame] Erro ao parsear JSON:', error)
+      return undefined
+    }
+  }, [data, resolver])
 
   // Aplicar estilos CSS variables no frame do Craft.js
   // O Craft.js cria um iframe, então precisamos aplicar as variáveis dentro do documento do iframe
@@ -626,6 +701,31 @@ export function RestrictedFrame({ data }: RestrictedFrameProps) {
       }
     }
   }, [previewMode]) // Re-executar quando o preview mode mudar
+
+  // Só renderizar o Frame se tivermos dados válidos
+  if (!safeData) {
+    return (
+      <>
+        <TemplateStyles />
+        <div 
+          ref={frameRef} 
+          className="preview-wrapper min-h-screen flex items-center justify-center"
+          style={{
+            fontFamily: 'var(--font-body, "Montserrat", system-ui, sans-serif)',
+            backgroundColor: 'hsl(var(--background, 0 0% 100%))',
+            color: 'hsl(var(--foreground, 0 0% 12%))',
+            isolation: 'isolate',
+          }}
+        >
+          <div className="text-muted-foreground text-sm">
+            {!resolver || Object.keys(resolver).length === 0 
+              ? 'Carregando componentes...' 
+              : 'Conteúdo inválido ou componentes não encontrados'}
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
