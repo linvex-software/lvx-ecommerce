@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Package,
   Ticket,
-  Settings,
   Tags,
   ShoppingCart,
   Warehouse,
@@ -79,11 +78,6 @@ const navItems: NavItem[] = [
     title: 'Cupons',
     href: '/cupons',
     icon: Ticket,
-  },
-  {
-    title: 'Configurações',
-    href: '/settings',
-    icon: Settings,
   },
   {
     title: 'Como usar',
