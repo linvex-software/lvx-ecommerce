@@ -25,8 +25,13 @@ import {
   createStockMovementUseCase,
   createStockMovementSchema
 } from '../../../application/catalog/use-cases/create-stock-movement'
+import {
+  generateProductDescriptionUseCase,
+  generateProductDescriptionSchema
+} from '../../../application/ai/use-cases/generate-product-description'
 import { ProductRepository } from '../../../infra/db/repositories/product-repository'
 import { StockMovementRepository } from '../../../infra/db/repositories/stock-movement-repository'
+import { GeminiClient } from '../../../infra/ai/gemini-client'
 
 export class ProductController {
   constructor(
@@ -306,6 +311,52 @@ export class ProductController {
       }
       if (error instanceof Error) {
         await reply.code(500).send({ error: error.message })
+        return
+      }
+      await reply.code(500).send({ error: 'Internal server error' })
+    }
+  }
+
+  async generateDescription(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const storeId = request.storeId
+      if (!storeId) {
+        await reply.code(400).send({ error: 'Store ID is required' })
+        return
+      }
+
+      const validated = generateProductDescriptionSchema.parse(request.body)
+      let aiProvider: GeminiClient
+      try {
+        aiProvider = new GeminiClient()
+      } catch (configError) {
+        const message =
+          configError instanceof Error ? configError.message : 'Serviço de IA não configurado.'
+        await reply.code(503).send({
+          error: message
+        })
+        return
+      }
+
+      const { description } = await generateProductDescriptionUseCase(validated, {
+        aiProvider
+      })
+
+      await reply.send({ description })
+    } catch (error) {
+      if (error instanceof ZodError) {
+        await reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors
+        })
+        return
+      }
+      if (error instanceof Error) {
+        const statusCode =
+          error.message.includes('indisponível') || error.message.includes('limite')
+            ? 503
+            : 500
+        await reply.code(statusCode).send({ error: error.message })
         return
       }
       await reply.code(500).send({ error: 'Internal server error' })

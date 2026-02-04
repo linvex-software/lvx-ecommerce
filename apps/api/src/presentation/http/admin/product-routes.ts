@@ -73,6 +73,18 @@ export async function registerAdminProductRoutes(
     }
   )
 
+  // POST /admin/products/generate-description - Gera descrição com IA (admin ou operador)
+  app.post<{ Body: { name: string; category_names?: string[]; attributes?: Record<string, string> } }>(
+    '/admin/products/generate-description',
+    {
+      onRequest: [requireAuth, tenantMiddleware],
+      preHandler: [requireRole(['admin', 'operador'])]
+    },
+    async (request: FastifyRequest<{ Body: { name: string; category_names?: string[]; attributes?: Record<string, string> } }>, reply: FastifyReply) => {
+      await productController.generateDescription(request, reply)
+    }
+  )
+
   // PUT /admin/products/:id - Atualiza produto (apenas admin)
   app.put<{ Params: { id: string } }>(
     '/admin/products/:id',

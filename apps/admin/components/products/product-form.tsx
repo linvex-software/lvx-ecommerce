@@ -20,6 +20,7 @@ import { SizeChartForm, type SizeChartData } from './size-chart-form'
 import type { Product } from '@/lib/hooks/use-products'
 import { isClothingProduct, generateDefaultSizeChart } from '@/lib/utils/product-detection'
 import { useCategories } from '@/lib/hooks/use-categories'
+import { apiClient } from '@/lib/api-client'
 import {
   Select,
   SelectContent,
@@ -135,6 +136,7 @@ interface ProductFormProps {
 
 export function ProductForm({ product, onSubmit, isLoading = false }: ProductFormProps) {
   const { data: categoriesData } = useCategories()
+  const [generateDescriptionLoading, setGenerateDescriptionLoading] = useState(false)
 
   const initialVariants: ProductVariant[] = (product as any)?.variants?.map((v: any) => ({
     size: v.size || null,
@@ -472,7 +474,48 @@ export function ProductForm({ product, onSubmit, isLoading = false }: ProductFor
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description">Descrição curta</Label>
+                <div className="flex items-center justify-between gap-2">
+                  <Label htmlFor="description">Descrição curta</Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={generateDescriptionLoading || !watch('name')?.trim()}
+                    onClick={async () => {
+                      const name = watch('name')?.trim()
+                      if (!name) {
+                        toast.error('Informe o nome do produto para gerar a descrição.')
+                        return
+                      }
+                      setGenerateDescriptionLoading(true)
+                      try {
+                        const categoryIds = watch('category_ids') || []
+                        const allCategories = categoriesData?.categories || []
+                        const category_names = categoryIds
+                          .map((id: string) => allCategories.find((c) => c.id === id)?.name)
+                          .filter(Boolean) as string[]
+                        const { data } = await apiClient.post<{ description: string }>(
+                          '/admin/products/generate-description',
+                          { name, category_names }
+                        )
+                        setValue('description', data.description ?? '', {
+                          shouldDirty: true,
+                          shouldValidate: true
+                        })
+                        toast.success('Descrição gerada com IA. Você pode editar o texto.')
+                      } catch (err: unknown) {
+                        const message =
+                          (err as { response?: { data?: { error?: string } } })?.response?.data
+                            ?.error ?? 'Erro ao gerar descrição. Tente novamente.'
+                        toast.error(message)
+                      } finally {
+                        setGenerateDescriptionLoading(false)
+                      }
+                    }}
+                  >
+                    {generateDescriptionLoading ? 'Gerando…' : 'Gerar com IA'}
+                  </Button>
+                </div>
                 <Textarea
                   id="description"
                   {...register('description')}

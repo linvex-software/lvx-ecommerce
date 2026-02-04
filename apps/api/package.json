@@ -17,6 +17,7 @@
     "@fastify/jwt": "^5.0.0",
     "@fastify/multipart": "^7.6.0",
     "@fastify/swagger": "^8.15.0",
+    "@google/genai": "^1.39.0",
     "@white-label/db": "workspace:*",
     "@white-label/shared": "workspace:*",
     "@white-label/types": "workspace:*",
